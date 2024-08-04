@@ -25,7 +25,8 @@ sns.set_theme(style="whitegrid", font_scale=1.5)
 # The remaining 80% will be moved into a subfolder called 'train'
 
 # Get all the pickle files in data/psp/processed
-processed_files = sorted(glob.glob("data/processed/psp/psp_*.pkl"))
+data_path_prefix = "/nesi/project/vuw04187/"
+processed_files = sorted(glob.glob(data_path_prefix + "data/processed/psp/psp_*.pkl"))
 
 train_frac = 0.6
 
@@ -311,11 +312,11 @@ lookup_table_3d.head()
 
 # Export the lookup tables
 print("Exporting lookup tables to CSV")
-lookup_table_2d.to_csv(f"data/processed/lookup_table_2d_{n_bins}bins.csv")
-lookup_table_3d.to_csv(f"data/processed/lookup_table_3d_{n_bins}bins.csv")
+lookup_table_2d.to_csv(f"{data_path_prefix}data/processed/lookup_table_2d_{n_bins}bins.csv")
+lookup_table_3d.to_csv(f"{data_path_prefix}data/processed/lookup_table_3d_{n_bins}bins.csv")
 
 # Export heatmap as a pickle for final case study correction figure
-with open(f"data/processed/heatmap_2d_{n_bins}bins.pkl", "wb") as f:
+with open(f"{data_path_prefix}data/processed/heatmap_2d_{n_bins}bins.pkl", "wb") as f:
     pickle.dump(
         {
             "heatmap_bin_vals_2d": heatmap_bin_vals_2d,

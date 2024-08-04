@@ -21,10 +21,12 @@ sns.set_theme(style="whitegrid", font_scale=1.5)
 spacecraft = sys.argv[1]
 n_bins = 10
 
+data_path_prefix = "/nesi/project/vuw04187/"
+
 if spacecraft == "psp":
-    input_file_list = sorted(glob.glob("data/processed/psp/test/psp_*_corrected.pkl"))
+    input_file_list = sorted(glob.glob(data_path_prefix + "data/processed/psp/test/psp_*_corrected.pkl"))
 elif spacecraft == "wind":
-    input_file_list = sorted(glob.glob("data/processed/wind/wi_*_corrected.pkl"))
+    input_file_list = sorted(glob.glob(data_path_prefix + "data/processed/wind/wi_*_corrected.pkl"))
 else:
     raise ValueError("Spacecraft must be 'psp' or 'wind'")
 
@@ -53,7 +55,7 @@ heatmap_bin_vals_2d = data["heatmap_bin_vals_2d"]
 heatmap_bin_edges_2d = data["heatmap_bin_edges_2d"]
 
 # Export final overall dataframes, combined from all outputs
-output_file_path = f"data/processed/test_corrected_{spacecraft}.pkl"
+output_file_path = f"{data_path_prefix}data/processed/test_corrected_{spacecraft}.pkl"
 
 with open(output_file_path, "wb") as f:
     pickle.dump(

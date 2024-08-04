@@ -16,12 +16,14 @@ n_bins = 10
 times_to_gap = 3
 pwrl_range = [10, 100]
 
+data_path_prefix = "/nesi/project/vuw04187/"
+
 # Importing lookup table
 lookup_table_2d = pd.read_csv(
-    f"data/processed/lookup_table_2d_{n_bins}bins.csv", index_col=0
+    f"{data_path_prefix}data/processed/lookup_table_2d_{n_bins}bins.csv", index_col=0
 )
 lookup_table_3d = pd.read_csv(
-    f"data/processed/lookup_table_3d_{n_bins}bins.csv", index_col=0
+    f"{data_path_prefix}data/processed/lookup_table_3d_{n_bins}bins.csv", index_col=0
 )
 
 spacecraft = sys.argv[1]  # "psp" or "wind"
@@ -30,9 +32,9 @@ file_index_test = int(sys.argv[2])
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
-    input_file_list = [sorted(glob.glob("data/processed/wind/wi_*v05.pkl"))][0]
+    input_file_list = [sorted(glob.glob(data_path_prefix + "data/processed/wind/wi_*v05.pkl"))][0]
 elif spacecraft == "psp":
-    input_file_list = [sorted(glob.glob("data/processed/psp/test/psp_*v02.pkl"))][0]
+    input_file_list = [sorted(glob.glob(data_path_prefix + "data/processed/psp/test/psp_*v02.pkl"))][0]
 else:
     raise ValueError("Spacecraft must be 'psp' or 'wind'")
 

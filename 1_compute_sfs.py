@@ -56,12 +56,14 @@ times_to_gap = 3
 minimum_missing_chunks = 0.7
 np.random.seed(123)  # For reproducibility
 
+data_path_prefix = "/nesi/project/vuw04187/"
+
 spacecraft = sys.argv[1]
 # Ensure necessary directories exist
-os.makedirs(f"data/processed/{spacecraft}", exist_ok=True)
-os.makedirs(f"plots/temp/{spacecraft}", exist_ok=True)
+os.makedirs(f"{data_path_prefix}data/processed/{spacecraft}", exist_ok=True)
+os.makedirs(f"{data_path_prefix}plots/temp/{spacecraft}", exist_ok=True)
 
-raw_file_list = sorted(glob.iglob(f"data/raw/{spacecraft}/" + "/*.cdf"))
+raw_file_list = sorted(glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf"))
 
 # Selecting one file to read in
 file_index = int(sys.argv[2])

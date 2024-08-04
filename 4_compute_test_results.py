@@ -229,9 +229,11 @@ for file_index_selected in range(2):
 
     fig, ax = plt.subplots(2, 3, figsize=(16, 2 * 3))
     # will use consistent interval index, but choose random versions of it to plot
-    for ax_index, version in enumerate(
-        [random.randint(0, times_to_gap - 1), random.randint(0, times_to_gap - 1)]
-    ):
+    versions_to_plot = [
+        random.randint(0, times_to_gap - 1),
+        random.randint(0, times_to_gap - 1),
+    ]
+    for ax_index, version in enumerate(versions_to_plot):
         # ax[ax_index, 0].plot(ints[0][int_index][0].values, c="grey")
         # Not currently plotting due to indexing issue: need to be able to index
         # on both file_index and int_index
@@ -445,12 +447,12 @@ for file_index_selected in range(2):
     ax0 = fig.add_subplot(gs1[0, 0])
     ax1 = fig.add_subplot(gs2[0, 0])
 
-    for version in range(2):
-        if version == 0:
+    for ax_index, version in enumerate(versions_to_plot):
+        if ax_index == 0:
             ax = ax1
             ax.set_ylabel("SF")
         else:
-            ax = fig.add_subplot(gs2[0, version], sharey=ax1)
+            ax = fig.add_subplot(gs2[0, ax_index], sharey=ax1)
             plt.setp(ax.get_yticklabels(), visible=False)
 
         ax.plot(

@@ -1,10 +1,9 @@
-#!/bin/bash -e
+#!/bin/bash
 
-#SBATCH --job-name          3_correct_test_sfs
-#SBATCH --mem               1G
-#SBATCH --array             0-1
+#SBATCH --job-name          2b_compute_heatmap
+#SBATCH --mem               2G
 #SBATCH --time              00:10:00
-#SBATCH --output            logs/%x_%A_%a.out
+#SBATCH --output            logs/%x_%j.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
 
@@ -14,9 +13,7 @@ source venv/bin/activate
 echo "JOB STARTED"
 date
 
-file_index=$SLURM_ARRAY_TASK_ID
-
-python 3_correct_test_sfs.py psp $file_index
+python 2b_compute_heatmap.py # runs on PSP training data 
 
 echo "JOB FINISHED"
 date

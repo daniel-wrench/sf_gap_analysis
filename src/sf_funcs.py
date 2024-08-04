@@ -390,7 +390,7 @@ def plot_error_trend_line(
     title="SF estimation error vs. lag and global sparsity",
     y_axis_log=False,
 ):
-    fig, ax = plt.subplots(figsize=(8, 4), tight_layout=True)
+    fig, ax = plt.subplots(figsize=(8, 5), tight_layout=True)
     plt.title(title)
     # plt.plot(lag_error_mean_i, color="black", lw=3)
     plt.scatter(

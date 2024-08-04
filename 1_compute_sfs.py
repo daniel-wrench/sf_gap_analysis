@@ -52,7 +52,7 @@ sys_arg_dict = {
 # *local* outer scale and create our standardise intervals using that.
 
 
-times_to_gap = 3
+times_to_gap = 25
 minimum_missing_chunks = 0.7
 np.random.seed(123)  # For reproducibility
 
@@ -89,7 +89,6 @@ if spacecraft == "psp":
     psp_df = psp_df.drop(columns="epoch_mag_RTN").set_index("Time")
 
     df_raw = psp_df["B_R"].rename("B")  # Giving generic name for spacecraft consistency
-    print("\n")
     # print(df_raw.info())
 
     del psp_data, psp_data_ready, psp_df
@@ -314,7 +313,7 @@ else:
 
     # Analyse intervals (get true SF and slope)
 
-    lags = np.arange(1, 0.1 * len(ints[0]))
+    lags = np.arange(1, 0.2 * len(ints[0]))
 
     # Logarithmically-spaced lags?
     # vals = np.logspace(0, 3, 0.25 * len(ints[0]))
@@ -483,7 +482,7 @@ else:
         }
     )
 
-    print("Exporting processed dataframes to pickle file")
+    print("Exporting processed dataframes to pickle file\n")
 
     output_file_path = (
         raw_file_list[file_index].replace("raw", "processed").replace(".cdf", ".pkl")

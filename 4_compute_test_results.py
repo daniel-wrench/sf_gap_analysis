@@ -48,7 +48,7 @@ print(
 print("Now proceeding to calculate overall test set statistics")
 # Also get the 2d heatmap for final case study correction figure, by undoing the above operation
 
-with open(f"data/processed/heatmap_2d_{n_bins}bins.pkl", "rb") as f:
+with open(f"{data_path_prefix}data/processed/heatmap_2d_{n_bins}bins.pkl", "rb") as f:
     data = pickle.load(f)
 
 heatmap_bin_vals_2d = data["heatmap_bin_vals_2d"]
@@ -75,7 +75,7 @@ with open(output_file_path, "wb") as f:
 # Box plots
 
 
-# ints_gapped_metadata.groupby("gap_handling")[["missing_percent_overall", "slope", "slope_pe", "mpe", "mape"]].agg(["mean", "median", "std", "min", "max"])
+print(ints_gapped_metadata.groupby("gap_handling")[["missing_percent_overall", "slope", "slope_pe", "mpe", "mape"]].agg(["mean", "median", "std", "min", "max"]))
 
 # Assuming ints_gapped_metadata is your DataFrame
 # Define the list of columns to plot
@@ -118,6 +118,7 @@ plt.tight_layout()
 plt.suptitle("")  # Remove the default title to avoid overlap
 plt.savefig(f"plots/temp/test_{spacecraft}_boxplots.png", bbox_inches="tight")
 
+raise SystemExit
 
 # Regression lines
 

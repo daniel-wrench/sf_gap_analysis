@@ -26,9 +26,13 @@ times_to_gap = 25
 data_path_prefix = "/nesi/project/vuw04187/"
 
 if spacecraft == "psp":
-    input_file_list = sorted(glob.glob(data_path_prefix + "data/processed/psp/test/psp_*_corrected.pkl"))
+    input_file_list = sorted(
+        glob.glob(data_path_prefix + "data/processed/psp/test/psp_*_corrected.pkl")
+    )
 elif spacecraft == "wind":
-    input_file_list = sorted(glob.glob(data_path_prefix + "data/processed/wind/wi_*_corrected.pkl"))
+    input_file_list = sorted(
+        glob.glob(data_path_prefix + "data/processed/wind/wi_*_corrected.pkl")
+    )
 else:
     raise ValueError("Spacecraft must be 'psp' or 'wind'")
 
@@ -77,7 +81,7 @@ with open(output_file_path, "wb") as f:
 # Box plots
 
 
-#print(ints_gapped_metadata.groupby("gap_handling")[["missing_percent_overall", "slope", "slope_pe", "mpe", "mape"]].agg(["mean", "median", "std", "min", "max"]))
+# print(ints_gapped_metadata.groupby("gap_handling")[["missing_percent_overall", "slope", "slope_pe", "mpe", "mape"]].agg(["mean", "median", "std", "min", "max"]))
 
 # Assuming ints_gapped_metadata is your DataFrame
 # Define the list of columns to plot
@@ -225,11 +229,13 @@ for file_index_selected in range(2):
 
     fig, ax = plt.subplots(2, 3, figsize=(16, 2 * 3))
     # will use consistent interval index, but choose random versions of it to plot
-    for version in enumerate([random.randint(0, times_to_gap-1), random.randint(0, times_to_gap-1)]):
-        # ax[version, 0].plot(ints[0][int_index][0].values, c="grey")
+    for ax_index, version in enumerate(
+        [random.randint(0, times_to_gap - 1), random.randint(0, times_to_gap - 1)]
+    ):
+        # ax[ax_index, 0].plot(ints[0][int_index][0].values, c="grey")
         # Not currently plotting due to indexing issue: need to be able to index
         # on both file_index and int_index
-        ax[version, 0].plot(
+        ax[ax_index, 0].plot(
             ints_gapped.loc[
                 (ints_gapped["file_index"] == file_index)
                 & (ints_gapped["int_index"] == int_index)
@@ -241,12 +247,12 @@ for file_index_selected in range(2):
         )
 
         # Put missing_percent_overall in the title
-        ax[version, 0].set_title(
+        ax[ax_index, 0].set_title(
             f"{ints_gapped_metadata.loc[(ints_gapped_metadata['file_index']==file_index) & (ints_gapped_metadata['int_index']==int_index) & (ints_gapped_metadata['version']==version) & (ints_gapped_metadata['gap_handling']=='lint'), 'missing_percent_overall'].values[0]:.1f}% missing"
         )
 
         # Plot the SF
-        ax[version, 1].plot(
+        ax[ax_index, 1].plot(
             sfs.loc[
                 (sfs["file_index"] == file_index) & (sfs["int_index"] == int_index),
                 "lag",
@@ -260,7 +266,7 @@ for file_index_selected in range(2):
             lw=5,
         )
 
-        ax[version, 1].plot(
+        ax[ax_index, 1].plot(
             sfs_gapped_corrected.loc[
                 (sfs_gapped_corrected["file_index"] == file_index)
                 & (sfs_gapped_corrected["int_index"] == int_index)
@@ -287,7 +293,7 @@ for file_index_selected in range(2):
             ),
         )
 
-        ax[version, 1].plot(
+        ax[ax_index, 1].plot(
             sfs_gapped_corrected.loc[
                 (sfs_gapped_corrected["file_index"] == file_index)
                 & (sfs_gapped_corrected["int_index"] == int_index)
@@ -315,7 +321,7 @@ for file_index_selected in range(2):
         )
 
         # Plot the sf_2_pe
-        ax[version, 2].plot(
+        ax[ax_index, 2].plot(
             sfs_gapped_corrected.loc[
                 (sfs_gapped_corrected["file_index"] == file_index)
                 & (sfs_gapped_corrected["int_index"] == int_index)
@@ -332,7 +338,7 @@ for file_index_selected in range(2):
             ],
             c="black",
         )
-        ax[version, 2].plot(
+        ax[ax_index, 2].plot(
             sfs_gapped_corrected.loc[
                 (sfs_gapped_corrected["file_index"] == file_index)
                 & (sfs_gapped_corrected["int_index"] == int_index)
@@ -351,7 +357,7 @@ for file_index_selected in range(2):
         )
 
         # plot sample size n on right axis
-        ax2 = ax[version, 2].twinx()
+        ax2 = ax[ax_index, 2].twinx()
         ax2.plot(
             sfs_gapped_corrected.loc[
                 (sfs_gapped_corrected["file_index"] == file_index)
@@ -372,22 +378,22 @@ for file_index_selected in range(2):
 
         # Label the axes
         ax[1, 0].set_xlabel("Time")
-        ax[version, 0].set_ylabel("$B$ (normalised)")
+        ax[ax_index, 0].set_ylabel("$B$ (normalised)")
         ax[1, 1].set_xlabel("Lag ($\\tau$)")
-        ax[version, 1].set_ylabel("SF")
+        ax[ax_index, 1].set_ylabel("SF")
         ax[1, 2].set_xlabel("Lag ($\\tau$)")
-        ax[version, 2].set_ylabel("% error")
+        ax[ax_index, 2].set_ylabel("% error")
         ax2.set_ylabel("% missing", color="grey")
         ax2.tick_params(axis="y", colors="grey")
         ax2.set_ylim(0, 100)
 
-        # ax[version, 2].axhline(0, c="black", linestyle="--")
-        ax[version, 2].set_ylim(-100, 100)
+        # ax[ax_index, 2].axhline(0, c="black", linestyle="--")
+        ax[ax_index, 2].set_ylim(-100, 100)
 
-        ax[version, 1].set_xscale("log")
-        ax[version, 1].set_yscale("log")
-        ax[version, 2].set_xscale("log")
-        ax[version, 1].legend(fontsize=12)
+        ax[ax_index, 1].set_xscale("log")
+        ax[ax_index, 1].set_yscale("log")
+        ax[ax_index, 2].set_xscale("log")
+        ax[ax_index, 1].legend(fontsize=12)
         [ax[0, i].set_xticklabels([]) for i in range(3)]
 
     # Add titles

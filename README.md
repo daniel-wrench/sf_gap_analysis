@@ -1,35 +1,29 @@
-# Gaps on structure functions: **interactive pipeline demo**
-1. ~~Email Marcus~~
-1. ~~Get heatmap importing and exporting~~
-1. Plots
-    - ~~MAPE in error trend line plots (means vs. means of means)? Using these in test set eval as well as determining bias initially?~~
-    - ~~Add file indexing to later plots, move to appropriate locations.~~
-    - ~~Get sample size plot (add *n* to heatmaps) Especially interested in how 3d heatmaps become more populated - *how often can test intervals not find the nearest bin?*~~
-    - ~~Get plots to save. At earliest point in the code, whereever we're saving things, run the os func to check folder exists~~
-1. ~~Run for 2 PSP ints for training, 1 PSP for testing.~~ See what dfs we are left with, and export the final ones.
-1. ~~Run for 1 Wind testing~~
-1. ~~Save and commit~~
-2. ~~Move concatenation, as done as at start of step 3, from start of step 4 to start of step 5. Make step 4 run *on each test set file individually*.~~
-1. ~~Divide each of the numbered steps into separate notebooks.~~ 
-2. ~~Test these separate notebooks locally: 3 and 2 PSPs, 2 Wind~~
-2. ~~Make quick to run on PSP vs. Wind, especially initial processing. Perhaps to just have if spacecraft =="psp": do this, elif "wind". Possibly easier to test this in scripts rather than notebooks.~~
-2. ~~Quick run of each notebook~~
-2. ~~Quick scroll through notebooks, checking for unnecessary outputs~~
-3. ~~Convert notebooks to scripts.~~
-    - ~~Note text output, make sure informative/concise enough.~~
-    - ~~Turn file_index into a sys argument (this will be the job # on the HPC)~~
-2. ~~Create new repo locally with necessary files~~
-2. Full Python run on PSP
-1. Push new repo to GitHub (don't need to commit data folders)
-2. Speed up Wind data reading
-2. Clone to NeSI, make job submission scripts
-9. Quick scaling study on NeSI, investigating bad ints and possible automatic removal during download or initial reading
-10. Results for 1 year of PSP, 1 month of Wind
-10. Up the ante to two years, **while writing up existing results**. Maybe set aside geostats stuff for now.
-11. Send manuscript to Tulasi, Fraternale, Marcus
-12. Implement Fraternale's sample size threshold for fitting slopes
+# Gaps on structure functions
 
-#### Notes
+## To-do
+
+2. ~~Clone new-and-improved repo to NeSI, make job submission scripts~~
+    - ~~Improve output slurm file checking protocol, esp. for array jobs~~
+    - ~~Think about the array jobs reading in multiple files (choose $file_index with index*n_files)~~
+    - ~~Update to true max lag and gap times (25)~~
+    - ~~Run whole pipeline~~
+    - ~~Check why no boxplots~~
+    - ~~Confirm (PSP) params, noting step 2b dependent on # files~~
+3. Put on PSP run of 30 files
+4. Put on Wind run of 10 files
+2. Full pipeline run with 10, 15, 20 bins, noting mem and time reqs
+3. When good, all PSP, 1 month PSP test and 1 month Wind test
+4. Depending on heatmap bins trend, maybe try different #
+5. New manuscript, just taking intro/bg from existing and not doing geostats stuff for now.
+11. Send completed draft manuscript to Tulasi, Marcus
+12. Implement Fraternale's sample size threshold for fitting slopes, and send to him
+
+### Notes
+- investigating bad ints and possible automatic removal during download or initial reading
+- consistency between times_to_gap across files
+- Problem with first step is uneven times due to some files having no intervals, some having up to 4. Might be better to run on 3-5 files, spaced out (i.e. every 3rd file) in order to get more even times across jobs.
+- Wind data reads very slowly, compared with PSP. It is using a pipeline function that I think Kevin made, made up of many smaller functions.
+The bottleneck is the "format epochs" function. I've starting trying to do this in the same was as PSP, but it was struggling to do the timedelta addition
 - Can add smoothing to correction step alter, **not on critical path for getting most of the scripts on NESI**
 - Having logarithmically spaced lag bins would make the correction factor much cleaner to work with: one-to-one bins
 - For now likely to do stick with simple job arrays and single jobs on HPC, with importing and exporting of intermediate steps, but perhaps better to do single MPI script with broadcasting and reducing.
@@ -83,9 +77,18 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 4. **Process the data, file by file**
 
-    Local: `for i in $(seq 0 5); do python 1_compute_sfs.py psp $i; done`
+    Local:
 
-    HPC: `sbatch 1_compute_sfs.sh`
+    Adjust data_prefix_path, depending on where you are storing the data (likely in code dir, so set to `""`)
+
+    `for i in $(seq 0 5); do python 1_compute_sfs.py psp $i; done`
+
+    HPC: 
+    
+    Adjust `data_prefix_path`, depending on where you are storing the data
+
+
+    `sbatch 1_compute_sfs.sh`
         
     - Recommended HPC job requirements: 256 cores/150 GB/7 hours (7-9min/file/core) for full 28-year dataset (works for 12, 8 and 4H interval lengths)
     

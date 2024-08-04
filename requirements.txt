@@ -1,6 +1,8 @@
 pandas==1.4.2
 scipy==1.11.4
 numpy==1.22.3
+# if above doesn't work, try 1.23.0
+# might also want to reinstall pandas --no-cache-dir
 cdflib==0.4.7
 statsmodels==0.13.2
 matplotlib==3.5.1

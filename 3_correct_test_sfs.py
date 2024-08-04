@@ -13,7 +13,7 @@ import sys
 sns.set_theme(style="whitegrid", font_scale=1.5)
 
 n_bins = 10
-times_to_gap = 3
+times_to_gap = 25 # THIS SHOULD REALLY BE CHECKED AGAINST THE ACTUAL VALUE FROM STEP 2B
 pwrl_range = [10, 100]
 
 data_path_prefix = "/nesi/project/vuw04187/"

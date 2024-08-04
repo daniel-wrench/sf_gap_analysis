@@ -23,7 +23,6 @@ sns.set_theme(style="whitegrid", font_scale=1.5)
 # plt.rcParams.update({"font.size": 16})
 
 # For current Wind importing
-
 sys_arg_dict = {
     # arg1
     "mag_path": params.mag_path,
@@ -63,7 +62,9 @@ spacecraft = sys.argv[1]
 os.makedirs(f"{data_path_prefix}data/processed/{spacecraft}", exist_ok=True)
 os.makedirs(f"{data_path_prefix}plots/temp/{spacecraft}", exist_ok=True)
 
-raw_file_list = sorted(glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf"))
+raw_file_list = sorted(
+    glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf")
+)
 
 # Selecting one file to read in
 file_index = int(sys.argv[2])

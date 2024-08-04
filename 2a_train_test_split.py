@@ -28,12 +28,20 @@ test_files = processed_files[n_train:]
 # Create the 'train' and 'test' subfolders if they don't already exist
 os.makedirs(data_path_prefix + "data/processed/psp/train", exist_ok=True)
 
+# Delete any existing files in the 'train' subfolder
+for file in glob.glob(data_path_prefix + "data/processed/psp/train/psp_*.pkl"):
+    os.remove(file)
+
 # Move the training files into the 'train' subfolder
 for file in train_files:
     shutil.move(file, file.replace("processed/psp", "processed/psp/train"))
 
 # Create the 'test' subfolder if it doesn't already exist
 os.makedirs(data_path_prefix + "data/processed/psp/test", exist_ok=True)
+
+# Delete any existing files in the 'test' subfolder
+for file in glob.glob(data_path_prefix + "data/processed/psp/test/psp_*.pkl"):
+    os.remove(file)
 
 # Move the test files into the 'test' subfolder
 for file in test_files:
@@ -45,4 +53,3 @@ test_files = sorted(glob.glob(data_path_prefix + "data/processed/psp/test/psp_*.
 
 print(f"Number of files in PSP 'train' subfolder: {len(train_files)}")
 print(f"Number of files in PSP 'test' subfolder: {len(test_files)}")
-

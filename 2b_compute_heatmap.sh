@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name          2b_compute_heatmap
-#SBATCH --mem               2G
+#SBATCH --mem               2G 
+## for 3 files in training set, uses 500MB and 30s
 #SBATCH --time              00:10:00
 #SBATCH --output            logs/%x_%j.out
 ##SBATCH --mail-type         BEGIN,END,FAIL

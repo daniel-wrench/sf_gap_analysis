@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
 import sys
+import random
 import warnings
 
 warnings.filterwarnings("ignore", module="matplotlib\..*")
@@ -20,6 +21,7 @@ sns.set_theme(style="whitegrid", font_scale=1.5)
 # Import all corrected (test) files
 spacecraft = sys.argv[1]
 n_bins = 10
+times_to_gap = 25
 
 data_path_prefix = "/nesi/project/vuw04187/"
 
@@ -75,14 +77,14 @@ with open(output_file_path, "wb") as f:
 # Box plots
 
 
-print(ints_gapped_metadata.groupby("gap_handling")[["missing_percent_overall", "slope", "slope_pe", "mpe", "mape"]].agg(["mean", "median", "std", "min", "max"]))
+#print(ints_gapped_metadata.groupby("gap_handling")[["missing_percent_overall", "slope", "slope_pe", "mpe", "mape"]].agg(["mean", "median", "std", "min", "max"]))
 
 # Assuming ints_gapped_metadata is your DataFrame
 # Define the list of columns to plot
 columns = ["mpe", "mape", "slope_pe", "slope_ape"]
 
 # Create subplots
-fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+fig, axes = plt.subplots(2, 2, figsize=(16, 10))
 
 # Flatten the 2D array of axes for easy iteration
 axes = axes.flatten()
@@ -118,7 +120,6 @@ plt.tight_layout()
 plt.suptitle("")  # Remove the default title to avoid overlap
 plt.savefig(f"plots/temp/test_{spacecraft}_boxplots.png", bbox_inches="tight")
 
-raise SystemExit
 
 # Regression lines
 
@@ -211,13 +212,9 @@ for gap_handling in sfs_gapped_corrected.gap_handling.unique():
 
 
 # CASE STUDY PLOTS
-
 # Pre-correction case studies
 
 # Parameters for the 3 case study plots
-
-print(ints_gapped_metadata)
-
 int_index = 0  # We will be selecting the first interval for each file
 
 for file_index_selected in range(2):
@@ -227,8 +224,8 @@ for file_index_selected in range(2):
     )
 
     fig, ax = plt.subplots(2, 3, figsize=(16, 2 * 3))
-
-    for version in range(2):
+    # will use consistent interval index, but choose random versions of it to plot
+    for version in enumerate([random.randint(0, times_to_gap-1), random.randint(0, times_to_gap-1)]):
         # ax[version, 0].plot(ints[0][int_index][0].values, c="grey")
         # Not currently plotting due to indexing issue: need to be able to index
         # on both file_index and int_index

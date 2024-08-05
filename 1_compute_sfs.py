@@ -55,7 +55,7 @@ times_to_gap = 25
 minimum_missing_chunks = 0.7
 np.random.seed(123)  # For reproducibility
 
-data_path_prefix = "/nesi/project/vuw04187/"
+data_path_prefix = "/nesi/nobackup/vuw04187/"
 
 spacecraft = sys.argv[1]
 # Ensure necessary directories exist

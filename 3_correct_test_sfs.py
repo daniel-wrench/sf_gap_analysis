@@ -16,14 +16,14 @@ n_bins = sys.argv[3]
 times_to_gap = 25  # THIS SHOULD REALLY BE CHECKED AGAINST THE ACTUAL VALUE FROM STEP 2B
 pwrl_range = [10, 100]
 
-data_path_prefix = "/nesi/project/vuw04187/"
+data_path_prefix = "/nesi/nobackup/vuw04187/"
 
 # Importing lookup table
 lookup_table_2d = pd.read_csv(
-    f"{data_path_prefix}data/processed/lookup_table_2d_{n_bins}bins.csv", index_col=0
+    f"data/processed/lookup_table_2d_{n_bins}bins.csv", index_col=0
 )
 lookup_table_3d = pd.read_csv(
-    f"{data_path_prefix}data/processed/lookup_table_3d_{n_bins}bins.csv", index_col=0
+    f"data/processed/lookup_table_3d_{n_bins}bins.csv", index_col=0
 )
 
 spacecraft = sys.argv[1]  # "psp" or "wind"

@@ -9,7 +9,7 @@ import shutil
 # The remaining 80% will be moved into a subfolder called 'train'
 
 # Get all the pickle files in data/psp/processed
-data_path_prefix = "/nesi/project/vuw04187/"
+data_path_prefix = "/nesi/nobackup/vuw04187/"
 processed_files = sorted(glob.glob(data_path_prefix + "data/processed/psp/psp_*.pkl"))
 
 train_frac = 0.6

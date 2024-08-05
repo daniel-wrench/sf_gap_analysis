@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 
 sns.set_theme(style="whitegrid", font_scale=1.5)
 
-data_path_prefix = "/nesi/project/vuw04187/"
+data_path_prefix = "/nesi/nobackup/vuw04187/"
 
 spacecraft = "psp"
 input_file_list = [

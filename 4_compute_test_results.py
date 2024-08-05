@@ -23,7 +23,7 @@ spacecraft = sys.argv[1]
 n_bins = sys.argv[2]
 times_to_gap = 25
 
-data_path_prefix = "/nesi/project/vuw04187/"
+data_path_prefix = "/nesi/nobackup/vuw04187/"
 
 
 print(f"Calculating stats for {spacecraft} data with {n_bins} bins")
@@ -61,14 +61,14 @@ print(
 print("Now proceeding to calculate overall test set statistics")
 # Also get the 2d heatmap for final case study correction figure, by undoing the above operation
 
-with open(f"{data_path_prefix}data/processed/heatmap_2d_{n_bins}bins.pkl", "rb") as f:
+with open(f"data/processed/heatmap_2d_{n_bins}bins.pkl", "rb") as f:
     data = pickle.load(f)
 
 heatmap_bin_vals_2d = data["heatmap_bin_vals_2d"]
 heatmap_bin_edges_2d = data["heatmap_bin_edges_2d"]
 
 # Export final overall dataframes, combined from all outputs
-output_file_path = f"{data_path_prefix}data/processed/test_corrected_{spacecraft}.pkl"
+output_file_path = f"data/processed/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
 
 with open(output_file_path, "wb") as f:
     pickle.dump(
@@ -149,6 +149,7 @@ sns.scatterplot(
     x="missing_percent_overall",
     y="mape",
     hue="gap_handling",
+    style="gap_handling",
     palette=palette,
     ax=ax[0],
 )
@@ -168,7 +169,6 @@ for gap_handling_method in unique_gap_handling:
         scatter=False,
         color=palette[gap_handling_method],
         label=gap_handling_method,
-        ci=None,
         ax=ax[0],
     )
 
@@ -177,6 +177,7 @@ sns.scatterplot(
     x="missing_percent_overall",
     y="slope_ape",
     hue="gap_handling",
+    style="gap_handling",
     palette=palette,
     ax=ax[1],
 )
@@ -196,7 +197,6 @@ for gap_handling_method in unique_gap_handling:
         scatter=False,
         color=palette[gap_handling_method],
         label=gap_handling_method,
-        ci=None,
         ax=ax[1],
     )
 
@@ -232,7 +232,7 @@ for gap_handling in sfs_gapped_corrected.gap_handling.unique():
 # Parameters for the 3 case study plots
 int_index = 0  # We will be selecting the first interval for each file
 
-for file_index_selected in range(1):
+for file_index_selected in range(2):
     file_index = ints_gapped_metadata["file_index"].unique()[file_index_selected]
     print(
         "Currenting making plots for file index",

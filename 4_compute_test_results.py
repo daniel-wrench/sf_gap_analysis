@@ -1,5 +1,4 @@
-# # STEP 4: FOR ALL INTERVALS IN TEST SET: get overall test set results
-
+# STEP 4: FOR ALL INTERVALS IN TEST SET: get overall test set results
 
 import pickle
 import numpy as np
@@ -11,8 +10,9 @@ from matplotlib.gridspec import GridSpec
 import sys
 import random
 import warnings
+import matplotlib.cbook
 
-warnings.filterwarnings("ignore", module="matplotlib\..*")
+warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 # Annoying deprecation warning
 
 sns.set_theme(style="whitegrid", font_scale=1.5)
@@ -20,18 +20,25 @@ sns.set_theme(style="whitegrid", font_scale=1.5)
 
 # Import all corrected (test) files
 spacecraft = sys.argv[1]
-n_bins = 10
+n_bins = sys.argv[2]
 times_to_gap = 25
 
 data_path_prefix = "/nesi/project/vuw04187/"
 
+
+print(f"Calculating stats for {spacecraft} data with {n_bins} bins")
 if spacecraft == "psp":
     input_file_list = sorted(
-        glob.glob(data_path_prefix + "data/processed/psp/test/psp_*_corrected.pkl")
+        glob.glob(
+            data_path_prefix
+            + f"data/processed/psp/test/psp_*_corrected_{n_bins}_bins.pkl"
+        )
     )
 elif spacecraft == "wind":
     input_file_list = sorted(
-        glob.glob(data_path_prefix + "data/processed/wind/wi_*_corrected.pkl")
+        glob.glob(
+            data_path_prefix + f"data/processed/wind/wi_*_corrected_{n_bins}_bins.pkl"
+        )
     )
 else:
     raise ValueError("Spacecraft must be 'psp' or 'wind'")
@@ -77,11 +84,15 @@ with open(output_file_path, "wb") as f:
         f,
     )
 
-
 # Box plots
 
-
-# print(ints_gapped_metadata.groupby("gap_handling")[["missing_percent_overall", "slope", "slope_pe", "mpe", "mape"]].agg(["mean", "median", "std", "min", "max"]))
+correction_stats = ints_gapped_metadata.groupby("gap_handling")[
+    ["missing_percent_overall", "slope", "slope_pe", "mpe", "mape"]
+].agg(["mean", "median", "std", "min", "max"])
+# Save as csv
+correction_stats.to_csv(
+    f"plots/temp/test_{spacecraft}_correction_stats_{n_bins}_bins.csv"
+)
 
 # Assuming ints_gapped_metadata is your DataFrame
 # Define the list of columns to plot
@@ -122,11 +133,11 @@ for col, ax in zip(columns, axes):
 # Adjust layout
 plt.tight_layout()
 plt.suptitle("")  # Remove the default title to avoid overlap
-plt.savefig(f"plots/temp/test_{spacecraft}_boxplots.png", bbox_inches="tight")
-
+plt.savefig(
+    f"plots/temp/test_{spacecraft}_boxplots_{n_bins}_bins.png", bbox_inches="tight"
+)
 
 # Regression lines
-
 
 # Make scatterplot of mape vs. missing_percent, coloured by gap handling
 palette = dict(zip(custom_order, colors))
@@ -196,11 +207,12 @@ ax[1].set_xlabel("Missing %")
 ax[1].set_ylabel("Slope APE")
 ax[1].set_title("Inertial range slope estimation error")
 
-plt.savefig(f"plots/temp/test_{spacecraft}_scatterplots.png", bbox_inches="tight")
-
+plt.savefig(
+    f"plots/temp/test_{spacecraft}_scatterplots_{n_bins}_bins.png",
+    bbox_inches="tight",
+)
 
 # Error trendlines
-
 
 for gap_handling in sfs_gapped_corrected.gap_handling.unique():
     sf.plot_error_trend_line(
@@ -210,10 +222,9 @@ for gap_handling in sfs_gapped_corrected.gap_handling.unique():
         y_axis_log=True,
     )
     plt.savefig(
-        f"plots/temp/test_{spacecraft}_error_trend_{gap_handling}.png",
+        f"plots/temp/test_{spacecraft}_error_trend_{gap_handling}_{n_bins}_bins.png",
         bbox_inches="tight",
     )
-
 
 # CASE STUDY PLOTS
 # Pre-correction case studies
@@ -221,10 +232,13 @@ for gap_handling in sfs_gapped_corrected.gap_handling.unique():
 # Parameters for the 3 case study plots
 int_index = 0  # We will be selecting the first interval for each file
 
-for file_index_selected in range(2):
+for file_index_selected in range(1):
     file_index = ints_gapped_metadata["file_index"].unique()[file_index_selected]
     print(
-        "Currenting making plots for file index", file_index, "and interval", int_index
+        "Currenting making plots for file index",
+        file_index,
+        "and interval",
+        int_index,
     )
 
     fig, ax = plt.subplots(2, 3, figsize=(16, 2 * 3))
@@ -704,6 +718,6 @@ for file_index_selected in range(2):
     ax0.set_ylim(0, 100)
 
     plt.savefig(
-        f"plots/temp/test_{spacecraft}_case_study_correcting_{file_index}_{int_index}.png",
+        f"plots/temp/test_{spacecraft}_case_study_correcting_{file_index}_{int_index}_{n_bins}_bins.png",
         bbox_inches="tight",
     )

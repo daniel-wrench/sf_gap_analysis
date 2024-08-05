@@ -8,8 +8,10 @@ import glob
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
+import matplotlib.cbook
 
-warnings.filterwarnings("ignore", module="matplotlib\..*")
+warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
+
 # Annoying deprecation warning
 
 sns.set_theme(style="whitegrid", font_scale=1.5)
@@ -265,17 +267,11 @@ for n_bins in n_bins_list:
 
     # Export the lookup tables
     print("Exporting lookup tables to CSV")
-    lookup_table_2d.to_csv(
-        f"{data_path_prefix}data/processed/lookup_table_2d_{n_bins}bins.csv"
-    )
-    lookup_table_3d.to_csv(
-        f"{data_path_prefix}data/processed/lookup_table_3d_{n_bins}bins.csv"
-    )
+    lookup_table_2d.to_csv(f"data/processed/lookup_table_2d_{n_bins}bins.csv")
+    lookup_table_3d.to_csv(f"data/processed/lookup_table_3d_{n_bins}bins.csv")
 
     # Export heatmap as a pickle for final case study correction figure
-    with open(
-        f"{data_path_prefix}data/processed/heatmap_2d_{n_bins}bins.pkl", "wb"
-    ) as f:
+    with open(f"data/processed/heatmap_2d_{n_bins}bins.pkl", "wb") as f:
         pickle.dump(
             {
                 "heatmap_bin_vals_2d": heatmap_bin_vals_2d,

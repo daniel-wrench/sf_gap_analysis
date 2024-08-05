@@ -12,8 +12,8 @@ import sys
 
 sns.set_theme(style="whitegrid", font_scale=1.5)
 
-n_bins = 10
-times_to_gap = 25 # THIS SHOULD REALLY BE CHECKED AGAINST THE ACTUAL VALUE FROM STEP 2B
+n_bins = sys.argv[3]
+times_to_gap = 25  # THIS SHOULD REALLY BE CHECKED AGAINST THE ACTUAL VALUE FROM STEP 2B
 pwrl_range = [10, 100]
 
 data_path_prefix = "/nesi/project/vuw04187/"
@@ -32,9 +32,13 @@ file_index_test = int(sys.argv[2])
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
-    input_file_list = [sorted(glob.glob(data_path_prefix + "data/processed/wind/wi_*v05.pkl"))][0]
+    input_file_list = [
+        sorted(glob.glob(data_path_prefix + "data/processed/wind/wi_*v05.pkl"))
+    ][0]
 elif spacecraft == "psp":
-    input_file_list = [sorted(glob.glob(data_path_prefix + "data/processed/psp/test/psp_*v02.pkl"))][0]
+    input_file_list = [
+        sorted(glob.glob(data_path_prefix + "data/processed/psp/test/psp_*v02.pkl"))
+    ][0]
 else:
     raise ValueError("Spacecraft must be 'psp' or 'wind'")
 
@@ -281,7 +285,9 @@ ints_gapped_metadata["slope_ape"] = np.abs(ints_gapped_metadata["slope_pe"])
 
 
 # Export the dataframes in one big pickle file
-output_file_path = input_file_list[file_index_test].replace(".pkl", "_corrected.pkl")
+output_file_path = input_file_list[file_index_test].replace(
+    ".pkl", f"_corrected_{n_bins}_bins.pkl"
+)
 
 with open(output_file_path, "wb") as f:
     pickle.dump(

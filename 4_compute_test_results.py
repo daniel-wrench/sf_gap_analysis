@@ -658,7 +658,7 @@ for file_index_selected in range(1):
         )
 
         # Label test intervals with letters
-        alphabet = "abcdefghijklmnopqrstuvwxyz"
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         annotate_curve(
             ax0,
             sfs_gapped_corrected.loc[
@@ -675,12 +675,12 @@ for file_index_selected in range(1):
                 & (sfs_gapped_corrected["gap_handling"] == "lint"),
                 "missing_percent",
             ],
-            f"{alphabet[version]}",
+            f"{alphabet[ax_index]}",
             offset_scaling=(0.8, -0.3),
         )
 
         ax.annotate(
-            f"{alphabet[version]}: {float(missing[0]):.1f}% missing overall",
+            f"{alphabet[ax_index]}: {float(missing[0]):.1f}% missing overall",
             xy=(1, 1),
             xycoords="axes fraction",
             xytext=(0.1, 0.9),

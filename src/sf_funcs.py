@@ -349,10 +349,19 @@ def load_and_concatenate_dataframes(pickle_files):
     }
 
     for file in pickle_files:
-        with open(file, "rb") as f:
-            data = pickle.load(f)
-            for key in concatenated_dataframes.keys():
-                concatenated_dataframes[key].append(data[key])
+        try:
+            with open(file, "rb") as f:
+                data = pickle.load(f)
+                for key in concatenated_dataframes.keys():
+                    concatenated_dataframes[key].append(data[key])
+        except pickle.UnpicklingError:
+            print(f"UnpicklingError encountered in file: {file}. Skipping this file.")
+        except EOFError:
+            print(f"EOFError encountered in file: {file}. Skipping this file.")
+        except Exception as e:
+            print(
+                f"An unexpected error {e} occurred with file: {file}. Skipping this file."
+            )
 
     for key in concatenated_dataframes.keys():
         if (

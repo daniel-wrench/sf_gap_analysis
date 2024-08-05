@@ -9,11 +9,13 @@
     - ~~Run whole pipeline~~
     - ~~Check why no boxplots~~
     - ~~Confirm (PSP) params, noting step 2b dependent on # files~~
-3. Put on PSP run of 30 files
-4. Put on Wind run of 10 files
-2. Full pipeline run with 10, 15, 20 bins, noting mem and time reqs
-3. When good, all PSP, 1 month PSP test and 1 month Wind test
-4. Depending on heatmap bins trend, maybe try different #
+3. ~~Put on PSP run of 30 files~~
+4. ~~Put on Wind run of 10 files~~
+3. ~~While that's running test 10, 15 bin run here (fixing for local params), then pushing those updates to nesi~~
+2. ~~Full pipeline run with 10, 15, 20 bins, noting mem and time reqs~~
+    - Add pickle error checking everywhere these are read in (2b, 4)
+3. When good, run pipeline with all current PSP data, 1 month PSP test and 1 month Wind test
+4. Depending on heatmap bins trend, maybe try different #. Also decide on smoothing and error bars.
 5. New manuscript, just taking intro/bg from existing and not doing geostats stuff for now.
 11. Send completed draft manuscript to Tulasi, Marcus
 12. Implement Fraternale's sample size threshold for fitting slopes, and send to him
@@ -90,8 +92,9 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     `sbatch 1_compute_sfs.sh`
         
-    - Recommended HPC job requirements: 256 cores/150 GB/7 hours (7-9min/file/core) for full 28-year dataset (works for 12, 8 and 4H interval lengths)
-    
+    - Recommended HPC job requirements: 
+        PSP: 30min, 1GB
+        Wind: 30min, 1GB
     This script processes magnetic field and velocity data measured in the solar wind by spacecraft to compute various metrics related to turbulent fluctuations and their statistical properties. It outputs the processed data for each input file into `data/processed/`.
         
     See the notebook **demo_scale_funcs.ipynb** for more on the numerical fitting. Fitting parameters, including the interval length, are specified in `params.py`. The most computationally expensive part of this script is the spectrum-smoothing algorithm, used to create a nice smooth spectrum for fitting slopes to.

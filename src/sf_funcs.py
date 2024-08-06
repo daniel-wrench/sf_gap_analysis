@@ -16,7 +16,7 @@ sns.set_theme(style="whitegrid", font_scale=1.5)
 # )
 
 # Set seed for reproducibility
-np.random.seed(42)
+np.random.seed(123)
 
 
 def compute_sf(

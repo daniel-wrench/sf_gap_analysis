@@ -12,6 +12,8 @@ import random
 import warnings
 import matplotlib.cbook
 
+np.random.seed(123)
+
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 # Annoying deprecation warning
 
@@ -445,9 +447,7 @@ for file_index_selected in range(2):
             # xycoords="axes fraction",
             # textcoords="axes fraction",
             arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"),
-            bbox=dict(
-                facecolor="white", edgecolor="white", boxstyle="round", alpha=0.7
-            ),
+            bbox=dict(facecolor="gray", edgecolor="gray", boxstyle="round", alpha=0.7),
             fontsize=20,
         )
 

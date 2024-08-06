@@ -8,11 +8,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
 import sys
-import random
 import warnings
 import matplotlib.cbook
 
-np.random.seed(123)
+np.random.seed(123)  # For reproducibility
 
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 # Annoying deprecation warning
@@ -233,7 +232,6 @@ for gap_handling in sfs_gapped_corrected.gap_handling.unique():
 
 # Parameters for the 3 case study plots
 int_index = 0  # We will be selecting the first interval for each file
-
 for file_index_selected in range(2):
     file_index = ints_gapped_metadata["file_index"].unique()[file_index_selected]
     print(
@@ -246,8 +244,8 @@ for file_index_selected in range(2):
     fig, ax = plt.subplots(2, 3, figsize=(16, 2 * 3))
     # will use consistent interval index, but choose random versions of it to plot
     versions_to_plot = [
-        random.randint(0, times_to_gap - 1),
-        random.randint(0, times_to_gap - 1),
+        np.random.randint(0, times_to_gap),
+        np.random.randint(0, times_to_gap),
     ]
     for ax_index, version in enumerate(versions_to_plot):
         # ax[ax_index, 0].plot(ints[0][int_index][0].values, c="grey")

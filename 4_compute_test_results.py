@@ -232,7 +232,7 @@ for gap_handling in sfs_gapped_corrected.gap_handling.unique():
 
 # Parameters for the 3 case study plots
 int_index = 0  # We will be selecting the first interval for each file
-for file_index_selected in range(2):
+for file_index_selected in range(4):
     file_index = ints_gapped_metadata["file_index"].unique()[file_index_selected]
     print(
         "Currenting making plots for file index",
@@ -444,7 +444,9 @@ for file_index_selected in range(2):
             xytext=(x_text, y_text),
             # xycoords="axes fraction",
             # textcoords="axes fraction",
-            arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"),
+            arrowprops=dict(
+                arrowstyle="->", connectionstyle="arc3,rad=.2", color="gray"
+            ),
             bbox=dict(facecolor="gray", edgecolor="gray", boxstyle="round", alpha=0.7),
             fontsize=20,
         )
@@ -691,7 +693,7 @@ for file_index_selected in range(2):
 
         ax.set_xlabel("Lag ($\\tau$)")
 
-        print(f"\nStats for interval version {alphabet[version]}:\n")
+        print(f"\nStats for interval version {alphabet[ax_index]} as plotted:\n")
         print(
             ints_gapped_metadata.loc[
                 (ints_gapped_metadata["file_index"] == file_index)

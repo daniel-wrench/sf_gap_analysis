@@ -557,8 +557,8 @@ def create_heatmap_lookup(inputs, missing_measure, num_bins=25, log=False):
     data = pd.DataFrame(data)
     data["scaling"] = 1 / (1 + data["mpe"] / 100)
     # Reversed because min MPE is more negative
-    data["scaling_lower"] = 1 / (1 + data["pe_max"] / 100)
-    data["scaling_upper"] = 1 / (1 + data["pe_min"] / 100)
+    data["scaling_lower"] = 1 / (1 + (data["mpe"] + 2 * data["mpe_sd"]) / 100)
+    data["scaling_upper"] = 1 / (1 + (data["mpe"] - 2 * data["mpe_sd"]) / 100)
 
     return means, counts, [xedges, yedges], data
 

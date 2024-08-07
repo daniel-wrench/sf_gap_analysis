@@ -43,6 +43,10 @@ print(
     )
 )
 
+# Print summary stats of slope
+print("\nSummary stats of slope:")
+print(ints_metadata["slope"].describe())
+
 
 # Calculate lag-scale errors (sf_2_pe)
 # Join original and copies dataframes and do column operation

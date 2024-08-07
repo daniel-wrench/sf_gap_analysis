@@ -72,7 +72,7 @@ sfs_gapped["sf_2_pe"] = (
 # Compute and export heatmaps
 
 
-n_bins_list = [10, 15, 20]
+n_bins_list = [15,20,25]
 
 for n_bins in n_bins_list:
     print("Calculating 2D heatmap with {} bins".format(n_bins))

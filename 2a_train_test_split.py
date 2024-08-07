@@ -12,7 +12,7 @@ import shutil
 data_path_prefix = "/nesi/nobackup/vuw04187/"
 processed_files = sorted(glob.glob(data_path_prefix + "data/processed/psp/psp_*.pkl"))
 
-train_frac = 0.6
+train_frac = 0.8
 
 # Randomly shuffle the list of pickle files
 np.random.seed(123)  # For reproducibility

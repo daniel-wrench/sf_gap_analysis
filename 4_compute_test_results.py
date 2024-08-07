@@ -59,6 +59,11 @@ print(
         len(input_file_list), input_file_list[0]
     )
 )
+
+# Print summary stats of slope
+print("\nSummary stats of slope:")
+print(ints_metadata["slope"].describe())
+
 print("Now proceeding to calculate overall test set statistics")
 # Also get the 2d heatmap for final case study correction figure, by undoing the above operation
 
@@ -114,7 +119,7 @@ for col, ax in zip(columns, axes):
         ints_gapped_metadata[ints_gapped_metadata["gap_handling"] == method][col]
         for method in custom_order
     ]
-    box = ax.boxplot(data_to_plot, patch_artist=True)
+    box = ax.boxplot(data_to_plot, whis=(0, 100), patch_artist=True)
 
     # Set colors for the boxes
 
@@ -144,22 +149,12 @@ plt.savefig(
 palette = dict(zip(custom_order, colors))
 
 # Plotting the MAPE vs. missing percentage
-fig, ax = plt.subplots(1, 2, figsize=(18, 5))
-sns.scatterplot(
-    data=ints_gapped_metadata,
-    x="missing_percent_overall",
-    y="mape",
-    hue="gap_handling",
-    style="gap_handling",
-    palette=palette,
-    ax=ax[0],
-)
-ax[0].legend(title="Gap handling method")
+fig, ax = plt.subplots(2, 5, figsize=(18, 6))
 
 # Add regression lines for each group
 unique_gap_handling = ints_gapped_metadata["gap_handling"].unique()
 
-for gap_handling_method in unique_gap_handling:
+for i, gap_handling_method in enumerate(unique_gap_handling):
     subset = ints_gapped_metadata[
         ints_gapped_metadata["gap_handling"] == gap_handling_method
     ]
@@ -167,30 +162,32 @@ for gap_handling_method in unique_gap_handling:
         data=subset,
         x="missing_percent_overall",
         y="mape",
+        scatter=True,
+        color=palette[gap_handling_method],
+        label=gap_handling_method,
+        ax=ax[0, i],
+    )
+
+    sns.regplot(
+        data=subset,
+        x="missing_percent_overall",
+        y="mape",
         scatter=False,
         color=palette[gap_handling_method],
         label=gap_handling_method,
-        ax=ax[0],
+        ax=ax[0, 4],
     )
 
-sns.scatterplot(
-    data=ints_gapped_metadata,
-    x="missing_percent_overall",
-    y="slope_ape",
-    hue="gap_handling",
-    style="gap_handling",
-    palette=palette,
-    ax=ax[1],
-)
+    sns.regplot(
+        data=subset,
+        x="missing_percent_overall",
+        y="slope_ape",
+        scatter=True,
+        color=palette[gap_handling_method],
+        label=gap_handling_method,
+        ax=ax[1, i],
+    )
 
-# Add regression lines for each group
-
-unique_gap_handling = ints_gapped_metadata["gap_handling"].unique()
-
-for gap_handling_method in unique_gap_handling:
-    subset = ints_gapped_metadata[
-        ints_gapped_metadata["gap_handling"] == gap_handling_method
-    ]
     sns.regplot(
         data=subset,
         x="missing_percent_overall",
@@ -198,15 +195,21 @@ for gap_handling_method in unique_gap_handling:
         scatter=False,
         color=palette[gap_handling_method],
         label=gap_handling_method,
-        ax=ax[1],
+        ax=ax[1, 4],
     )
 
-ax[0].set_xlabel("Missing %")
-ax[0].set_ylabel("SF MAPE")
-ax[0].set_title("Overall SF estimation error")
-ax[1].set_xlabel("Missing %")
-ax[1].set_ylabel("Slope APE")
-ax[1].set_title("Inertial range slope estimation error")
+
+ax[0, 0].set(xlabel="", ylabel="MAPE", title="Naive")
+ax[0, 1].set(xlabel="", ylabel="", title="LINT")
+ax[0, 2].set(xlabel="", ylabel="", title="Corrected (2D)")
+ax[0, 3].set(xlabel="", ylabel="", title="Corrected (3D)")
+ax[0, 4].set(xlabel="", ylabel="", title="All")
+
+ax[1, 0].set(xlabel="% missing", ylabel="Slope APE", title="")
+ax[1, 1].set(xlabel="% missing", ylabel="", title="")
+ax[1, 2].set(xlabel="% missing", ylabel="", title="")
+ax[1, 3].set(xlabel="% missing", ylabel="", title="")
+ax[1, 4].set(xlabel="% missing", ylabel="", title="")
 
 plt.savefig(
     f"plots/temp/test_{spacecraft}_scatterplots_{n_bins}_bins.png",
@@ -390,6 +393,8 @@ for file_index_selected in range(4):
                 "missing_percent",
             ],
             c="grey",
+            linestyle="--",
+            lw=3,
         )
 
         # Label the axes
@@ -399,7 +404,7 @@ for file_index_selected in range(4):
         ax[ax_index, 1].set_ylabel("SF")
         ax[1, 2].set_xlabel("Lag ($\\tau$)")
         ax[ax_index, 2].set_ylabel("% error")
-        ax2.set_ylabel("% missing", color="grey")
+        ax2.set_ylabel("% pairs missing", color="grey")
         ax2.tick_params(axis="y", colors="grey")
         ax2.set_ylim(0, 100)
 
@@ -552,7 +557,7 @@ for file_index_selected in range(4):
             ],
             color="blue",
             lw=1,
-            label="2D corrected ({:.1f})".format(
+            label="Corrected (2D) ({:.1f})".format(
                 ints_gapped_metadata.loc[
                     (ints_gapped_metadata["file_index"] == file_index)
                     & (ints_gapped_metadata["int_index"] == int_index)
@@ -579,7 +584,7 @@ for file_index_selected in range(4):
             ],
             color="purple",
             lw=1,
-            label="3D corrected ({:.1f})".format(
+            label="Corrected (3D) ({:.1f})".format(
                 ints_gapped_metadata.loc[
                     (ints_gapped_metadata["file_index"] == file_index)
                     & (ints_gapped_metadata["int_index"] == int_index)
@@ -653,7 +658,8 @@ for file_index_selected in range(4):
                 & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
                 "missing_percent",
             ],
-            c="black",
+            c="grey",
+            linestyle="--",
             lw=3,
         )
 
@@ -714,7 +720,8 @@ for file_index_selected in range(4):
 
     ax0.set_xscale("log")
     ax0.set_xlabel("Lag ($\\tau$)")
-    ax0.set_ylabel("% pairs missing")
+    ax0.set_ylabel("% pairs missing", color="grey")
+    ax0.tick_params(axis="y", colors="grey")
     ax0.set_ylim(0, 100)
 
     plt.savefig(

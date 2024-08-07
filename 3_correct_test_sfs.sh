@@ -1,12 +1,13 @@
 #!/bin/bash -e
 
-#SBATCH --job-name          3_correct_test_sfs
+#SBATCH --job-name          3_correct_test_sfs_wind
 #SBATCH --mem               1G
-#SBATCH --array             0-1
-#SBATCH --time              00:10:00
-#SBATCH --output            logs/%x_%A_%a.out
+#SBATCH --array             0-42 #0-5 for wind
+#SBATCH --time              00:15:00
+#SBATCH --output            logs/%x_%A_%3a.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
+
 
 module load Python/3.10.5-gimkl-2022a
 source venv/bin/activate
@@ -14,9 +15,11 @@ source venv/bin/activate
 echo "JOB STARTED"
 date
 
+spacecraft=psp
 file_index=$SLURM_ARRAY_TASK_ID
+n_bins=20
 
-python 3_correct_test_sfs.py psp $file_index
+python 3_correct_test_sfs.py $spacecraft $file_index $n_bins
 
 echo "JOB FINISHED"
 date

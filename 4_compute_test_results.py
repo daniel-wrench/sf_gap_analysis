@@ -93,7 +93,7 @@ with open(output_file_path, "wb") as f:
 # Box plots
 
 correction_stats = ints_gapped_metadata.groupby("gap_handling")[
-    ["missing_percent_overall", "slope", "slope_pe", "mpe", "mape"]
+    ["missing_percent_overall", "slope", "slope_pe", "slope_ape", "mpe", "mape"]
 ].agg(["mean", "median", "std", "min", "max"])
 # Save as csv
 correction_stats.to_csv(

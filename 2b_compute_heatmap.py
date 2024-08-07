@@ -39,7 +39,7 @@ input_file_list = [
 
 print(
     "Successfully read in and concatenated {} files, starting with {}".format(
-        len(input_file_list), input_file_list[0]
+        len(files_metadata), input_file_list[0]
     )
 )
 

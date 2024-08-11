@@ -350,10 +350,10 @@ else:
         label="SF",
     )
     dif.pltpwrl(
-        10,
-        0.1,
-        10,
-        100,
+        pwrl_range[0],
+        0.8,
+        pwrl_range[0],
+        pwrl_range[1],
         slope,
         lw=2,
         ls="--",

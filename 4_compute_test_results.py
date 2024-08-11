@@ -55,9 +55,8 @@ else:
 ) = sf.load_and_concatenate_dataframes(input_file_list)
 
 print(
-    "Successfully read in and concatenated {} files, starting with {}".format(
-        len(input_file_list), input_file_list[0]
-    )
+    f"Successfully read in and concatenated {len(input_file_list)} files, starting with {input_file_list[0]}\n \
+    Now calculating statistics of results for the {len(ints_metadata)}x{times_to_gap} intervals contained within"
 )
 
 # Print summary stats of slope
@@ -110,8 +109,8 @@ fig, axes = plt.subplots(2, 2, figsize=(16, 10))
 # Flatten the 2D array of axes for easy iteration
 axes = axes.flatten()
 
-custom_order = ["naive", "lint", "corrected_2d", "corrected_3d"]
-colors = ["indianred", "grey", "royalblue", "purple"]
+custom_order = ["naive", "lint", "corrected_3d"]
+colors = ["indianred", "grey", "purple"]
 
 # Create boxplots for each column
 for col, ax in zip(columns, axes):
@@ -148,13 +147,18 @@ plt.savefig(
 # Make scatterplot of mape vs. missing_percent, coloured by gap handling
 palette = dict(zip(custom_order, colors))
 
+# unique_gap_handling = ints_gapped_metadata["gap_handling"].unique()
+# unique_gap_handling = ["naive", "lint", "corrected_3d"]
+
 # Plotting the MAPE vs. missing percentage
-fig, ax = plt.subplots(2, 5, figsize=(18, 6))
-
+fig, ax = plt.subplots(
+    2, len(custom_order) + 1, figsize=(14, 5), sharex=True, sharey=True
+)
+plt.subplots_adjust(wspace=0)
 # Add regression lines for each group
-unique_gap_handling = ints_gapped_metadata["gap_handling"].unique()
 
-for i, gap_handling_method in enumerate(unique_gap_handling):
+
+for i, gap_handling_method in enumerate(custom_order):
     subset = ints_gapped_metadata[
         ints_gapped_metadata["gap_handling"] == gap_handling_method
     ]
@@ -163,8 +167,10 @@ for i, gap_handling_method in enumerate(unique_gap_handling):
         x="missing_percent_overall",
         y="mape",
         scatter=True,
+        scatter_kws=dict(alpha=0.3, s=10),
         color=palette[gap_handling_method],
         label=gap_handling_method,
+        order=2,
         ax=ax[0, i],
     )
 
@@ -173,9 +179,11 @@ for i, gap_handling_method in enumerate(unique_gap_handling):
         x="missing_percent_overall",
         y="mape",
         scatter=False,
+        scatter_kws=dict(alpha=0.3, s=10),
         color=palette[gap_handling_method],
         label=gap_handling_method,
-        ax=ax[0, 4],
+        order=2,
+        ax=ax[0, -1],
     )
 
     sns.regplot(
@@ -183,8 +191,10 @@ for i, gap_handling_method in enumerate(unique_gap_handling):
         x="missing_percent_overall",
         y="slope_ape",
         scatter=True,
+        scatter_kws=dict(alpha=0.3, s=10),
         color=palette[gap_handling_method],
         label=gap_handling_method,
+        order=2,
         ax=ax[1, i],
     )
 
@@ -193,23 +203,31 @@ for i, gap_handling_method in enumerate(unique_gap_handling):
         x="missing_percent_overall",
         y="slope_ape",
         scatter=False,
+        scatter_kws=dict(alpha=0.3, s=10),
         color=palette[gap_handling_method],
         label=gap_handling_method,
-        ax=ax[1, 4],
+        order=2,
+        ax=ax[1, -1],
     )
 
 
 ax[0, 0].set(xlabel="", ylabel="MAPE", title="Naive")
 ax[0, 1].set(xlabel="", ylabel="", title="LINT")
-ax[0, 2].set(xlabel="", ylabel="", title="Corrected (2D)")
-ax[0, 3].set(xlabel="", ylabel="", title="Corrected (3D)")
-ax[0, 4].set(xlabel="", ylabel="", title="All")
+ax[0, 2].set(xlabel="", ylabel="", title="Corrected")
+ax[0, 3].set(xlabel="", ylabel="", title="All")
 
 ax[1, 0].set(xlabel="% missing", ylabel="Slope APE", title="")
 ax[1, 1].set(xlabel="% missing", ylabel="", title="")
 ax[1, 2].set(xlabel="% missing", ylabel="", title="")
 ax[1, 3].set(xlabel="% missing", ylabel="", title="")
-ax[1, 4].set(xlabel="% missing", ylabel="", title="")
+
+# Set the same x-axis limits for all plots
+for i in range(4):
+    ax[0, i].set_xlim(0, 100)
+    ax[1, i].set_xlim(0, 100)
+
+plt.show()
+
 
 plt.savefig(
     f"plots/temp/test_{spacecraft}_scatterplots_{n_bins}_bins.png",

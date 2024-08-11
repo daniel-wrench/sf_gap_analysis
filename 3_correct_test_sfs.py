@@ -9,14 +9,15 @@ import src.sf_funcs as sf
 import glob
 import seaborn as sns
 import sys
+import src.params as params
 
 sns.set_theme(style="whitegrid", font_scale=1.5)
 
 n_bins = sys.argv[3]
-times_to_gap = 25  # THIS SHOULD REALLY BE CHECKED AGAINST THE ACTUAL VALUE FROM STEP 2B
-pwrl_range = [10, 100]
+times_to_gap = params.times_to_gap
+pwrl_range = params.pwrl_range  # Should be 200-800 probably
 
-data_path_prefix = "/nesi/nobackup/vuw04187/"
+data_path_prefix = params.data_path_prefix
 
 # Importing lookup table
 lookup_table_2d = pd.read_csv(

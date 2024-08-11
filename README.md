@@ -2,28 +2,48 @@
 
 ## To-do
 
-2. ~~Clone new-and-improved repo to NeSI, make job submission scripts~~
-    - ~~Improve output slurm file checking protocol, esp. for array jobs~~
-    - ~~Think about the array jobs reading in multiple files (choose $file_index with index*n_files)~~
-    - ~~Update to true max lag and gap times (25)~~
-    - ~~Run whole pipeline~~
-    - ~~Check why no boxplots~~
-    - ~~Confirm (PSP) params, noting step 2b dependent on # files~~
-3. ~~Put on PSP run of 30 files~~
-4. ~~Put on Wind run of 10 files~~
-3. ~~While that's running test 10, 15 bin run here (fixing for local params), then pushing those updates to nesi~~
-2. ~~Full pipeline run with 10, 15, 20 bins, noting mem and time reqs~~
-    - Add pickle error checking everywhere these are read in (2b, 4)
-3. When good, run pipeline with all current PSP data, 1 month PSP test and 1 month Wind test
-4. Depending on heatmap bins trend, maybe try different #. Also decide on smoothing and error bars.
-5. New manuscript, just taking intro/bg from existing and not doing geostats stuff for now.
-11. Send completed draft manuscript to Tulasi, Marcus
+1. ~~Commit changes!~~
+2. LOCALLY
+    - ~~Change scatterplots to ANN paper version~~
+    - ~~Change correction interval to pm 2SD (NOT se)~~
+    - ~~Change boxplots to violin plots, if easily done for seaborn. If not, just include outliers in tails~~
+    - ~~Get mean slopes from true SFs~~
+3. ~~Revert back to HPC params and push~~
+4. ~~Make nice improvements to paper intro~~
+5. ~~**Get full results on subset of data**~~
+    - Trained on 216 processed PSP files (171=43 days, coming from first 400 raw files)
+    - Tested on some bin ranges on 44 PSP (11 days) and 20 Wind files (20 days).
+    - Old slope range (10-100)
+    - Old bin range (10,15,20) 
+6. ~~Process all files and train-test split (2019-2020) **using old slope range** = 1159 training files~~
+6. Test out computing bigger bins on larger subset of training files: 15,20,25 on first 400
+    - ~~Trained on 300 processed PSP files (5 months)~~
+    - ~~Tested on PSP test set with all 3 bin sizes~~
+    - ~~Tested on Wind test set with all 3 bin sizes~~
+    - ~~Calculate results for Wind dataset with all 3 bin sizes (20 files)~~
+    - For PSP (100 files)
+6. Update scatterplot (25 versions of 20 Wind files) 
+    - **Speed up plot iteration process** (get the latest scatterplot to show at meeting, plus an example)
+    - Make statement about when to use which method
+    - Performance on PSP?
+7. Calculate correlation between slope APE and MAPE
+7. Run remainder of pipeline **using old slope range** and equivalently sized test sets.
+7. Space out files in step 1. Look at other notes below to see if any easy things to knock over.
+8. With the latest numbers for job requirements, and bigger bin results, re-run full pipeline on all data with new slope range.
+
+5. Meanwhile, new manuscript, just taking intro/bg from existing and not doing geostats stuff for now.
+    - Get latest best plots from NESI, chuck em in, and GET WRITING! (Visual editor)
+11. Send completed draft manuscript to Tulasi, Marcus. Don't worry about Voyager just yet.
 12. Implement Fraternale's sample size threshold for fitting slopes, and send to him
 
 ### Notes
+- Processed PSP and Wind files are between 32 and 156MB each
+- Add true SFs to case study plots. Will require re-jig of `ints` df
+- Get mean slopes from true SFs. Maybe move "inertial range" if consistent bias wrt 2/3
+- Problem with first step is uneven times due to some files having no intervals, some having up to 4. Might be better to run on 3-5 files, spaced out (i.e. every 3rd file) in order to get more even times across jobs.
+- Would be nice to get total # intervals for each set returned by step 1
 - investigating bad ints and possible automatic removal during download or initial reading
 - consistency between times_to_gap across files
-- Problem with first step is uneven times due to some files having no intervals, some having up to 4. Might be better to run on 3-5 files, spaced out (i.e. every 3rd file) in order to get more even times across jobs.
 - Wind data reads very slowly, compared with PSP. It is using a pipeline function that I think Kevin made, made up of many smaller functions.
 The bottleneck is the "format epochs" function. I've starting trying to do this in the same was as PSP, but it was struggling to do the timedelta addition
 - Can add smoothing to correction step alter, **not on critical path for getting most of the scripts on NESI**
@@ -83,7 +103,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     Adjust data_prefix_path, depending on where you are storing the data (likely in code dir, so set to `""`)
 
-    `for i in $(seq 0 5); do python 1_compute_sfs.py psp $i; done`
+    `for i in $(seq 0 5); do python 1_compute_sfs.py $spacecraft $i; done`
 
     HPC: 
     
@@ -92,21 +112,47 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     `sbatch 1_compute_sfs.sh`
         
-    - Recommended HPC job requirements: 
-        PSP: 30min, 1GB
-        Wind: 30min, 1GB
+    - For 1 file each, job reqs of up to 1GB and rarely over 15min time (often much less when no good intervals found)
+        PSP: From complete set of 400 raw files, we got 216 output files containing good intervals (with just the occassional timeout) **FEBRUARY 2019 IS NO GOOD (can tell from looking at plots/temp/, where only acfs are plotted**
+        Wind: From 30 tries, we got 20 good files.
     This script processes magnetic field and velocity data measured in the solar wind by spacecraft to compute various metrics related to turbulent fluctuations and their statistical properties. It outputs the processed data for each input file into `data/processed/`.
         
     See the notebook **demo_scale_funcs.ipynb** for more on the numerical fitting. Fitting parameters, including the interval length, are specified in `params.py`. The most computationally expensive part of this script is the spectrum-smoothing algorithm, used to create a nice smooth spectrum for fitting slopes to.
 
+3. Perform train-test split for PSP data
+
+    (make sure you have `module load`ed Python if on an HPC first)
+
+    `python 2a_train_test_split.py`
+
 4. **Compute the correction factor from all training set files**
+
+    `python 2b_compute_heatmap.py`
+
+    `sbatch 2b_compute_heatmap.sh`
+
+    HPC job: for 10 files, 3 sets of bins: 2.5min, 1.5GB
+    20 files '': 5min, 3GB
+    170 files '': 45min, 25GB
+
+    10 files, 15,20,25 bins: 5min, 1.7GB
+    30 files '': 15min, 5GB
+    300 files '': 
+    400 files, '': >6 hours, >72GB
+    
 
 5. **Perform the correction on the test set, file by file**
 
-    Local: `for i in $(seq 0 5); do python 3_correct_test_sfs.py psp $i; done`
+    Local: `for i in $(seq 0 5); do python 3_correct_test_sfs.py $spacecraft $i $n_bins; done`
 
     HPC: `sbatch 3_correct_test_sfs.sh`
 
 6. **Compute the statistical results for all (corrected) test set files**
 
-    `python 4_compute_test_results.py psp'
+    `python 4_compute_test_results.py $spacecraft $n_bins`
+
+    Reqs: 
+    
+    20 files (Wind) = 4GB, 7min
+
+    43 files (PSP) = 12GB, 12min

@@ -51,11 +51,11 @@ sys_arg_dict = {
 # *local* outer scale and create our standardise intervals using that.
 
 
-times_to_gap = 25
+times_to_gap = params.times_to_gap
 minimum_missing_chunks = 0.7
 np.random.seed(123)  # For reproducibility
 
-data_path_prefix = "/nesi/nobackup/vuw04187/"
+data_path_prefix = params.data_path_prefix
 
 spacecraft = sys.argv[1]
 # Ensure necessary directories exist
@@ -321,7 +321,7 @@ else:
     # lags = np.unique(vals.astype(int))
 
     powers = [2]
-    pwrl_range = [10, 100]
+    pwrl_range = params.pwrl_range
 
     sfs = pd.DataFrame()
 

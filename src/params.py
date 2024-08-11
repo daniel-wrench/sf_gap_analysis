@@ -7,6 +7,11 @@
 # See also accessing Wind data with HelioPy:
 # https://buildmedia.readthedocs.org/media/pdf/heliopy/0.6.0/heliopy.pdf
 
+times_to_gap = 25
+data_path_prefix = "/nesi/nobackup/vuw04187/"
+pwrl_range = [10, 100]
+minimum_missing_chunks = 0.7
+
 timestamp = "Epoch"
 int_size = "12H"
 start_date = "19950101"

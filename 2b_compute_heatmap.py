@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import src.sf_funcs as sf
 import glob
+import src.params as params
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
@@ -16,7 +17,7 @@ warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 
 sns.set_theme(style="whitegrid", font_scale=1.5)
 
-data_path_prefix = "/nesi/nobackup/vuw04187/"
+data_path_prefix = params.data_path_prefix
 
 spacecraft = "psp"
 input_file_list = [
@@ -76,7 +77,7 @@ sfs_gapped["sf_2_pe"] = (
 # Compute and export heatmaps
 
 
-n_bins_list = [15,20,25]
+n_bins_list = [15, 20, 25]
 
 for n_bins in n_bins_list:
     print("Calculating 2D heatmap with {} bins".format(n_bins))

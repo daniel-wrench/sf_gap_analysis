@@ -104,7 +104,7 @@ palette = dict(zip(custom_order, colors))
 
 # unique_gap_handling = ints_gapped_metadata["gap_handling"].unique()
 # unique_gap_handling = ["naive", "lint", "corrected_3d"]
-
+sns.set_style("ticks")
 # Plotting the MAPE vs. missing percentage
 fig, ax = plt.subplots(
     2,
@@ -188,16 +188,26 @@ fig.text(0.5, 0.02, "% missing", ha="center", va="center")
 for i in range(2):
     for j in range(4):
         ax[i, j].grid(False)
+        ax[i, j].set_xticks([0, 25, 50, 75, 100])
+        ax[i, j].set_xlim(-15, 105)
         ax[i, j].spines["top"].set_visible(False)
+        # ax[i, j].spines["left"].set_visible(False)
         ax[i, j].spines["right"].set_visible(False)
 
 # Set the same x-axis limits for all plots
 for i in range(4):
-    ax[0, i].set_xlim(-15, 105)
+    ax[1, i].set_ylim(0, 60)
     ax[1, i].set_xlim(-15, 105)
     ax[0, i].set_ylim(0, 150)
-    ax[1, i].set_ylim(0, 60)
 
+# Remove ticks from all but first column
+# for i in range(1, 4):
+#     ax[0, i].set_yticks([])
+#     ax[1, i].set_yticks([])
+
+
+ax[0, 0].spines["left"].set_visible(True)
+ax[1, 0].spines["left"].set_visible(True)
 plt.show()
 
 

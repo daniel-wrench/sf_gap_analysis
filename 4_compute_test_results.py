@@ -4,9 +4,7 @@ import pickle
 import numpy as np
 import src.sf_funcs as sf
 import glob
-import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib.gridspec import GridSpec
 import sys
 import src.params as params
 import warnings

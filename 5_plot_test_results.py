@@ -24,8 +24,9 @@ times_to_gap = params.times_to_gap
 
 data_path_prefix = params.data_path_prefix
 
-
-output_file_path = f"data/processed/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
+output_file_path = (
+    f"data/processed/raapoi/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
+)
 
 # Read in the file that has just been exported above
 with open(output_file_path, "rb") as f:
@@ -106,7 +107,12 @@ palette = dict(zip(custom_order, colors))
 
 # Plotting the MAPE vs. missing percentage
 fig, ax = plt.subplots(
-    2, len(custom_order) + 1, figsize=(12, 4), sharex=True, sharey=True
+    2,
+    len(custom_order) + 1,
+    figsize=(10, 5),
+    sharex="col",
+    sharey="row",
+    tight_layout=True,
 )
 plt.subplots_adjust(wspace=0)
 # Add regression lines for each group
@@ -116,16 +122,16 @@ for i, gap_handling_method in enumerate(custom_order):
     subset = ints_gapped_metadata[
         ints_gapped_metadata["gap_handling"] == gap_handling_method
     ]
-    sns.regplot(
+    sns.scatterplot(
         data=subset,
         x="missing_percent_overall",
         y="mape",
-        scatter=True,
-        scatter_kws=dict(alpha=0.3, s=10),
+        alpha=0.3,
+        s=10,
         color=palette[gap_handling_method],
         label=gap_handling_method,
-        order=2,
         ax=ax[0, i],
+        legend=False,
     )
 
     sns.regplot(
@@ -133,23 +139,23 @@ for i, gap_handling_method in enumerate(custom_order):
         x="missing_percent_overall",
         y="mape",
         scatter=False,
-        scatter_kws=dict(alpha=0.3, s=10),
         color=palette[gap_handling_method],
         label=gap_handling_method,
         order=2,
         ax=ax[0, -1],
+        ci=99,
     )
 
-    sns.regplot(
+    sns.scatterplot(
         data=subset,
         x="missing_percent_overall",
         y="slope_ape",
-        scatter=True,
-        scatter_kws=dict(alpha=0.3, s=10),
+        alpha=0.3,
+        s=10,
         color=palette[gap_handling_method],
         label=gap_handling_method,
-        order=2,
         ax=ax[1, i],
+        legend=False,
     )
 
     sns.regplot(
@@ -157,28 +163,40 @@ for i, gap_handling_method in enumerate(custom_order):
         x="missing_percent_overall",
         y="slope_ape",
         scatter=False,
-        scatter_kws=dict(alpha=0.3, s=10),
         color=palette[gap_handling_method],
         label=gap_handling_method,
         order=2,
         ax=ax[1, -1],
+        ci=99,
     )
 
 
-ax[0, 0].set(xlabel="", ylabel="MAPE", title="Naive")
+ax[0, 0].set(xlabel="", ylabel="MAPE (%)", title="Naive")
 ax[0, 1].set(xlabel="", ylabel="", title="LINT")
 ax[0, 2].set(xlabel="", ylabel="", title="Corrected")
 ax[0, 3].set(xlabel="", ylabel="", title="All")
 
-ax[1, 0].set(xlabel="% missing", ylabel="Slope APE", title="")
-ax[1, 1].set(xlabel="% missing", ylabel="", title="")
-ax[1, 2].set(xlabel="% missing", ylabel="", title="")
-ax[1, 3].set(xlabel="% missing", ylabel="", title="")
+ax[1, 0].set(xlabel="", ylabel="Slope APE (%)", title="")
+ax[1, 1].set(xlabel="", ylabel="", title="")
+ax[1, 2].set(xlabel="", ylabel="", title="")
+ax[1, 3].set(xlabel="", ylabel="", title="")
+# Remove gridlines and plot outlines
+
+# Make one x-axis label for all plots
+fig.text(0.5, 0.02, "% missing", ha="center", va="center")
+
+for i in range(2):
+    for j in range(4):
+        ax[i, j].grid(False)
+        ax[i, j].spines["top"].set_visible(False)
+        ax[i, j].spines["right"].set_visible(False)
 
 # Set the same x-axis limits for all plots
 for i in range(4):
-    ax[0, i].set_xlim(0, 100)
-    ax[1, i].set_xlim(0, 100)
+    ax[0, i].set_xlim(-15, 105)
+    ax[1, i].set_xlim(-15, 105)
+    ax[0, i].set_ylim(0, 150)
+    ax[1, i].set_ylim(0, 60)
 
 plt.show()
 

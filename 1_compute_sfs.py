@@ -267,7 +267,7 @@ else:
     [plt.plot(interval, c="black") for interval in ints]
     plt.axhline(0, c="black", linewidth=0.5, linestyle="--")
     plt.suptitle(
-        f"Standardised solar wind interval/s from {spacecraft}, given local conditions",
+        f"Standardised solar wind interval/s from {spacecraft.upper()}, given local conditions",
         y=1.1,
         fontsize=20,
     )
@@ -317,10 +317,10 @@ else:
     lags = np.arange(1, 0.2 * len(ints[0]))
 
     # Logarithmically-spaced lags?
-    # vals = np.logspace(0, 3, 0.25 * len(ints[0]))
+    # vals = np.logspace(0, 0.2 * len(ints[0]), 50)
     # lags = np.unique(vals.astype(int))
 
-    powers = [2]
+    powers = [2, 4]
     pwrl_range = params.pwrl_range
 
     sfs = pd.DataFrame()

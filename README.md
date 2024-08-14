@@ -1,7 +1,11 @@
 # Gaps on structure functions
 
 ## To-do
-
+2. Come up with more streamlined pipeline, mainly to speed up plotting at the end.
+1. Run on all 3 components with new slope range (5-50% of lambda C), fix the power bins, calculate S4 as well (for later kurtosis analysis)
+2. Scaling study with this updated pipeline, looking at running on all PSP data we can (don't worry about calculating kurtosis as well for now)
+3. Potentially more bins if still getting better (are less bins better for slope), and smoothing, reasonable error bars    
+3. Think about how to study Frat's method, and verify Burger's results
 1. ~~Commit changes!~~
 2. LOCALLY
     - ~~Change scatterplots to ANN paper version~~
@@ -22,8 +26,11 @@
     - ~~Tested on Wind test set with all 3 bin sizes~~
     - ~~Calculate results for Wind dataset with all 3 bin sizes (20 files)~~
     - For PSP (100 files)
-6. Update scatterplot (25 versions of 20 Wind files) 
+    - For PSP
+6. Update scatterplot (25 versions of 40 Wind intervals; 25 versions of 175 PSP intervals) 
+    - REMOVE VERTICAL SPINES, ADD TICK MARKS TO X-AXIS AND LEFT-MOST Y-AXIS
     - **Speed up plot iteration process** (get the latest scatterplot to show at meeting, plus an example)
+        - For sfs_gapped_corrected, only save the intervals we want to plot, not all
     - Make statement about when to use which method
     - Performance on PSP?
 7. Calculate correlation between slope APE and MAPE
@@ -156,3 +163,10 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     20 files (Wind) = 4GB, 7min
 
     43 files (PSP) = 12GB, 12min
+
+    **Output: test_corrected_{spacecraft}_{bins}_bins.pkl** *not including ints, ints_gapped, sfs, or sfs_gapped_corrected*
+
+7.  **Plot the test set results**
+     (If on an HPC, download the above output at this step, as well as the **FIRST**  2-3 individual corrected pickle files for plotting case studies from) 
+    `python 5a_plot_test_overall.py`
+    `python 5b_plot_test_case_studies.py`

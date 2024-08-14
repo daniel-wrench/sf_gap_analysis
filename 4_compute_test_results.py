@@ -67,16 +67,19 @@ print("\nNow proceeding to calculate overall test set statistics")
 # Export final overall dataframes, combined from all outputs
 output_file_path = f"data/processed/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
 
+# NOT OUTPUTTING COMMENTED DFS DUE TO EXCESSIVE SIZE
+# The uncommented ones are sufficient for getting overall stats
+# We will use the individual corrected files for case study plots
 with open(output_file_path, "wb") as f:
     pickle.dump(
         {
             "files_metadata": files_metadata,
             "ints_metadata": ints_metadata,
-            "ints": ints,
+            # "ints": ints,
             "ints_gapped_metadata": ints_gapped_metadata,
-            "ints_gapped": ints_gapped,
-            "sfs": sfs,
-            "sfs_gapped_corrected": sfs_gapped_corrected,
+            # "ints_gapped": ints_gapped,
+            # "sfs": sfs,
+            # "sfs_gapped_corrected": sfs_gapped_corrected,
         },
         f,
     )

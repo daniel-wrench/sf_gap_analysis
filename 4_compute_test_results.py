@@ -89,9 +89,17 @@ with open(output_file_path, "wb") as f:
 correction_stats = ints_gapped_metadata.groupby("gap_handling")[
     ["missing_percent_overall", "slope", "slope_pe", "slope_ape", "mpe", "mape"]
 ].agg(["mean", "median", "std", "min", "max"])
+
+correction_corrs = ints_gapped_metadata.groupby("gap_handling")[
+    ["missing_percent_overall", "slope", "slope_pe", "slope_ape", "mpe", "mape"]
+].corr()
+
 # Save as csv
 correction_stats.to_csv(
     f"plots/temp/test_{spacecraft}_correction_stats_{n_bins}_bins.csv"
+)
+correction_corrs.to_csv(
+    f"plots/temp/test_{spacecraft}_correction_corrs_{n_bins}_bins.csv"
 )
 
 print("Saved correction stats to csv")

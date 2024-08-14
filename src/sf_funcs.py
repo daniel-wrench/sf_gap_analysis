@@ -410,9 +410,9 @@ def plot_error_trend_line(
         alpha=0.4,
         cmap="plasma",
     )
-    median_error = other_outputs_df.groupby("lag")[estimator + "_pe"].median()
+    # median_error = other_outputs_df.groupby("lag")[estimator + "_pe"].median()
     mean_error = other_outputs_df.groupby("lag")[estimator + "_pe"].mean()
-    plt.plot(median_error, color="g", lw=4, label="Median % error")
+    # plt.plot(median_error, color="g", lw=4, label="Median % error")
     plt.plot(mean_error, color="c", lw=4, label="Mean % error")
 
     # plt.annotate(
@@ -557,8 +557,8 @@ def create_heatmap_lookup(inputs, missing_measure, num_bins=25, log=False):
     data = pd.DataFrame(data)
     data["scaling"] = 1 / (1 + data["mpe"] / 100)
     # Reversed because min MPE is more negative
-    data["scaling_lower"] = 1 / (1 + (data["mpe"] + 2 * data["mpe_sd"]) / 100)
-    data["scaling_upper"] = 1 / (1 + (data["mpe"] - 2 * data["mpe_sd"]) / 100)
+    data["scaling_lower"] = 1 / (1 + (data["mpe"] + 1 * data["mpe_sd"]) / 100)
+    data["scaling_upper"] = 1 / (1 + (data["mpe"] - 1 * data["mpe_sd"]) / 100)
 
     return means, counts, [xedges, yedges], data
 

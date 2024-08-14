@@ -24,9 +24,7 @@ times_to_gap = params.times_to_gap
 
 data_path_prefix = params.data_path_prefix
 
-output_file_path = (
-    f"data/processed/raapoi/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
-)
+output_file_path = f"data/processed/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
 
 # Read in the file that has just been exported above
 with open(output_file_path, "rb") as f:

@@ -65,6 +65,10 @@ os.makedirs(f"{data_path_prefix}plots/temp/{spacecraft}", exist_ok=True)
 raw_file_list = sorted(
     glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf")
 )
+if len(raw_file_list) == 0:
+    raise ValueError(
+        f"No files found in directory{data_path_prefix}data/raw/{spacecraft}/"
+    )
 
 # Selecting one file to read in
 file_index = int(sys.argv[2])

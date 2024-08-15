@@ -2,7 +2,7 @@
 
 #SBATCH --job-name          1_compute_sfs
 #SBATCH --mem               1G
-#SBATCH --array             0-124
+#SBATCH --array             0-5
 #SBATCH --time              00:45:00
 #SBATCH --output            logs/%x_%A_%3a.out
 #SBATCH --mail-type         BEGIN,END,FAIL
@@ -11,28 +11,34 @@
 mkdir -p logs/
 
 module load Python/3.10.5-gimkl-2022a
+
 source venv/bin/activate
+# If running (locally) on Windows, may need to change the above line to the following: 
+#source venv/Scripts/activate
 
 echo "JOB STARTED"
 date
 
-spacecraft=psp
+spacecraft=wind
+
+# Specify total number of files
+total_files=3
 
 # Set number of files to be processed by each task
-n_files=4 # Adjust this value as needed
+n_files=3 # Adjust this value as needed (should really be defined based on number of job array tasks)
 task_id=$SLURM_ARRAY_TASK_ID
 
-# Calculate start and end indices for this task
-start_index=$(( task_id * n_files )) 
-end_index=$(( start_index + n_files - 1 ))
+# Calculate start index for this task (need to set to 0 if running on a single node)
+start_index=$task_id
 
-# Print the range of file indices for this task
+# Calculate the stride (number of files to skip between reads)
+stride=$(( total_files / n_files ))
 
-echo "Task ID: $task_id processing files from $start_index to $end_index"
+echo "Task ID: $task_id processing every $stride th file, starting from $start_index"
 
-# Process each file in the range (use $file_index for this)
-for file_index in $(seq $start_index $end_index); do
-python 1_compute_sfs.py $spacecraft $file_index
+# Process each file based on the stride
+for (( file_index=$start_index; file_index < total_files; file_index+=$stride )); do
+  python 1_compute_sfs.py $spacecraft $file_index
 done
 
 echo "JOB FINISHED"

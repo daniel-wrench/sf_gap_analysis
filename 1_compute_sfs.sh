@@ -11,15 +11,14 @@
 mkdir -p logs/
 
 module load Python/3.10.5-gimkl-2022a
-
 source venv/bin/activate
-# If running (locally) on Windows, may need to change the above line to the following: 
+# If running (locally) on Windows, may need to change above lines to the following: 
 #source venv/Scripts/activate
 
 echo "JOB STARTED"
 date
 
-spacecraft=wind
+spacecraft=psp
 
 # Specify total number of files
 total_files=3
@@ -37,7 +36,7 @@ stride=$(( total_files / n_files ))
 echo "Task ID: $task_id processing every $stride th file, starting from $start_index"
 
 # Process each file based on the stride
-for (( file_index=$start_index; file_index < total_files; file_index+=$stride )); do
+for ((file_index=$start_index; file_index < total_files; file_index+=$stride)); do
   python 1_compute_sfs.py $spacecraft $file_index
 done
 

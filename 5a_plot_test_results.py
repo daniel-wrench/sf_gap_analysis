@@ -1,21 +1,15 @@
 import pickle
 import numpy as np
-import src.sf_funcs as sf
 import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib.gridspec import GridSpec
 import sys
 import src.params as params
-import warnings
-import matplotlib.cbook
 
 np.random.seed(123)  # For reproducibility
 
-warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
-# Annoying deprecation warning
 
-sns.set_theme(style="whitegrid", font_scale=1.5)
-# plt.rcParams.update({"font.size": 16})
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # Import all corrected (test) files
 spacecraft = sys.argv[1]
@@ -123,6 +117,27 @@ for i, gap_handling_method in enumerate(custom_order):
         legend=False,
     )
 
+    # Create a secondary axis for the boxplot on the right-hand spine
+    ax_right = ax[0, i].inset_axes([1, 0, 0.1, 1], sharey=ax[0, i])
+    sns.boxplot(
+        data=subset,
+        y="mape",
+        ax=ax_right,
+        orient="v",
+        whis=(0, 100),
+        color=palette[gap_handling_method],
+    )
+
+    # Hide the y-axis labels of the boxplot to avoid duplication
+    ax_right.yaxis.set_visible(False)
+
+    # Optional: Remove the x-axis labels and ticks of the boxplot
+    ax_right.set_xticks([])
+    ax_right.set_xlabel("")
+
+    ax_right.spines["left"].set_visible(False)
+    ax_right.spines["right"].set_visible(False)
+
     sns.regplot(
         data=subset,
         x="missing_percent_overall",
@@ -160,7 +175,7 @@ for i, gap_handling_method in enumerate(custom_order):
     )
 
 
-ax[0, 0].set(xlabel="", ylabel="MAPE (%)", title="Naive")
+ax[0, 0].set(xlabel="", ylabel="MAPE (\%)", title="Naive")
 ax[0, 1].set(xlabel="", ylabel="", title="LINT")
 ax[0, 2].set(xlabel="", ylabel="", title="Corrected")
 ax[0, 3].set(xlabel="", ylabel="", title="All")
@@ -172,7 +187,7 @@ ax[1, 3].set(xlabel="", ylabel="", title="")
 # Remove gridlines and plot outlines
 
 # Make one x-axis label for all plots
-fig.text(0.5, 0.02, "% missing", ha="center", va="center")
+fig.text(0.5, 0.02, "\% missing", ha="center", va="center")
 
 for i in range(2):
     for j in range(4):

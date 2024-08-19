@@ -6,20 +6,15 @@ import glob
 import numpy as np
 import src.sf_funcs as sf
 import matplotlib.pyplot as plt
-import seaborn as sns
 from matplotlib.gridspec import GridSpec
 import sys
 import src.params as params
-import warnings
-import matplotlib.cbook
 
 np.random.seed(123)  # For reproducibility
 
-warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
-# Annoying deprecation warning
 
-sns.set_theme(style="whitegrid", font_scale=1.5)
-# plt.rcParams.update({"font.size": 16})
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # Import all corrected (test) files
 spacecraft = sys.argv[1]
@@ -98,7 +93,9 @@ versions_to_plot = [
     # np.random.randint(0, times_to_gap),
 ]
 for ax_index, version in enumerate(versions_to_plot):
-    ax[ax_index, 0].plot(ints[0][int_index][0].values, c="grey")
+    ax[ax_index, 0].plot(
+        ints[0][int_index][0]["Bx"].values, c="grey"
+    )  # Just plotting one component for simplicity
     # Not currently plotting due to indexing issue: need to be able to index
     # on both file_index and int_index
     ax[ax_index, 0].plot(
@@ -107,14 +104,14 @@ for ax_index, version in enumerate(versions_to_plot):
             & (ints_gapped["int_index"] == int_index)
             & (ints_gapped["version"] == version)
             & (ints_gapped["gap_handling"] == "lint"),
-            "B",
+            "Bx",  # Just plotting one component for simplicity
         ].values,
         c="black",
     )
 
     # Put missing_percent_overall in the title
     ax[ax_index, 0].set_title(
-        f"{ints_gapped_metadata.loc[(ints_gapped_metadata['file_index']==file_index) & (ints_gapped_metadata['int_index']==int_index) & (ints_gapped_metadata['version']==version) & (ints_gapped_metadata['gap_handling']=='lint'), 'missing_percent_overall'].values[0]:.1f}% missing"
+        f"{ints_gapped_metadata.loc[(ints_gapped_metadata['file_index']==file_index) & (ints_gapped_metadata['int_index']==int_index) & (ints_gapped_metadata['version']==version) & (ints_gapped_metadata['gap_handling']=='lint'), 'missing_percent_overall'].values[0]:.1f}\% missing"
     )
 
     # Plot the SF
@@ -246,16 +243,16 @@ for ax_index, version in enumerate(versions_to_plot):
 
     # Label the axes
     ax[1, 0].set_xlabel("Time")
-    ax[ax_index, 0].set_ylabel("$B$ (normalised)")
+    ax[ax_index, 0].set_ylabel("$B_R$ (normalised)")
     ax[1, 1].set_xlabel("Lag ($\\tau$)")
     ax[ax_index, 1].set_ylabel("SF")
     ax[1, 2].set_xlabel("Lag ($\\tau$)")
-    ax[ax_index, 2].set_ylabel("% error")
-    ax2.set_ylabel("% pairs missing", color="grey")
+    ax[ax_index, 2].set_ylabel("\% error")
+    ax2.set_ylabel("\% pairs missing", color="grey")
     ax2.tick_params(axis="y", colors="grey")
     ax2.set_ylim(0, 100)
 
-    # ax[ax_index, 2].axhline(0, c="black", linestyle="--")
+    ax[ax_index, 2].axhline(0, c="black", linestyle="--")
     ax[ax_index, 2].set_ylim(-100, 100)
 
     ax[ax_index, 1].set_xscale("log")
@@ -266,7 +263,7 @@ for ax_index, version in enumerate(versions_to_plot):
 
 # Add titles
 ax[0, 1].set_title("Structure function estimates")
-ax[0, 2].set_title("SF % error and % pairs missing")
+ax[0, 2].set_title("SF \% error and \% pairs missing")
 plt.subplots_adjust(wspace=0.4)
 
 plt.savefig(
@@ -297,8 +294,10 @@ def annotate_curve(ax, x, y, text, offset_scaling=(0.3, 0.1)):
         xytext=(x_text, y_text),
         # xycoords="axes fraction",
         # textcoords="axes fraction",
-        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2", color="gray"),
-        bbox=dict(facecolor="gray", edgecolor="gray", boxstyle="round", alpha=0.7),
+        arrowprops=dict(
+            arrowstyle="->", connectionstyle="arc3,rad=.2", color="lightgrey"
+        ),
+        bbox=dict(facecolor="gray", edgecolor="lightgrey", boxstyle="round", alpha=0.7),
         fontsize=20,
     )
 
@@ -480,7 +479,7 @@ for ax_index, version in enumerate(versions_to_plot):
 
     c = ax0.pcolormesh(
         heatmap_bin_edges_2d[0],
-        heatmap_bin_edges_2d[1],  # convert to % Missing
+        heatmap_bin_edges_2d[1],  # convert to \% Missing
         heatmap_bin_vals_2d.T,
         cmap="bwr",
     )
@@ -531,7 +530,7 @@ for ax_index, version in enumerate(versions_to_plot):
     )
 
     ax.annotate(
-        f"{alphabet[ax_index]}: {float(missing[0]):.1f}% missing overall",
+        f"{alphabet[ax_index]}: {float(missing[0]):.1f}\% missing overall",
         xy=(1, 1),
         xycoords="axes fraction",
         xytext=(0.1, 0.9),
@@ -539,7 +538,9 @@ for ax_index, version in enumerate(versions_to_plot):
         transform=ax.transAxes,
         c="black",
         fontsize=18,
-        bbox=dict(facecolor="lightgrey", edgecolor="white", boxstyle="round"),
+        bbox=dict(
+            facecolor="lightgrey", edgecolor="white", boxstyle="round", alpha=0.7
+        ),
     )
 
     ax.set_xlabel("Lag ($\\tau$)")
@@ -565,7 +566,7 @@ for ax_index, version in enumerate(versions_to_plot):
 
 ax0.set_xscale("log")
 ax0.set_xlabel("Lag ($\\tau$)")
-ax0.set_ylabel("% pairs missing", color="grey")
+ax0.set_ylabel("\% pairs missing", color="grey")
 ax0.tick_params(axis="y", colors="grey")
 ax0.set_ylim(0, 100)
 

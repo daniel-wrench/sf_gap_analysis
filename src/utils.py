@@ -716,22 +716,24 @@ def compute_outer_scale_integral(time_lags, acf, fig=None, ax=None, plot=False):
             fig = fig
             ax = ax
 
-            ax.fill_between(
-                time_lags / 1000,
-                0,
-                acf,
-                where=acf > 0,
-                color="black",
-                alpha=0.2,
-                label="Integral$\\rightarrow\\lambda_C^{{\mathrm{{int}}}}$={:.0f}s".format(
-                    integral
-                ),
-            )
-            ax.set_xlabel("$\\tau$ ($10^3$s)")
-            ax.tick_params(which="both", direction="in")
-            # Plot the legend
-            ax.legend(loc="upper right")
+        elif fig is None and ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(3.3, 2.5), constrained_layout=True)
 
+        ax.fill_between(
+            time_lags / 1000,
+            0,
+            acf,
+            where=acf > 0,
+            color="black",
+            alpha=0.2,
+            label="Integral$\\rightarrow\\lambda_C^{{\mathrm{{int}}}}$={:.0f}s".format(
+                integral
+            ),
+        )
+        ax.set_xlabel("$\\tau$ ($10^3$s)")
+        ax.tick_params(which="both", direction="in")
+        # Plot the legend
+        ax.legend(loc="upper right")
         return integral, fig, ax
     else:
         return integral

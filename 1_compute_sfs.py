@@ -15,12 +15,11 @@ import src.data_import_funcs as dif
 import glob
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import seaborn as sns
 import os
 import sys
 
-sns.set_theme(style="whitegrid", font_scale=1.5)
-# plt.rcParams.update({"font.size": 16})
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # For current Wind importing
 sys_arg_dict = {
@@ -29,7 +28,7 @@ sys_arg_dict = {
     "proton_path": params.proton_path,
     "electron_path": params.electron_path,
     # arg2
-    "mag_vars": [params.timestamp, params.Bwind, params.Bwind_vec],
+    "mag_vars": [params.timestamp, params.Bwind_vec],
     "proton_vars": [params.timestamp, params.np, params.Tp],
     "electron_vars": [params.timestamp, params.ne, params.Te],
     # arg3
@@ -76,72 +75,90 @@ file_index = int(sys.argv[2])
 if spacecraft == "psp":
     # takes < 1s/file, ~50 MB mem usage, 2-3 million rows
 
-    psp_data = dif.read_cdfs(
+    psp_raw_cdf = dif.read_cdfs(
         [raw_file_list[file_index]],  # LIMIT HERE!
         {"epoch_mag_RTN": (0), "psp_fld_l2_mag_RTN": (0, 3), "label_RTN": (0, 3)},
     )
-    psp_data_ready = dif.extract_components(
-        psp_data,
+    psp_raw = dif.extract_components(
+        psp_raw_cdf,
         var_name="psp_fld_l2_mag_RTN",
         label_name="label_RTN",
         time_var="epoch_mag_RTN",
         dim=3,
     )
-    psp_df = pd.DataFrame(psp_data_ready)
-    psp_df["Time"] = pd.to_datetime("2000-01-01 12:00") + pd.to_timedelta(
-        psp_df["epoch_mag_RTN"], unit="ns"
+    df_raw = pd.DataFrame(psp_raw)
+    df_raw["Time"] = pd.to_datetime("2000-01-01 12:00") + pd.to_timedelta(
+        df_raw["epoch_mag_RTN"], unit="ns"
     )
-    psp_df = psp_df.drop(columns="epoch_mag_RTN").set_index("Time")
+    df_raw = df_raw.drop(columns="epoch_mag_RTN").set_index("Time")
 
-    df_raw = psp_df["B_R"].rename("B")  # Giving generic name for spacecraft consistency
+    # Ensuring observations are in chronological order
+    df_raw = df_raw.sort_index()
+
+    # df_wind_hr = pd.read_pickle("data/processed/" + params.mag_path + params.dt_hr + ".pkl")
+    df_raw = df_raw.rename(
+        columns={
+            "B_R": "Bx",
+            "B_T": "By",
+            "B_N": "Bz",
+        }
+    )
+    missing = df_raw.iloc[:, 0].isna().sum() / len(df_raw)
+    # If more than 1% of the data is missing, we skip this file
+    if missing > 0.2:
+        print("More than 20% of the data is missing pre-resampling, skipping")
+        # Append the name of the file that failed to a file for keeping track of failed files
+        with open("failed_files.txt", "a") as f:
+            f.write(
+                raw_file_list[file_index]
+                + "More than 20\% missing, before re-sampling\n"
+            )
+
+        # Remove this file from the directory
+        os.remove(raw_file_list[file_index])
+        sys.exit()
+
     # print(df_raw.info())
-
-    del psp_data, psp_data_ready, psp_df
 
 elif spacecraft == "wind":
     # Takes ~90s/file, 11 MB mem usage, 1 million rows
-
-    df = utils.pipeline(
+    print("reading file", raw_file_list[file_index])
+    df_raw = utils.pipeline(
         raw_file_list[file_index],
         varlist=sys_arg_dict["mag_vars"],
         thresholds=sys_arg_dict["mag_thresh"],
         cadence=sys_arg_dict["dt_hr"],
     )
 
-    print(
-        "Reading {0}: {1:.1f}% missing".format(
-            raw_file_list[0], df.iloc[:, 0].isna().sum() / len(df) * 100
-        )
-    )
-
     # Ensuring observations are in chronological order
-    df_wind_hr = df.sort_index()
+    df_raw = df_raw.sort_index()
 
     # df_wind_hr = pd.read_pickle("data/processed/" + params.mag_path + params.dt_hr + ".pkl")
-    df_wind_hr = df_wind_hr.rename(
+    df_raw = df_raw.rename(
         columns={
-            params.Bwind: "Bwind",
+            # params.Bwind: "Bwind",
             params.Bx: "Bx",
             params.By: "By",
             params.Bz: "Bz",
         }
     )
 
-    missing = df_wind_hr.iloc[:, 0].isna().sum() / len(df_wind_hr)
+    missing = df_raw.iloc[:, 0].isna().sum() / len(df_raw)
+    # If more than 1% of the data is missing, we skip this file
+    if missing > 0.2:
+        print("More than 20% of the data is missing pre-resampling, skipping")
+        # Append the name of the file that failed to a file for keeping track of failed files
+        with open("failed_files.txt", "a") as f:
+            f.write(
+                raw_file_list[file_index]
+                + "More than 20\% missing, before re-sampling\n"
+            )
 
-    if missing > 0.4:
-        # Replacing values in lists with na
-        print("Large missing %")
-    else:
-        int_wind_hr = df_wind_hr.interpolate().ffill().bfill()
-
-    df_raw = int_wind_hr["Bx"].rename(
-        "B"
-    )  # Giving generic name for spacecraft consistency
+        # Remove this file from the directory
+        os.remove(raw_file_list[file_index])
+        sys.exit()
 
     # print(df_raw.info())
-
-    del df_wind_hr, int_wind_hr
 
 else:
     raise ValueError("Spacecraft not recognized")
@@ -178,48 +195,53 @@ else:
 if spacecraft == "psp":
     tc_approx = 500  # starting-point correlation time, in seconds
     cadence_approx = 0.1  # time resolution (dt) of the data, in seconds
-    nlags = 100000  # number of lags to compute the ACF over
+    nlags = 50000  # number of lags to compute the ACF over
 
 elif spacecraft == "wind":
     tc_approx = 2000  # s
     cadence_approx = 1  # s
-    nlags = 30000
+    nlags = 20000
 
 tc_n = 10  # Number of actual (computed) correlation times we want in our standardised interval...
 interval_length = 10000  # ...across this many points
 
 df = df_raw.resample(str(cadence_approx) + "S").mean()
+# Delete original dataframes
+del df_raw
 
 ints = []
 tc_list = []
 cadence_list = []
 
+# Significant missing data can result in weird oscillating ACFs, so we need to check for this first
 time_lags_lr, r_vec_lr = utils.compute_nd_acf(
-    [df],
+    [df.Bx, df.By, df.Bz],
     nlags=nlags,
     plot=False,
 )
 
-tc, fig, ax = utils.compute_outer_scale_exp_trick(time_lags_lr, r_vec_lr, plot=True)
+# Previously used utils.computer_outer_scale_exp_trick()
+tc, fig, ax = utils.compute_outer_scale_integral(time_lags_lr, r_vec_lr, plot=True)
+
 output_file_path = (
     raw_file_list[file_index]
     .replace("data/raw", "plots/temp")
-    .replace(".cdf", "_acf.png")
+    .replace(".cdf", "_acf_int.png")
 )
 plt.savefig(output_file_path, bbox_inches="tight")
 plt.close()
 
-if tc == -1:
+if tc < 0:
     tc = tc_approx
     new_cadence = tc_n * tc / interval_length
     print(
-        f"tc not found for this interval, setting to 500s (default) -> cadence = {new_cadence}s"
+        f"Correlation time (integral method) not found for this interval, setting to 500s (default) -> cadence = {new_cadence}s"
     )
 
 else:
     new_cadence = tc_n * tc / interval_length
     print(
-        f"Using the 1/e trick, tc was calculated to be {np.round(tc,2)}s -> data resampled to new cadence of {np.round(new_cadence,2)}s, for {tc_n}tc across {interval_length} points"
+        f"Correlation time (integral method) = {np.round(tc,2)}s -> data resampled to new cadence of {np.round(new_cadence,2)}s, for {tc_n}tc across {interval_length} points"
     )
 
 tc_list.append(tc)
@@ -235,34 +257,35 @@ try:
     ):
         interval = interval_approx_resampled.iloc[i : i + interval_length]
         # Check if interval is complete
-        if interval.isnull().sum() / len(interval) < 0.01:
-            # Linear interpolate
-            interval = interval.interpolate(method="linear")
+        if interval.Bx.isnull().sum() / len(interval) < 0.01:
+            # Linear interpolate (and, in case of missing values at edges, back and forward fill)
+            interval = interval.interpolate(method="linear").ffill().bfill()
             int_norm = utils.normalize(interval)
             ints.append(int_norm)
         else:
             print("Too many NaNs in interval, skipping")
 
-
 except Exception as e:
     print(f"An error occurred: {e}")
 
 print(
-    "Given this correlation length, this file yields",
+    "Given this correlation time and data quality, this file yields",
     len(ints),
     "standardised interval/s (see details below)",
 )
 if len(ints) == 0:
     print("NO GOOD INTERVALS WITH GIVEN SPECIFICATIONS: not proceeding with analysis")
+    # Append the name of the file that failed to a file for keeping track of failed files
+    with open("failed_files.txt", "a") as f:
+        f.write(f"{raw_file_list[file_index]} tc = {np.round(tc,2)}s\n")
+    # Remove this file from the directory
+    os.remove(raw_file_list[file_index])
 
 else:
     print("These will be now decimated in", times_to_gap, "different ways:")
 
-    # Delete original dataframes
-    del df_raw
-
     fig, ax = plt.subplots(figsize=(9, 3))
-    plt.plot(df, alpha=0.3, c="black")
+    plt.plot(df, alpha=0.3, c="black", lw=0.2)
     plt.axvline(df.index[0], c="black", linestyle="dashed")
     [
         plt.axvline(interval.index[-1], c="black", linestyle="dashed")
@@ -285,12 +308,12 @@ else:
     ax.xaxis.set_major_formatter(
         mdates.ConciseDateFormatter(ax.xaxis.get_major_locator())
     )
-    ax.set_ylabel(f"{interval.name}")
+    ax.set_ylabel("B")
 
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/temp")
-        .replace(".cdf", "_ints.png")
+        .replace(".cdf", "_ints_int.png")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
@@ -315,6 +338,8 @@ else:
     ints_metadata.rename(columns={"index": "int_index"}, inplace=True)
     ints_metadata.insert(0, "file_index", file_index)
     print(ints_metadata.head())
+
+    del df  # Clear memory of data no longer needed
 
     # Analyse intervals (get true SF and slope)
 
@@ -376,8 +401,9 @@ else:
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/temp")
-        .replace(".cdf", "_sf_example.png")
+        .replace(".cdf", "_sf_example_vect.png")
     )
+
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
 
@@ -405,19 +431,23 @@ else:
             # print("Nominal total removal: {0:.1f}%".format(total_removal * 100))
             # print("Nominal ratio: {0:.1f}%".format(ratio_removal * 100))
             prop_remove_chunks = total_removal * ratio_removal
-            prop_remove_unif = total_removal * (1 - ratio_removal)
+
             bad_input_chunks, bad_input_ind_chunks, prop_removed_chunks = (
                 ts.remove_data(
                     input, prop_remove_chunks, chunks=np.random.randint(1, 10)
                 )
             )
+            # Now calculate amount to remove uniformly, given that
+            # amount removed in chunks will invariably differ from specified amount
+            prop_remove_unif = total_removal - prop_removed_chunks
+
             # Add the uniform gaps on top of chunks gaps
             bad_input, bad_input_ind, prop_removed = ts.remove_data(
                 bad_input_chunks, prop_remove_unif
             )
-            if prop_removed >= 0.95 or prop_removed == 0:
-                # print(">95% or 0% data removed, skipping")
-                continue
+            # if prop_removed >= 0.95 or prop_removed == 0:
+            #     # print(">95% or 0% data removed, skipping")
+            #     continue
 
             bad_output = sf.compute_sf(
                 pd.DataFrame(bad_input), lags, powers, False, False
@@ -439,7 +469,8 @@ else:
                 if handling == "naive":
                     slopes_list.append(slope)
                     # Once we are done with computing the SF, add some metadata to the interval
-                    bad_input_df = pd.DataFrame(bad_input)
+                    bad_input_df = pd.DataFrame(bad_input).copy(deep=True)
+                    # So that we don't overwrite the original, relevant when it comes to linear interpolation
                     bad_input_df.reset_index(inplace=True)
                     bad_input_df["file_index"] = file_index
                     bad_input_df["int_index"] = index
@@ -448,7 +479,9 @@ else:
                     ints_gapped = pd.concat([ints_gapped, bad_input_df])
 
                 elif handling == "lint":
-                    interp_input = bad_input.interpolate(method="linear")
+                    interp_input = (
+                        bad_input.interpolate(method="linear").ffill().bfill()
+                    )  # Linearly interpolate (and, in case of missing values at edges, back and forward fill)
                     interp_output = sf.compute_sf(
                         pd.DataFrame(interp_input), lags, powers, False, False
                     )
@@ -475,6 +508,22 @@ else:
                     interp_output["sf_2_se"] = bad_output["sf_2_se"]
 
                     sfs_gapped = pd.concat([sfs_gapped, interp_output])
+
+        # Example plot of gapped intervals
+        # if index == 0:
+        #     fig, ax = plt.subplots(1, 2)
+        #     ax[0].plot(input, label="Original", c="grey")
+        #     ax[0].plot(interp_input, label="Linearly interpolated", c="black", ls="--")
+        #     ax[0].plot(bad_input, label="Naive", c="black")
+        #     ax[1].plot(good_output["lag"], good_output["sf_2"], label="Original")
+        #     ax[1].plot(bad_output["lag"], bad_output["sf_2"], label="Naive")
+        #     ax[1].plot(
+        #         interp_output["lag"],
+        #         interp_output["sf_2"],
+        #         label="Linearly interpolated",
+        #     )
+        #     plt.legend()
+        #     plt.show()
 
     ints_gapped_metadata = pd.DataFrame(
         {

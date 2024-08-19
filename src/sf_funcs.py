@@ -2,9 +2,10 @@ import pickle
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
-sns.set_theme(style="whitegrid", font_scale=1.5)
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=16)
+
 # Because Rāpoi can't handle latex apparently
 # plt.rcParams.update(
 #     {
@@ -52,6 +53,7 @@ def compute_sf(
                 lag = int(lag)
                 dax = np.abs(ax.shift(-lag) - ax)
                 strct = dax.pow(i)
+
                 array += [strct.values]
                 strct_mean = strct.mean()
                 if dax.isnull().sum() != len(dax):
@@ -75,10 +77,48 @@ def compute_sf(
                     df["diffs_" + str(i)] = array
                     df["diffs_" + str(i) + "_sd"] = std_array
 
+    elif data.shape[1] == 3:
+        ax = data.iloc[:, 0].copy()
+        ay = data.iloc[:, 1].copy()
+        az = data.iloc[:, 2].copy()
+        for i in powers:
+            array = []
+            mean_array = []
+            mapd_array = []
+            std_array = []
+            N_array = []
+            for lag in lags:
+                lag = int(lag)
+                dax = np.abs(ax.shift(-lag) - ax)
+                day = np.abs(ay.shift(-lag) - ay)
+                daz = np.abs(az.shift(-lag) - az)
+                strct = (dax**2 + day**2 + daz**2).pow(0.5).pow(i)
+
+                array += [strct.values]
+                strct_mean = strct.mean()
+                if strct.isnull().sum() != len(strct):
+                    # Otherwise this func will raise an error
+                    median_abs_diff = np.nanmedian(strct)
+                else:
+                    median_abs_diff = np.nan
+                mean_array += [strct_mean]
+                mapd_array += [median_abs_diff]
+                strct_std = strct.std()
+                std_array += [strct_std]
+
+                N = dax.notnull().sum()
+                N_array += [N]
+
+                df["lag"] = lags
+                df["n"] = N_array
+                df["sf_" + str(i)] = mean_array
+                df["sf_" + str(i) + "_se"] = np.array(std_array) / np.sqrt(N_array)
+                if retain_increments is True:
+                    df["diffs_" + str(i)] = array
+                    df["diffs_" + str(i) + "_sd"] = std_array
+
     else:
-        raise ValueError(
-            "This version only accepts scalar series: data must be a pd.DataFrame of shape (1, N)"
-        )
+        raise ValueError("Data is not in the shape (1, N) or (3, N)")
 
     df = pd.DataFrame(df, index=lags)
     if alt_estimators is True:
@@ -173,9 +213,9 @@ def plot_sample(
         ax[i, 0].plot(good_input[input_ind].values, color="grey", lw=0.8)
         ax[i, 0].plot(other_inputs_plot[i], color="black", lw=0.8)
 
-        # Add the missing % as an annotation in the top left
+        # Add the missing \% as an annotation in the top left
         ax[i, 0].annotate(
-            f"{missing*100:.2f}% missing",
+            f"{missing*100:.2f}\% missing",
             xy=(1, 1),
             xycoords="axes fraction",
             xytext=(0.05, 0.9),
@@ -209,7 +249,7 @@ def plot_sample(
             ax[i, ncols - 1].plot(
                 other_outputs_plot[i]["missing_prop"] * 100,
                 color="black",
-                label="% pairs missing",
+                label="\% pairs missing",
             )
             ax[i, ncols - 1].semilogx()
             ax[i, ncols - 1].set_ylim(0, 100)
@@ -219,7 +259,7 @@ def plot_sample(
             ax2.plot(
                 other_outputs_plot[i][estimator + "_pe"],
                 color=colors[est_ind],
-                label="% error",
+                label="\% error",
                 lw=0.8,
             )
 
@@ -228,7 +268,7 @@ def plot_sample(
             ax2.axhline(0, color="C0", linestyle="--")
             if i == 0:
                 ax2.annotate(
-                    "% error",
+                    "\% error",
                     xy=(1, 1),
                     xycoords="axes fraction",
                     xytext=(0.75, 0.9),
@@ -315,7 +355,7 @@ def plot_sample(
     # ax[0, 1].legend(loc="lower right", frameon=True)
 
     ax[0, ncols - 1].annotate(
-        "% pairs missing",
+        "\% pairs missing",
         xy=(1, 1),
         xycoords="axes fraction",
         xytext=(0.05, 0.9),
@@ -412,8 +452,8 @@ def plot_error_trend_line(
     )
     # median_error = other_outputs_df.groupby("lag")[estimator + "_pe"].median()
     mean_error = other_outputs_df.groupby("lag")[estimator + "_pe"].mean()
-    # plt.plot(median_error, color="g", lw=4, label="Median % error")
-    plt.plot(mean_error, color="c", lw=4, label="Mean % error")
+    # plt.plot(median_error, color="g", lw=4, label="Median \% error")
+    plt.plot(mean_error, color="c", lw=4, label="Mean \% error")
 
     # plt.annotate(
     #     "MAPE = {0:.2f}".format(other_outputs_df[estimator + "_pe"].abs().mean()),
@@ -425,7 +465,7 @@ def plot_error_trend_line(
     # )
 
     cb = plt.colorbar()
-    cb.set_label("% missing overall")
+    cb.set_label("\% missing overall")
     # Change range of color bar
     plt.hlines(0, 1, other_outputs_df.lag.max(), color="black", linestyle="--")
     plt.clim(0, 100)
@@ -434,13 +474,13 @@ def plot_error_trend_line(
     if y_axis_log is True:
         plt.yscale("symlog", linthresh=1e2)
     plt.xlabel("Lag ($\\tau$)")
-    plt.ylabel("% error")
+    plt.ylabel("\% error")
     plt.legend(loc="upper left")
     # plt.show()
 
 
 def plot_error_trend_scatter(
-    bad_outputs_df, interp_outputs_df, title="Overall % error vs. sparsity"
+    bad_outputs_df, interp_outputs_df, title="Overall \% error vs. sparsity"
 ):
     fig, ax = plt.subplots(figsize=(6, 3), tight_layout=True)
     sfn_mape = bad_outputs_df.groupby("missing_percent_overall")["sf_2_pe"].agg(

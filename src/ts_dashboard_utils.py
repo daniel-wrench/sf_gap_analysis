@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import random
 
 
 def calc_sfn(data, p, freq=1, max_lag_prop=0.2):
@@ -62,9 +61,18 @@ def remove_data(array, proportion, chunks=None):
     remove_idx = []
 
     if chunks is None:
-        remove_idx = np.random.choice(len(array), size=int(num_obs), replace=False)
+        # The current pipeline creates removes contiguous chunks and random points
+        # Since random gapping occurs after contiguous gapping, where here select
+        # the points to remove based on the remaining data. This ensures that
+        # the total proportion of data removed is as specified
+        remove_idx_timestamp = np.random.choice(
+            array[array.notna().any(axis=1)].index, size=int(num_obs), replace=False
+        )
+        # Convert these datetime indices to integer indices
+        remove_idx = [array.index.get_loc(i) for i in remove_idx_timestamp]
     else:
         num_obs_per_chunk = int(num_obs / chunks)
+        # Currently using constant chunk size, but could vary with following:
         # std = sigma * 0.341 * 2 * mean_obs
 
         for _ in range(chunks):
@@ -72,7 +80,10 @@ def remove_data(array, proportion, chunks=None):
             remove_idx.extend(range(start, start + num_obs_per_chunk))
 
     array_bad = array.copy()
-    array_bad[remove_idx] = np.nan
+    if isinstance(array, pd.DataFrame):
+        array_bad.iloc[remove_idx] = np.nan
+    else:
+        array_bad[remove_idx] = np.nan
 
     prop_removed = np.sum(np.isnan(array_bad)) / len(array)
     # Will be somewhat different from value specified if removed in chunks
@@ -86,4 +97,10 @@ def remove_data(array, proportion, chunks=None):
     #     np.arange(len(input)), bad_input_ind, bad_input_adjacent
     # )
 
-    return array_bad, array_bad_idx, prop_removed
+    return (
+        array_bad,
+        array_bad_idx,
+        prop_removed[
+            0
+        ],  # All vector components are the same, so just return the first one
+    )

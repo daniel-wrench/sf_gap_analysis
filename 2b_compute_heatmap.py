@@ -7,15 +7,15 @@ import src.sf_funcs as sf
 import glob
 import src.params as params
 import matplotlib.pyplot as plt
-import seaborn as sns
-import warnings
-import matplotlib.cbook
+# import warnings
+# import matplotlib.cbook
 
-warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
+# warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 
 # Annoying deprecation warning
 
-sns.set_theme(style="whitegrid", font_scale=1.5)
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 data_path_prefix = params.data_path_prefix
 
@@ -39,14 +39,19 @@ input_file_list = [
 ) = sf.load_and_concatenate_dataframes(input_file_list)
 
 print(
-    "Successfully read in and concatenated {} files, starting with {}".format(
-        len(files_metadata), input_file_list[0]
+    "Successfully read in and concatenated {} files, starting with {}\nThese comprise a total of {} gapped intervals".format(
+        len(files_metadata), input_file_list[0], len(ints_gapped_metadata)
     )
 )
 
+
+# Print summary stats of tc
+print("\nSummary stats of correlation time, across original files:")
+print(files_metadata["tc"].describe() + "\n")
+
 # Print summary stats of slope
-print("\nSummary stats of slope:")
-print(ints_metadata["slope"].describe())
+print("\nSummary stats of slope, across original (sub-)intervals:")
+print(ints_metadata["slope"].describe() + "\n")
 
 
 # Calculate lag-scale errors (sf_2_pe)

@@ -1,63 +1,86 @@
 # Gaps on structure functions
+*Furthering numerically improving our estimates of solar wind statistics (Re was implementing on large dataset, this is actually developing a new way)*
+
+## Latest results
+-  Trained on 20,000 intervals, 25x785 PSP intervals (=2.5 months, coming from first 300 processed files), 15,20,25 bins, outdated slope range *takes about 3.5 hours*
+
+
+![alt text](train_psp_heatmap_10bins_3d_lint_lag.png) 
+![alt text](train_psp_heatmap_10bins_3d_lint_missing.png) 
+![alt text](train_psp_heatmap_10bins_3d_lint_power.png)
+
+
+- Tested on 25x175 PSP intervals (=43 days)
+
+![alt text](plots/temp/test_psp_scatterplots_25_bins.png)
+
+- Tested on 25x40 Wind intervals (=20 days, coming from first 20 raw files, as above)
+
+![alt text](plots/temp/test_wind_scatterplots_25_bins.png)
+
+- Draft manuscript completed with these results; likely to be only minor updates with latest numbers and figs. Important to scale up analysis to populate heatmaps better, as well as using vector stats and better range (50-500 lags = 5-50% of $\lambda_C$)
+- *NB: Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints*
+
 
 ## To-do
-2. Come up with more streamlined pipeline, mainly to speed up plotting at the end.
-1. Run on all 3 components with new slope range (5-50% of lambda C), fix the power bins, calculate S4 as well (for later kurtosis analysis)
-2. Scaling study with this updated pipeline, looking at running on all PSP data we can (don't worry about calculating kurtosis as well for now)
-3. Potentially more bins if still getting better (are less bins better for slope), and smoothing, reasonable error bars    
-3. Think about how to study Frat's method, and verify Burger's results
-1. ~~Commit changes!~~
-2. LOCALLY
-    - ~~Change scatterplots to ANN paper version~~
-    - ~~Change correction interval to pm 2SD (NOT se)~~
-    - ~~Change boxplots to violin plots, if easily done for seaborn. If not, just include outliers in tails~~
-    - ~~Get mean slopes from true SFs~~
-3. ~~Revert back to HPC params and push~~
-4. ~~Make nice improvements to paper intro~~
-5. ~~**Get full results on subset of data**~~
-    - Trained on 216 processed PSP files (171=43 days, coming from first 400 raw files)
-    - Tested on some bin ranges on 44 PSP (11 days) and 20 Wind files (20 days).
-    - Old slope range (10-100)
-    - Old bin range (10,15,20) 
-6. ~~Process all files and train-test split (2019-2020) **using old slope range** = 1159 training files~~
-6. Test out computing bigger bins on larger subset of training files: 15,20,25 on first 400
-    - ~~Trained on 300 processed PSP files (5 months)~~
-    - ~~Tested on PSP test set with all 3 bin sizes~~
-    - ~~Tested on Wind test set with all 3 bin sizes~~
-    - ~~Calculate results for Wind dataset with all 3 bin sizes (20 files)~~
-    - For PSP (100 files)
-    - For PSP
-6. Update scatterplot (25 versions of 40 Wind intervals; 25 versions of 175 PSP intervals) 
-    - REMOVE VERTICAL SPINES, ADD TICK MARKS TO X-AXIS AND LEFT-MOST Y-AXIS
-    - **Speed up plot iteration process** (get the latest scatterplot to show at meeting, plus an example)
-        - For sfs_gapped_corrected, only save the intervals we want to plot, not all
-    - Make statement about when to use which method
-    - Performance on PSP?
-7. Calculate correlation between slope APE and MAPE
-7. Run remainder of pipeline **using old slope range** and equivalently sized test sets.
-7. Space out files in step 1. Look at other notes below to see if any easy things to knock over.
-8. With the latest numbers for job requirements, and bigger bin results, re-run full pipeline on all data with new slope range.
+### Analysis
 
-5. Meanwhile, new manuscript, just taking intro/bg from existing and not doing geostats stuff for now.
-    - Get latest best plots from NESI, chuck em in, and GET WRITING! (Visual editor)
+1. ~~Make very clear description of current state and next steps for Tulasi at meeting (and me), referring to my UN notebook~~
+2. ~~Come up with more streamlined pipeline, mainly to speed up plotting at the end.~~
+2. ~~Get correlations on each method in test set~~
+2. ~~Delete outputs and test new pipeline with updated slope range and streamlined outputs~~
+1. Updating step 1
+    - ~~Do consistent missing data check *before* calculating ACF~~
+    - ~~Switch to vector integral scale~~
+    - ~~Save name of bad files to list and move out of main data dir during initial processing~~
+    - ~~Test gapping fn: can we actually get up to 95% missing?~~
+    - ~~Switch to vector SF (but prob just plot radial component for case studies)~~
+    - ~~Diagnose error with interpolation~~
+    - ~~Get error messages in failed file~~
+    - ~~Check 2019 psp bad wasn't missing 20% before resampling~~
+2. ~~Test updated pipeline locally: should have more gaps now~~
+2. Switch to May-July for Wind test set, much cleaner than Jan
+3. Scaling study on NESI, now with vector stats, updated slope range, S4, better parallel imports, stats and plots, streamlined outputs
+2. Add standardisation figure to overleaf
+2. Note average slope
+3. Run on all PSP data we can (don't worry about calculating kurtosis as well for now)
+4. **Choose #bins based on PSP data, report final results on Wind data**
+3. Potentially investigate smoothing and error bars - do they look OK as is?
+3. Plot lag x-axes in units of $\lambda_C$?
+3. Think about how to study Frat's method, and verify Burger's results
+4. **Kurtosis** analysis
 11. Send completed draft manuscript to Tulasi, Marcus. Don't worry about Voyager just yet.
 12. Implement Fraternale's sample size threshold for fitting slopes, and send to him
+13. Read Ruzmaikin
+
+### Manuscript and plots
+
+*Chat with Tulasi when have final figures*
+
+1. ~~Finish first draft of paper~~
+2. For standardisation demo, use secondary y-axis
+2. Change boxplot linetype
+2. Note correlation between correlation scales from Reynolds
+2. Depending on final results, prob remove slope APE from scatterplots, just have boxplots separately. Potentially make corrected taylor scale 
+2. Check Google Doc, Notion for notes, comments
+3. Improve variogram clouds plot: what are we saying that isn't already covered by case study plots. And whatever that is, make it clear with good examples (probably same length as analysis intervals) and make the style consistent 
+2. Make consistent (Latex) font, and specify sizes to match specifications in Overleaf
 
 ### Notes
 - Processed PSP and Wind files are between 32 and 156MB each
-- Add true SFs to case study plots. Will require re-jig of `ints` df
-- Get mean slopes from true SFs. Maybe move "inertial range" if consistent bias wrt 2/3
+- ~~Add true SFs to case study plots. Will require re-jig of `ints` df~~
+- ~~Get mean slopes from true SFs. Maybe move "inertial range" if consistent bias wrt 2/3~~
 - Problem with first step is uneven times due to some files having no intervals, some having up to 4. Might be better to run on 3-5 files, spaced out (i.e. every 3rd file) in order to get more even times across jobs.
+- Add handling, e.g. in sf func, for extreme cases where SF will be missing values for certain lags due to high % missing (not a high priority for now because only going up to lag 2000, e.g. still 30 dx values for 99.6% missing)
 - Would be nice to get total # intervals for each set returned by step 1
 - investigating bad ints and possible automatic removal during download or initial reading
-- consistency between times_to_gap across files
+- ~~consistency between times_to_gap across files~~
 - Wind data reads very slowly, compared with PSP. It is using a pipeline function that I think Kevin made, made up of many smaller functions.
 The bottleneck is the "format epochs" function. I've starting trying to do this in the same was as PSP, but it was struggling to do the timedelta addition
 - Can add smoothing to correction step alter, **not on critical path for getting most of the scripts on NESI**
 - Having logarithmically spaced lag bins would make the correction factor much cleaner to work with: one-to-one bins
 - For now likely to do stick with simple job arrays and single jobs on HPC, with importing and exporting of intermediate steps, but perhaps better to do single MPI script with broadcasting and reducing.
-- If we tend to just get one 1 interval out of each file, could do away with (file,int) indexing
-- In either case, might using actual pandas indexes be easier/more efficient?
+- Might using actual pandas indexes be easier/more efficient?
 - Add sf slope to Wind dataset
 
 ## How to run this code
@@ -106,16 +129,17 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 4. **Process the data, file by file**
 
+    In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and likely `times_to_gap` as well
+
     Local:
 
-    Adjust data_prefix_path, depending on where you are storing the data (likely in code dir, so set to `""`)
-
-    `for i in $(seq 0 5); do python 1_compute_sfs.py $spacecraft $i; done`
+    In `1_compute_sfs.sh`, change `start_index` to 0 
+    
+    `bash 1_compute_sfs.sh`
 
     HPC: 
     
     Adjust `data_prefix_path`, depending on where you are storing the data
-
 
     `sbatch 1_compute_sfs.sh`
         
@@ -168,5 +192,6 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 7.  **Plot the test set results**
      (If on an HPC, download the above output at this step, as well as the **FIRST**  2-3 individual corrected pickle files for plotting case studies from) 
-    `python 5a_plot_test_overall.py`
-    `python 5b_plot_test_case_studies.py`
+    `python 5a_plot_test_overall.py {spacecraft} {n_bins}`
+
+    `python 5b_plot_test_case_studies.py  {spacecraft} {n_bins}`

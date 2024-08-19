@@ -7,11 +7,8 @@ import pandas as pd
 import numpy as np
 import src.sf_funcs as sf
 import glob
-import seaborn as sns
 import sys
 import src.params as params
-
-sns.set_theme(style="whitegrid", font_scale=1.5)
 
 n_bins = sys.argv[3]
 times_to_gap = params.times_to_gap

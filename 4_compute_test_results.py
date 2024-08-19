@@ -4,19 +4,10 @@ import pickle
 import numpy as np
 import src.sf_funcs as sf
 import glob
-import seaborn as sns
 import sys
 import src.params as params
-import warnings
-import matplotlib.cbook
 
 np.random.seed(123)  # For reproducibility
-
-warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
-# Annoying deprecation warning
-
-sns.set_theme(style="whitegrid", font_scale=1.5)
-# plt.rcParams.update({"font.size": 16})
 
 # Import all corrected (test) files
 spacecraft = sys.argv[1]
@@ -87,11 +78,27 @@ with open(output_file_path, "wb") as f:
 # Box plots
 
 correction_stats = ints_gapped_metadata.groupby("gap_handling")[
-    ["missing_percent_overall", "slope", "slope_pe", "slope_ape", "mpe", "mape"]
+    [
+        "missing_percent_overall",
+        "missing_percent_chunks",
+        "slope",
+        "slope_pe",
+        "slope_ape",
+        "mpe",
+        "mape",
+    ]
 ].agg(["mean", "median", "std", "min", "max"])
 
 correction_corrs = ints_gapped_metadata.groupby("gap_handling")[
-    ["missing_percent_overall", "slope", "slope_pe", "slope_ape", "mpe", "mape"]
+    [
+        "missing_percent_overall",
+        "missing_percent_chunks",
+        "slope",
+        "slope_pe",
+        "slope_ape",
+        "mpe",
+        "mape",
+    ]
 ].corr()
 
 # Save as csv

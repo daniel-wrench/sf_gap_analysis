@@ -264,7 +264,7 @@ try:
             int_norm = utils.normalize(interval)
             ints.append(int_norm)
         else:
-            print(">1% missing values in final (resampled) interval; skipping")
+            print(">1% missing values in a re-sampled interval; skipping")
 
 except Exception as e:
     print(f"An error occurred: {e}")
@@ -274,7 +274,7 @@ if len(ints) == 0:
     # Append the name of the file that failed to a file for keeping track of failed files
     with open("failed_files.txt", "a") as f:
         f.write(
-            f"{raw_file_list[file_index]}: File has uncompatible correlation time: {np.round(tc,2)}s\n"
+            f"{raw_file_list[file_index]}: Interval has too much missing data after re-sampling and/or incompatible correlation time: {np.round(tc,2)}s\n"
         )
     # Remove this file from the directory
     os.remove(raw_file_list[file_index])

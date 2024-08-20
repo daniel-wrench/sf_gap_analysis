@@ -3,8 +3,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=16)
+# plt.rc("text", usetex=True)
+# plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # Because Rāpoi can't handle latex apparently
 # plt.rcParams.update(

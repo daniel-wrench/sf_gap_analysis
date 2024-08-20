@@ -18,8 +18,8 @@ import matplotlib.dates as mdates
 import os
 import sys
 
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=16)
+# plt.rc("text", usetex=True)
+# plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # For current Wind importing
 sys_arg_dict = {

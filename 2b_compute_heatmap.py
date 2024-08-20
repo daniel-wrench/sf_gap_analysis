@@ -14,8 +14,8 @@ import matplotlib.pyplot as plt
 
 # Annoying deprecation warning
 
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=16)
+# plt.rc("text", usetex=True)
+# plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 data_path_prefix = params.data_path_prefix
 

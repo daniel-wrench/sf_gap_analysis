@@ -10,9 +10,6 @@ import random
 
 # plt.rcParams.update({"font.size": 12})
 # plt.rc("text", usetex=True)
-import seaborn as sns
-
-sns.set_theme(style="whitegrid", font_scale=1.5)
 
 
 # Get MSE between two curves

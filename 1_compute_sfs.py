@@ -103,20 +103,6 @@ if spacecraft == "psp":
             "B_N": "Bz",
         }
     )
-    missing = df_raw.iloc[:, 0].isna().sum() / len(df_raw)
-    # If more than 1% of the data is missing, we skip this file
-    if missing > 0.2:
-        print("More than 20% of the data is missing pre-resampling, skipping")
-        # Append the name of the file that failed to a file for keeping track of failed files
-        with open("failed_files.txt", "a") as f:
-            f.write(
-                raw_file_list[file_index]
-                + "More than 20\% missing, before re-sampling\n"
-            )
-
-        # Remove this file from the directory
-        os.remove(raw_file_list[file_index])
-        sys.exit()
 
     # print(df_raw.info())
 
@@ -142,21 +128,6 @@ elif spacecraft == "wind":
             params.Bz: "Bz",
         }
     )
-
-    missing = df_raw.iloc[:, 0].isna().sum() / len(df_raw)
-    # If more than 1% of the data is missing, we skip this file
-    if missing > 0.2:
-        print("More than 20% of the data is missing pre-resampling, skipping")
-        # Append the name of the file that failed to a file for keeping track of failed files
-        with open("failed_files.txt", "a") as f:
-            f.write(
-                raw_file_list[file_index]
-                + "More than 20\% missing, before re-sampling\n"
-            )
-
-        # Remove this file from the directory
-        os.remove(raw_file_list[file_index])
-        sys.exit()
 
     # print(df_raw.info())
 
@@ -206,8 +177,26 @@ tc_n = 10  # Number of actual (computed) correlation times we want in our standa
 interval_length = 10000  # ...across this many points
 
 df = df_raw.resample(str(cadence_approx) + "S").mean()
+
 # Delete original dataframes
 del df_raw
+
+missing = df.iloc[:, 0].isna().sum() / len(df)
+# If more than 1% of the data is missing, we skip this file
+if missing > 0.2:
+    print(
+        "More than 20% of the data file is missing pre-final resampling, skipping to next file"
+    )
+    # Append the name of the file that failed to a file for keeping track of failed files
+    with open("failed_files.txt", "a") as f:
+        f.write(
+            raw_file_list[file_index]
+            + "More than 20\% missing, before final re-sampling\n"
+        )
+
+    # Remove this file from the directory
+    os.remove(raw_file_list[file_index])
+    sys.exit()
 
 ints = []
 tc_list = []

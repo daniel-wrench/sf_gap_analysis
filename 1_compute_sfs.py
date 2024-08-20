@@ -17,6 +17,9 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import os
 import sys
+import warnings
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 # plt.rc("text", usetex=True)
 # plt.rc("font", family="serif", serif="Computer Modern", size=16)
@@ -135,6 +138,19 @@ else:
     raise ValueError("Spacecraft not recognized")
 
 
+missing = df_raw.iloc[:, 0].isna().sum() / len(df_raw)
+# If more than 20% of the data is missing initially, we skip this file (want robust correlation times)
+if missing > 0.2:
+    print("File missing > 20% data; skipping to next file")
+    # Append the name of the file that failed to a file for keeping track of failed files
+    with open("failed_files.txt", "a") as f:
+        f.write(raw_file_list[file_index] + ": File missing > 20% data\n")
+
+    # Remove this file from the directory
+    os.remove(raw_file_list[file_index])
+    sys.exit()
+
+
 # The following chunk gives some metadata - not necessary for the pipeline
 
 ### 0PTIONAL CODE ###
@@ -178,25 +194,21 @@ interval_length = 10000  # ...across this many points
 
 df = df_raw.resample(str(cadence_approx) + "S").mean()
 
-# Delete original dataframes
-del df_raw
-
-missing = df.iloc[:, 0].isna().sum() / len(df)
-# If more than 1% of the data is missing, we skip this file
-if missing > 0.2:
-    print(
-        "More than 20% of the data file is missing pre-final resampling, skipping to next file"
-    )
+# Another data quality check: some are less than their stated duration
+if len(df) < nlags:
+    print("Dataset too small, skipping to next file")
     # Append the name of the file that failed to a file for keeping track of failed files
     with open("failed_files.txt", "a") as f:
         f.write(
-            raw_file_list[file_index]
-            + "More than 20\% missing, before final re-sampling\n"
+            f"{raw_file_list[file_index]}: File unexpectedly short: {df.index[-1] - df.index[0]}\n"
         )
 
     # Remove this file from the directory
     os.remove(raw_file_list[file_index])
     sys.exit()
+
+# Delete original dataframes
+del df_raw
 
 ints = []
 tc_list = []
@@ -245,33 +257,36 @@ try:
         0, len(interval_approx_resampled) - interval_length + 1, interval_length
     ):
         interval = interval_approx_resampled.iloc[i : i + interval_length]
-        # Check if interval is complete
+        # Check if interval is complete (accept at most 1% missing after resampling)
         if interval.Bx.isnull().sum() / len(interval) < 0.01:
             # Linear interpolate (and, in case of missing values at edges, back and forward fill)
             interval = interval.interpolate(method="linear").ffill().bfill()
             int_norm = utils.normalize(interval)
             ints.append(int_norm)
         else:
-            print("Too many NaNs in interval, skipping")
+            print(">1% missing values in final (resampled) interval; skipping")
 
 except Exception as e:
     print(f"An error occurred: {e}")
 
-print(
-    "Given this correlation time and data quality, this file yields",
-    len(ints),
-    "standardised interval/s (see details below)",
-)
 if len(ints) == 0:
     print("NO GOOD INTERVALS WITH GIVEN SPECIFICATIONS: not proceeding with analysis")
     # Append the name of the file that failed to a file for keeping track of failed files
     with open("failed_files.txt", "a") as f:
-        f.write(f"{raw_file_list[file_index]} tc = {np.round(tc,2)}s\n")
+        f.write(
+            f"{raw_file_list[file_index]}: File has uncompatible correlation time: {np.round(tc,2)}s\n"
+        )
     # Remove this file from the directory
     os.remove(raw_file_list[file_index])
 
 else:
-    print("These will be now decimated in", times_to_gap, "different ways:")
+    print(
+        "Given this correlation time and data quality, this file yields",
+        len(ints),
+        "standardised interval/s (see details below)\nThese will be now decimated in",
+        times_to_gap,
+        "different ways",
+    )
 
     fig, ax = plt.subplots(figsize=(9, 3))
     plt.plot(df, alpha=0.3, c="black", lw=0.2)

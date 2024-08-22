@@ -288,37 +288,40 @@ else:
         "different ways",
     )
 
-    fig, ax = plt.subplots(figsize=(9, 3))
-    plt.plot(df, alpha=0.3, c="black", lw=0.2)
-    plt.axvline(df.index[0], c="black", linestyle="dashed")
+    fig, ax1 = plt.subplots(figsize=(9, 3))
+    ax2 = ax1.twinx()
+
+    ax1.plot(df, alpha=0.3, c="black", lw=0.1)
+    ax1.axvline(df.index[0], c="black", linestyle="dashed")
     [
-        plt.axvline(interval.index[-1], c="black", linestyle="dashed")
+        ax1.axvline(interval.index[-1], c="black", linestyle="dashed")
         for interval in ints
     ]
-    [plt.plot(interval, c="black") for interval in ints]
-    plt.axhline(0, c="black", linewidth=0.5, linestyle="--")
+    [ax2.plot(interval, c="black", lw=0.1) for interval in ints]
+    ax2.axhline(0, c="black", linewidth=0.5, linestyle="--")
+    ax1.set_xlabel("Time")
+    ax1.xaxis.set_major_formatter(
+        mdates.ConciseDateFormatter(ax1.xaxis.get_major_locator())
+    )
+    ax1.set_ylabel("B")
+
+    ax2.set_ylabel("B (standardised)")
+
     plt.suptitle(
         f"Standardised solar wind interval/s from {spacecraft.upper()}, given local conditions",
         y=1.1,
         fontsize=20,
     )
-    # Add subtitle
     plt.title(
         f"{tc_n}$\lambda_C$ ($\lambda_C=${int(tc)}s) across {interval_length} points, $\langle x \\rangle=0$, $\sigma=1$"
     )
-
-    # ax.set_xlim(interval_list_approx[0].index[0], interval_list_approx[2].index[-1])
-    ax.set_xlabel("Time")
-    ax.xaxis.set_major_formatter(
-        mdates.ConciseDateFormatter(ax.xaxis.get_major_locator())
-    )
-    ax.set_ylabel("B")
 
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/temp")
         .replace(".cdf", "_ints_int.png")
     )
+
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
 

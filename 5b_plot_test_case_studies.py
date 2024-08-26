@@ -12,6 +12,8 @@ import src.params as params
 
 np.random.seed(123)  # For reproducibility
 
+dir = "raapoi_test/"
+times_to_gap = 25
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=16)
@@ -19,7 +21,7 @@ plt.rc("font", family="serif", serif="Computer Modern", size=16)
 # Import all corrected (test) files
 spacecraft = sys.argv[1]
 n_bins = sys.argv[2]
-times_to_gap = params.times_to_gap
+# times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
 
@@ -34,13 +36,14 @@ if spacecraft == "psp":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/processed/psp/test/psp_*_corrected_{n_bins}_bins.pkl"
+            + f"data/processed/psp/test/{dir}psp_*_corrected_{n_bins}_bins.pkl"
         )
     )
 elif spacecraft == "wind":
     input_file_list = sorted(
         glob.glob(
-            data_path_prefix + f"data/processed/wind/wi_*_corrected_{n_bins}_bins.pkl"
+            data_path_prefix
+            + f"data/processed/{dir}wind/wi_*_corrected_{n_bins}_bins.pkl"
         )
     )
 else:
@@ -63,7 +66,7 @@ print(
 
 # Also get the 2d heatmap for final case study correction figure, by undoing the above operation
 
-with open(f"data/processed/heatmap_2d_{n_bins}bins.pkl", "rb") as f:
+with open(f"data/processed/{dir}heatmap_2d_{n_bins}bins.pkl", "rb") as f:
     data = pickle.load(f)
 
 heatmap_bin_vals_2d = data["heatmap_bin_vals_2d"]
@@ -267,7 +270,7 @@ ax[0, 2].set_title("SF \% error and \% pairs missing")
 plt.subplots_adjust(wspace=0.4)
 
 plt.savefig(
-    f"plots/temp/test_{spacecraft}_case_study_gapping_{file_index}_{int_index}.png",
+    f"plots/temp/{dir}test_{spacecraft}_case_study_gapping_{file_index}_{int_index}.png",
     bbox_inches="tight",
 )
 
@@ -571,6 +574,6 @@ ax0.tick_params(axis="y", colors="grey")
 ax0.set_ylim(0, 100)
 
 plt.savefig(
-    f"plots/temp/test_{spacecraft}_case_study_correcting_{file_index}_{int_index}_{n_bins}_bins.png",
+    f"plots/temp/{dir}test_{spacecraft}_case_study_correcting_{file_index}_{int_index}_{n_bins}_bins.png",
     bbox_inches="tight",
 )

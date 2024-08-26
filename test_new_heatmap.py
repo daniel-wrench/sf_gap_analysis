@@ -22,6 +22,7 @@ spacecraft = "psp"
 n_bins = 10
 missing_measure = "missing_percent"
 num_bins = 25
+gap_handling = "lint"
 
 input_file_list = [
     sorted(
@@ -76,7 +77,6 @@ sfs_gapped["sf_2_pe"] = (
 )
 
 inputs = sfs_gapped[sfs_gapped["gap_handling"] == "lint"]
-
 
 x = inputs["lag"]
 y = inputs[missing_measure]
@@ -147,62 +147,58 @@ plt.show()
 
 
 # APPLYING CORRECTION FACTOR
-
-file_index_test = 0
-spacecraft = "wind"
-
-# Importing processed time series and structure functions
-if spacecraft == "wind":
-    input_file_list = [
-        sorted(glob.glob(data_path_prefix + "data/processed/wind/wi_*v05.pkl"))
-    ][0]
-elif spacecraft == "psp":
-    input_file_list = [
-        sorted(glob.glob(data_path_prefix + "data/processed/psp/test/psp_*v02.pkl"))
-    ][0]
-else:
-    raise ValueError("Spacecraft must be 'psp' or 'wind'")
-
-(
-    files_metadata,
-    ints_metadata,
-    ints,
-    ints_gapped_metadata,
-    ints_gapped,
-    sfs,
-    sfs_gapped,
-) = sf.load_and_concatenate_dataframes([input_file_list[file_index_test]])
-print(f"Loaded {input_file_list[file_index_test]}")
-
-# Apply 2D and 3D scaling to test set, report avg errors
+# (on same original interval, to confirm it works as expected)
 
 
-x = sfs_gapped["lag"]
-y = sfs_gapped[missing_measure]
+x = inputs["lag"]
+y = inputs[missing_measure]
 
+num_bins = 10
+
+
+# Can use np.histogram2d to get the linear bin edges for 2D
 xedges = (
-    np.logspace(0, np.log10(sfs_gapped.lag.max()), num_bins + 1) - 0.01
+    np.logspace(0, np.log10(x.max()), num_bins + 1) - 0.01
 )  # so that first lag bin starts just before 1
-xedges[-1] = sfs_gapped.lag.max() + 1
+xedges[-1] = x.max() + 1
 yedges = np.linspace(0, 100, num_bins + 1)  # Missing prop
 zedges = np.logspace(-2, 1, num_bins + 1)  # ranges from 0.01 to 10
 
 
-sfs_gapped["lag_bin"] = (
-    np.digitize(sfs_gapped["lag"], xedges) - 1
-)  # correcting for annoying 1-indexing
-sfs_gapped["missing_percent_bin"] = (
-    np.digitize(sfs_gapped[missing_measure], yedges) - 1
-)  # as above
+xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing
+yidx = np.digitize(y, yedges) - 1  # as above
+
+# Stick with original value if no bins available
+inputs["sf_2_corrected_2d"] = inputs["sf_2"].copy()
+
+for i in range(num_bins):
+    for j in range(num_bins):
+        # If there are any values, calculate the mean for that bin
+        if len(x[(xidx == i) & (yidx == j)]) > 0:
+            inputs["sf_2_corrected_2d"][(xidx == i) & (yidx == j)] = (
+                inputs["sf_2"][(xidx == i) & (yidx == j)] * scaling[i, j]
+            )
+            inputs["sf_2_corrected_2d_lower"][(xidx == i) & (yidx == j)] = (
+                inputs["sf_2"][(xidx == i) & (yidx == j)] * scaling_lower[i, j]
+            )
+            inputs["sf_2_corrected_2d_upper"][(xidx == i) & (yidx == j)] = (
+                inputs["sf_2"][(xidx == i) & (yidx == j)] * scaling_upper[i, j]
+            )
+
+# Smoothed version
+inputs["sf_2_corrected_2d_smoothed"] = inputs["sf_2_corrected_2d"].rolling(5).mean()
+inputs[["sf_2_orig", "sf_2", "sf_2_corrected_2d", "sf_2_corrected_2d_smoothed"]].plot()
+plt.show()
+
+# New version works as expected
+# But how do we interpolate? Should we?
 
 
 # Apply 2D and 3D scaling to test set, report avg errors
 print(
     f"Correcting {len(ints_metadata)} intervals using 2D error heatmap with {n_bins} bins"
 )
-sfs_lint_corrected_2d = sf.compute_scaling(
-    sfs_gapped[sfs_gapped["gap_handling"] == "lint"], "missing_percent", lookup_table_2d
-)
+sfs_lint_corrected_2d = sf.compute_scaling(inputs, "missing_percent", lookup_table_2d)
 
 
 plt.plot(sfs_lint_corrected_2d["lag"], sfs_lint_corrected_2d["sf_2"], label="Original")

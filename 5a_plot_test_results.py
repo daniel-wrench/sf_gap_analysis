@@ -7,6 +7,8 @@ import src.params as params
 
 np.random.seed(123)  # For reproducibility
 
+dir = "raapoi_test"
+times_to_gap = 25
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=16)
@@ -14,11 +16,11 @@ plt.rc("font", family="serif", serif="Computer Modern", size=16)
 # Import all corrected (test) files
 spacecraft = sys.argv[1]
 n_bins = sys.argv[2]
-times_to_gap = params.times_to_gap
+# times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
 
-output_file_path = f"data/processed/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
+output_file_path = f"data/processed/{dir}/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
 
 # Read in the file that has just been exported above
 with open(output_file_path, "rb") as f:
@@ -47,8 +49,8 @@ fig, axes = plt.subplots(2, 2, figsize=(14, 8))
 # Flatten the 2D array of axes for easy iteration
 axes = axes.flatten()
 
-custom_order = ["naive", "lint", "corrected_3d"]
-colors = ["indianred", "grey", "purple"]
+custom_order = ["naive", "lint", "corrected_2d", "corrected_3d"]
+colors = ["indianred", "grey", "C0", "purple"]
 
 # Create boxplots for each column
 for col, ax in zip(columns, axes):
@@ -72,15 +74,33 @@ for col, ax in zip(columns, axes):
     ax.set_title(f"{col}")
     ax.set_ylabel(f"{col}")
     ax.set_xticklabels(custom_order)
+    # Add a horizontal at 0 for PE and MPE
+    # Set y-limits
+    if col == "slope_pe":
+        ax.set_ylim(-100, 100)
+        ax.axhline(0, color="black", linestyle="--", linewidth=1)
+    elif col == "slope_ape":
+        ax.set_ylim(0, 100)
+    elif col == "mpe":
+        ax.set_ylim(-100, 100)
+        ax.axhline(0, color="black", linestyle="--", linewidth=1)
+    elif col == "mape":
+        ax.set_ylim(0, 100)
 
 # Adjust layout
 plt.tight_layout()
+
 plt.suptitle("")  # Remove the default title to avoid overlap
 plt.savefig(
-    f"plots/temp/test_{spacecraft}_boxplots_{n_bins}_bins.png", bbox_inches="tight"
+    f"plots/temp/{dir}/test_{spacecraft}_boxplots_{n_bins}_bins.png",
+    bbox_inches="tight",
 )
 
 # Regression lines
+# Paper figures, so removing sub-par 2D correction
+
+custom_order = ["naive", "lint", "corrected_3d"]
+colors = ["indianred", "grey", "purple"]
 
 # Make scatterplot of mape vs. missing_percent, coloured by gap handling
 palette = dict(zip(custom_order, colors))
@@ -126,17 +146,20 @@ for i, gap_handling_method in enumerate(custom_order):
         orient="v",
         whis=(0, 100),
         color=palette[gap_handling_method],
+        linecolor="black",
+        linewidth=1.5,
     )
 
     # Hide the y-axis labels of the boxplot to avoid duplication
     ax_right.yaxis.set_visible(False)
 
-    # Optional: Remove the x-axis labels and ticks of the boxplot
-    ax_right.set_xticks([])
-    ax_right.set_xlabel("")
+    # # Optional: Remove the x-axis labels and ticks of the boxplot
+    # ax_right.set_xticks([])
+    # ax_right.set_xlabel("")
 
     ax_right.spines["left"].set_visible(False)
     ax_right.spines["right"].set_visible(False)
+    ax_right.spines["top"].set_visible(False)
 
     sns.regplot(
         data=subset,
@@ -180,7 +203,7 @@ ax[0, 1].set(xlabel="", ylabel="", title="LINT")
 ax[0, 2].set(xlabel="", ylabel="", title="Corrected")
 ax[0, 3].set(xlabel="", ylabel="", title="All")
 
-ax[1, 0].set(xlabel="", ylabel="Slope APE (%)", title="")
+ax[1, 0].set(xlabel="", ylabel="Slope APE (\%)", title="")
 ax[1, 1].set(xlabel="", ylabel="", title="")
 ax[1, 2].set(xlabel="", ylabel="", title="")
 ax[1, 3].set(xlabel="", ylabel="", title="")
@@ -214,7 +237,7 @@ ax[0, 0].spines["left"].set_visible(True)
 ax[1, 0].spines["left"].set_visible(True)
 
 plt.savefig(
-    f"plots/temp/test_{spacecraft}_scatterplots_{n_bins}_bins.png",
+    f"plots/temp/{dir}/test_{spacecraft}_scatterplots_{n_bins}_bins.png",
     bbox_inches="tight",
 )
 

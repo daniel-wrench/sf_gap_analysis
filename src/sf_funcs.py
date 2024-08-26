@@ -521,86 +521,90 @@ def plot_error_trend_scatter(
     # plt.show()
 
 
-def create_heatmap_lookup(inputs, missing_measure, num_bins=25, log=False):
+def get_correction_lookup(inputs, missing_measure, gap_handling="lint", num_bins=25):
     """Extract the mean error for each bin of lag and missing measure.
     Args:
         num_bins: The number of bins to use in each direction (x and y)
     """
-
+    inputs = inputs[inputs["gap_handling"] == gap_handling]
     x = inputs["lag"]
     y = inputs[missing_measure]
 
-    heatmap, xedges, yedges = np.histogram2d(
-        x, y, bins=num_bins, range=[[0, inputs.lag.max()], [0, 100]]
-    )
+    # Can use np.histogram2d to get the linear bin edges for 2D
+    xedges = (
+        np.logspace(0, np.log10(x.max()), num_bins + 1) - 0.01
+    )  # so that first lag bin starts just before 1
+    xedges[-1] = x.max() + 1
+    yedges = np.linspace(0, 100, num_bins + 1)  # Missing prop
+    zedges = np.logspace(-2, 1, num_bins + 1)  # ranges from 0.01 to 10
 
-    if log is True:
-        xedges = (
-            np.logspace(0, np.log10(inputs.lag.max()), num_bins + 1) - 0.01
-        )  # so that first lag bin starts just before 1
-        # y_bins = np.logspace(0, 2, num_bins) / 100 - 0.01
-        # y_bins[-1] = 1
-        xedges[-1] = inputs.lag.max() + 1
-
-        # _, xedges, _ = np.histogram2d(
-        #     x,
-        #     y,
-        #     bins=[x_bins, y_bins],
-        # )
-
-    data = {
-        # Currently saving midpoints of bins to lookup table - could change to edges
-        "lag": [],
-        missing_measure: [],
-        "n": [],
-        "mpe": [],
-        "mpe_sd": [],
-        "pe_min": [],
-        "pe_max": [],
-    }
     # Calculate the mean value in each bin
     xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing
     yidx = np.digitize(y, yedges) - 1  # as above
-    means = np.full((num_bins, num_bins), fill_value=np.nan)
-    counts = np.full((num_bins, num_bins), fill_value=np.nan)
-    # upper = np.full((num_bins, num_bins), fill_value=np.nan)
-    # lower = np.full((num_bins, num_bins), fill_value=np.nan)
+    pe_mean = np.full((num_bins, num_bins), fill_value=np.nan)
+    pe_min = np.full((num_bins, num_bins), fill_value=np.nan)
+    pe_max = np.full((num_bins, num_bins), fill_value=np.nan)
+    pe_std = np.full((num_bins, num_bins), fill_value=np.nan)
+    n = np.full((num_bins, num_bins), fill_value=np.nan)
+    scaling = np.full((num_bins, num_bins), fill_value=np.nan)
+    scaling_lower = np.full((num_bins, num_bins), fill_value=np.nan)
+    scaling_upper = np.full((num_bins, num_bins), fill_value=np.nan)
+
     for i in range(num_bins):
         for j in range(num_bins):
             # If there are any values, calculate the mean for that bin
             if len(x[(xidx == i) & (yidx == j)]) > 0:
                 # means[i, j] = np.mean(y[(xidx == i) & (yidx == j)])
                 current_bin_vals = inputs["sf_2_pe"][(xidx == i) & (yidx == j)]
-                mpe = np.nanmean(current_bin_vals)
-                n = len(current_bin_vals)
-                means[i, j] = mpe
-                counts[i, j] = n
 
-                # Calculate standard deviation for the lookup table too
-                # / np.sqrt(
-                #    len(inputs["sf_2_pe"][(xidx == i) & (yidx == j)])
-                # )
+                pe_mean[i, j] = np.nanmean(current_bin_vals)
+                pe_std[i, j] = np.nanstd(current_bin_vals)
+                pe_min[i, j] = np.nanmin(current_bin_vals)
+                pe_max[i, j] = np.nanmax(current_bin_vals)
+                n[i, j] = len(current_bin_vals)
 
-                # upper[i, j] = lag_prop_mean + 3 * lag_prop_std_err
-                # lower[i, j] = lag_prop_mean - 3 * lag_prop_std_err
+                scaling[i, j] = 1 / (1 + pe_mean[i, j] / 100)
+                scaling_lower[i, j] = 1 / (1 + (pe_mean[i, j] + 1 * pe_std[i, j]) / 100)
+                scaling_upper[i, j] = 1 / (1 + (pe_mean[i, j] - 1 * pe_std[i, j]) / 100)
 
-                # Save values at midpoint of each bin
-                data["lag"].append(0.5 * (xedges[i] + xedges[i + 1]))
-                data[missing_measure].append(0.5 * (yedges[j] + yedges[j + 1]))
-                data["n"].append(n)
-                data["mpe"].append(mpe)
-                data["mpe_sd"].append(np.nanstd(current_bin_vals))
-                data["pe_min"].append(np.nanmin(current_bin_vals))
-                data["pe_max"].append(np.nanmax(current_bin_vals))
+    # Export these arrays in an efficient manner
+    correction_lookup = {
+        "xedges": xedges,
+        "yedges": yedges,
+        "scaling": scaling,
+        "scaling_lower": scaling_lower,
+        "scaling_upper": scaling_upper,
+        "pe_mean": pe_mean,
+        "pe_std": pe_std,
+        "pe_min": pe_min,
+        "pe_max": pe_max,
+        "n": n,
+    }
 
-    # Compute scaling factors
-    data = pd.DataFrame(data)
-    data["scaling"] = 1 / (1 + data["mpe"] / 100)
-    # Reversed because min MPE is more negative
-    data["scaling_lower"] = 1 / (1 + (data["mpe"] + 1 * data["mpe_sd"]) / 100)
-    data["scaling_upper"] = 1 / (1 + (data["mpe"] - 1 * data["mpe_sd"]) / 100)
+    # Export the lookup table as a pickle file
+    with open(f"correction_lookup_{num_bins}_bins.pkl", "wb") as f:
+        pickle.dump(correction_lookup, f)
 
-    return means, counts, [xedges, yedges], data
+    fig, ax = plt.subplots(figsize=(7, 5))
+    plt.grid(False)
+    plt.pcolormesh(
+        xedges,
+        yedges,
+        pe_mean.T,
+        cmap="bwr",
+    )
+    plt.grid(False)
+    plt.colorbar(label="MPE")
+    plt.clim(-100, 100)
+    plt.xlabel("Lag ($\\tau$)")
+    plt.ylabel("Missing percentage")
+    plt.title(f"Distribution of missing proportion and lag ({gap_handling})", y=1.1)
+    ax.set_facecolor("black")
+    ax.set_xscale("log")
+
+    plt.savefig(
+        f"plots/temp/train_heatmap_{num_bins}bins_2d_{gap_handling}_NEW.png",
+    )
 
 
 def create_heatmap_lookup_3D(inputs, missing_measure, num_bins=25, log=False):

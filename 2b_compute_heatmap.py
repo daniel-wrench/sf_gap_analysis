@@ -28,6 +28,9 @@ input_file_list = [
     )
 ][0]
 
+# Randomly shuffle the list of files
+np.random.shuffle(input_file_list)
+
 (
     files_metadata,
     ints_metadata,
@@ -47,11 +50,11 @@ print(
 
 # Print summary stats of tc
 print("\nSummary stats of correlation time, across original files:")
-print(files_metadata["tc"].describe() + "\n")
+print(files_metadata["tc"].describe())
 
 # Print summary stats of slope
 print("\nSummary stats of slope, across original (sub-)intervals:")
-print(ints_metadata["slope"].describe() + "\n")
+print(ints_metadata["slope"].describe())
 
 
 # Calculate lag-scale errors (sf_2_pe)
@@ -87,62 +90,12 @@ n_bins_list = params.n_bins_list
 for n_bins in n_bins_list:
     print("Calculating 2D heatmap with {} bins".format(n_bins))
     for gap_handling in ["naive", "lint"]:
-        (
-            heatmap_bin_vals_2d,
-            heatmap_bin_counts_2d,
-            heatmap_bin_edges_2d,
-            lookup_table_2d,
-        ) = sf.create_heatmap_lookup(
-            sfs_gapped[sfs_gapped["gap_handling"] == gap_handling],
+        sf.get_correction_lookup(
+            sfs_gapped,
             "missing_percent",
+            gap_handling,
             n_bins,
-            log=True,
         )
-
-        # Mean percentage error per bin
-        fig, ax = plt.subplots(figsize=(7, 5))
-        plt.grid(False)
-        plt.pcolormesh(
-            heatmap_bin_edges_2d[0],
-            heatmap_bin_edges_2d[1],
-            heatmap_bin_vals_2d.T,
-            cmap="bwr",
-        )
-        plt.grid(False)
-        plt.colorbar(label="MPE")
-        plt.clim(-100, 100)
-        plt.xlabel("Lag ($\\tau$)")
-        plt.ylabel("Missing percentage")
-        plt.title(f"Distribution of missing proportion and lag ({gap_handling})", y=1.1)
-        ax.set_facecolor("black")
-        ax.set_xscale("log")
-
-        plt.savefig(
-            f"plots/temp/train_{spacecraft}_heatmap_{n_bins}bins_2d_{gap_handling}.png",
-            bbox_inches="tight",
-        )
-
-    # Count of pairs per bin (same for both)
-    fig, ax = plt.subplots(figsize=(7, 5))
-    plt.grid(False)
-    plt.pcolormesh(
-        heatmap_bin_edges_2d[0],
-        heatmap_bin_edges_2d[1],
-        heatmap_bin_counts_2d.T,
-        cmap="Greens",
-    )
-    # Remove gridlines
-    plt.grid(False)
-    plt.colorbar(label="Count of intervals")
-    plt.xlabel("Lag ($\\tau$)")
-    plt.ylabel("Missing percentage")
-    plt.title("Distribution of missing proportion and lag", y=1.1)
-    ax.set_facecolor("black")
-    ax.set_xscale("log")
-    plt.savefig(
-        f"plots/temp/train_{spacecraft}_heatmap_{n_bins}bins_2d_counts.png",
-        bbox_inches="tight",
-    )
 
     # Potential future sample size analysis
 
@@ -272,23 +225,6 @@ for n_bins in n_bins_list:
         bbox_inches="tight",
     )
     plt.close()
-
-    lookup_table_3d.head()
-
-    # Export the lookup tables
-    print("Exporting lookup tables to CSV")
-    lookup_table_2d.to_csv(f"data/processed/lookup_table_2d_{n_bins}bins.csv")
-    lookup_table_3d.to_csv(f"data/processed/lookup_table_3d_{n_bins}bins.csv")
-
-    # Export heatmap as a pickle for final case study correction figure
-    with open(f"data/processed/heatmap_2d_{n_bins}bins.pkl", "wb") as f:
-        pickle.dump(
-            {
-                "heatmap_bin_vals_2d": heatmap_bin_vals_2d,
-                "heatmap_bin_edges_2d": heatmap_bin_edges_2d,
-            },
-            f,
-        )
 
 
 # Other plots of error trends

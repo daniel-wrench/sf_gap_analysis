@@ -88,14 +88,20 @@ sfs_gapped["sf_2_pe"] = (
 n_bins_list = params.n_bins_list
 
 for n_bins in n_bins_list:
-    print("Calculating 2D heatmap with {} bins".format(n_bins))
     for gap_handling in ["naive", "lint"]:
-        sf.get_correction_lookup(
-            sfs_gapped,
-            "missing_percent",
-            gap_handling,
-            n_bins,
-        )
+        for dim in [2, 3]:
+            print(
+                "Calculating {}D heatmap for {} with {} bins".format(
+                    dim, gap_handling, n_bins
+                )
+            )
+            sf.get_correction_lookup(
+                sfs_gapped,
+                "missing_percent",
+                dim,
+                gap_handling,
+                n_bins,
+            )
 
     # Potential future sample size analysis
 
@@ -107,125 +113,6 @@ for n_bins in n_bins_list:
 
     # For each heatmap, print these stats.
     # Also, for the correction part, note when there is no corresponding bin.
-
-    # Because the LINT version was calculated most recently, this is what we have here
-
-    gap_handling = "lint"
-
-    print("Calculating 3D heatmap with {} bins".format(n_bins))
-
-    heatmap_bin_vals_3d, heatmap_bin_edges_3d, lookup_table_3d = (
-        sf.create_heatmap_lookup_3D(
-            sfs_gapped[sfs_gapped["gap_handling"] == gap_handling],
-            "missing_percent",
-            n_bins,
-            True,
-        )
-    )
-
-    # Plotting 3D heatmaps
-
-    fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
-    # Remove spacing between subplots
-    plt.subplots_adjust(wspace=0.2)
-    plt.grid(False)
-    for i in range(n_bins):
-        ax[i].grid(False)
-        c = ax[i].pcolormesh(
-            heatmap_bin_edges_3d[0],
-            heatmap_bin_edges_3d[1],
-            heatmap_bin_vals_3d[:, :, i],
-            cmap="bwr",
-        )
-        # plt.colorbar(label="MPE")
-        c.set_clim(-100, 100)
-        plt.xlabel("Lag ($\\tau$)")
-        plt.ylabel("Missing proportion")
-        plt.title("Distribution of missing proportion and lag")
-        ax[i].set_facecolor("black")
-        ax[i].semilogx()
-        ax[i].set_title(
-            f"Power bin {i+1}/{n_bins}".format(np.round(heatmap_bin_edges_3d[2][i], 2))
-        )
-        ax[i].set_xlabel("Lag ($\\tau$)")
-        # Remove y-axis labels for all but the first plot
-        if i > 0:
-            ax[i].set_yticklabels([])
-            ax[i].set_ylabel("")
-    plt.savefig(
-        f"plots/temp/train_{spacecraft}_heatmap_{n_bins}bins_3d_{gap_handling}_power.png",
-        bbox_inches="tight",
-    )
-    plt.close()
-
-    fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
-    # Remove spacing between subplots
-    plt.grid(False)
-    plt.subplots_adjust(wspace=0.2)
-    for i in range(n_bins):
-        ax[i].grid(False)
-        c = ax[i].pcolormesh(
-            heatmap_bin_edges_3d[1],
-            heatmap_bin_edges_3d[2],
-            heatmap_bin_vals_3d[i, :, :],
-            cmap="bwr",
-        )
-        # plt.colorbar(label="MPE")
-        c.set_clim(-100, 100)
-        ax[i].set_xlabel("Missing prop")
-        ax[i].set_ylabel("Power")
-        plt.title("Distribution of missing proportion and lag")
-        ax[i].set_facecolor("black")
-        ax[i].semilogy()
-        ax[i].set_title(
-            f"Lag bin {i+1}/{n_bins}".format(np.round(heatmap_bin_edges_3d[2][i], 2))
-        )
-        ax[i].set_xlabel("Missing prop")
-        # Remove y-axis labels for all but the first plot
-        if i > 0:
-            ax[i].set_yticklabels([])
-            ax[i].set_ylabel("")
-    plt.savefig(
-        f"plots/temp/train_{spacecraft}_heatmap_{n_bins}bins_3d_{gap_handling}_lag.png",
-        bbox_inches="tight",
-    )
-    plt.close()
-
-    fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
-    # Remove spacing between subplots
-    plt.grid(False)
-    plt.subplots_adjust(wspace=0.2)
-    for i in range(n_bins):
-        ax[i].grid(False)
-        c = ax[i].pcolormesh(
-            heatmap_bin_edges_3d[0],
-            heatmap_bin_edges_3d[2],
-            heatmap_bin_vals_3d[:, i, :],
-            cmap="bwr",
-        )
-        # plt.colorbar(label="MPE")
-        c.set_clim(-100, 100)
-        plt.title("Distribution of missing proportion and lag")
-        ax[i].set_facecolor("black")
-        ax[i].semilogx()
-        ax[i].semilogy()
-        ax[i].set_title(
-            f"Missing prop bin {i+1}/{n_bins}".format(
-                np.round(heatmap_bin_edges_3d[2][i], 2)
-            )
-        )
-        ax[i].set_xlabel("Lag ($\\tau$)")
-        ax[i].set_ylabel("Power")
-        # Remove y-axis labels for all but the first plot
-        if i > 0:
-            ax[i].set_yticklabels([])
-            ax[i].set_ylabel("")
-    plt.savefig(
-        f"plots/temp/train_{spacecraft}_heatmap_{n_bins}bins_3d_{gap_handling}_missing.png",
-        bbox_inches="tight",
-    )
-    plt.close()
-
 
 # Other plots of error trends
 

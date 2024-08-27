@@ -236,6 +236,12 @@ for i in range(4):
 ax[0, 0].spines["left"].set_visible(True)
 ax[1, 0].spines["left"].set_visible(True)
 
+# Add title
+plt.suptitle(
+    f"Error vs. \% missing data for the {str.upper(spacecraft)} test set ({n_bins} bins)"
+)
+
+
 plt.savefig(
     f"plots/temp/{dir}/test_{spacecraft}_scatterplots_{n_bins}_bins.png",
     bbox_inches="tight",

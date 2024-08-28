@@ -10,19 +10,18 @@ import glob
 import sys
 import src.params as params
 
-n_bins = sys.argv[3]
+n_bins = int(sys.argv[3])
 times_to_gap = params.times_to_gap
 pwrl_range = params.pwrl_range  # Should be 200-800 probably
 
 data_path_prefix = params.data_path_prefix
 
 # Importing lookup table
-lookup_table_2d = pd.read_csv(
-    f"data/processed/lookup_table_2d_{n_bins}bins.csv", index_col=0
-)
-lookup_table_3d = pd.read_csv(
-    f"data/processed/lookup_table_3d_{n_bins}bins.csv", index_col=0
-)
+with open(f"correction_lookup_2d_{n_bins}_bins.pkl", "rb") as f:
+    correction_lookup_2d = pickle.load(f)
+with open(f"correction_lookup_3d_{n_bins}_bins.pkl", "rb") as f:
+    correction_lookup_3d = pickle.load(f)
+
 
 spacecraft = sys.argv[1]  # "psp" or "wind"
 file_index_test = int(sys.argv[2])
@@ -56,18 +55,13 @@ print(f"Loaded {input_file_list[file_index_test]}")
 print(
     f"Correcting {len(ints_metadata)} intervals using 2D error heatmap with {n_bins} bins"
 )
-sfs_lint_corrected_2d = sf.compute_scaling(
-    sfs_gapped[sfs_gapped["gap_handling"] == "lint"], "missing_percent", lookup_table_2d
-)
-
+sfs_lint_corrected_2d = sf.compute_scaling(sfs_gapped, 2, correction_lookup_2d, n_bins)
 
 print(
     f"Correcting {len(ints_metadata)} intervals using 3D error heatmap with {n_bins} bins"
 )
-sfs_lint_corrected_2d_3d = sf.compute_scaling_3d(
-    sfs_lint_corrected_2d[sfs_lint_corrected_2d["gap_handling"] == "lint"],
-    "missing_percent",
-    lookup_table_3d,
+sfs_lint_corrected_2d_3d = sf.compute_scaling(
+    sfs_lint_corrected_2d, 3, correction_lookup_3d, n_bins
 )
 
 
@@ -103,6 +97,7 @@ correction_bounds_wide = sfs_lint_corrected_2d_3d[
         "sf_2_upper_corrected_3d",
     ]
 ]
+
 correction_bounds_long = pd.wide_to_long(
     correction_bounds_wide,
     ["sf_2_lower", "sf_2_upper"],
@@ -300,3 +295,32 @@ with open(output_file_path, "wb") as f:
         },
         f,
     )
+
+# CORRECTION CHECKING PLOT
+# import matplotlib.pyplot as plt
+
+# new = sfs_lint_corrected_2d_3d
+# check_int = new[(new["int_index"] == 2) & (new["version"] == 4)]
+
+# fig, ax = plt.subplots()
+# ax.plot(check_int["lag"], check_int["sf_2"], label="Interpolated")
+# ax.plot(check_int["lag"], check_int["sf_2_corrected_2d"], label="Corrected 2D")
+# ax.plot(check_int["lag"], check_int["sf_2_corrected_3d"], label="Corrected 3D")
+
+# ax.plot(
+#     check_int["lag"],
+#     check_int["sf_2_corrected_2d_smoothed"],
+#     label="Corrected Smoothed 2D",
+# )
+
+# # # Fill between lower and upper bounds
+# ax.fill_between(
+#     check_int["lag"],
+#     check_int["sf_2_lower_corrected_2d"],
+#     check_int["sf_2_upper_corrected_2d"],
+#     alpha=0.5,
+#     color="gray",
+# )
+# ax.set_ylim(0, 7)
+# plt.legend()
+# plt.show()

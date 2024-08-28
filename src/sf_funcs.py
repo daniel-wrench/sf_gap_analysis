@@ -521,12 +521,10 @@ def plot_error_trend_scatter(
     # plt.show()
 
 
-def get_correction_lookup(
-    inputs, missing_measure, dim, gap_handling="lint", num_bins=25
-):
+def get_correction_lookup(inputs, missing_measure, dim, gap_handling="lint", n_bins=25):
     """Extract the mean error for each bin of lag and missing measure.
     Args:
-        num_bins: The number of bins to use in each direction (x and y)
+        n_bins: The number of bins to use in each direction (x and y)
     """
 
     if dim == 2:
@@ -536,26 +534,28 @@ def get_correction_lookup(
 
         # Can use np.histogram2d to get the linear bin edges for 2D
         xedges = (
-            np.logspace(0, np.log10(x.max()), num_bins + 1) - 0.01
+            np.logspace(0, np.log10(x.max()), n_bins + 1) - 0.01
         )  # so that first lag bin starts just before 1
         xedges[-1] = x.max() + 1
-        yedges = np.linspace(0, 100, num_bins + 1)  # Missing prop
+        yedges = np.linspace(0, 100, n_bins + 1)  # Missing prop
 
         # Calculate the mean value in each bin
         xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing
         yidx = np.digitize(y, yedges) - 1  # as above
 
-        pe_mean = np.full((num_bins, num_bins), fill_value=np.nan)
-        pe_min = np.full((num_bins, num_bins), fill_value=np.nan)
-        pe_max = np.full((num_bins, num_bins), fill_value=np.nan)
-        pe_std = np.full((num_bins, num_bins), fill_value=np.nan)
-        n = np.full((num_bins, num_bins), fill_value=np.nan)
-        scaling = np.full((num_bins, num_bins), fill_value=np.nan)
-        scaling_lower = np.full((num_bins, num_bins), fill_value=np.nan)
-        scaling_upper = np.full((num_bins, num_bins), fill_value=np.nan)
+        pe_mean = np.full((n_bins, n_bins), fill_value=np.nan)
+        pe_min = np.full((n_bins, n_bins), fill_value=np.nan)
+        pe_max = np.full((n_bins, n_bins), fill_value=np.nan)
+        pe_std = np.full((n_bins, n_bins), fill_value=np.nan)
+        n = np.full((n_bins, n_bins), fill_value=np.nan)
+        scaling = np.full((n_bins, n_bins), fill_value=np.nan)
+        scaling_lower = np.full((n_bins, n_bins), fill_value=np.nan)
+        scaling_upper = np.full((n_bins, n_bins), fill_value=np.nan)
 
-        for i in range(num_bins):
-            for j in range(num_bins):
+        # Loop over every combination of bin: if there are any values
+        # in that bin, calculate the mean and standard deviation
+        for i in range(n_bins):
+            for j in range(n_bins):
                 if len(x[(xidx == i) & (yidx == j)]) > 0:
                     current_bin_vals = inputs["sf_2_pe"][(xidx == i) & (yidx == j)]
 
@@ -572,6 +572,16 @@ def get_correction_lookup(
                     scaling_upper[i, j] = 1 / (
                         1 + (pe_mean[i, j] - 1 * pe_std[i, j]) / 100
                     )
+
+                else:  # If there are no values in the bin, set scaling to 1
+                    pe_mean[i, j] = np.nan
+                    pe_std[i, j] = np.nan
+                    pe_min[i, j] = np.nan
+                    pe_max[i, j] = np.nan
+                    n[i, j] = 0
+                    scaling[i, j] = 1
+                    scaling_lower[i, j] = 1
+                    scaling_upper[i, j] = 1
 
         # Export these arrays in an efficient manner
         correction_lookup = {
@@ -605,7 +615,7 @@ def get_correction_lookup(
         ax.set_xscale("log")
 
         plt.savefig(
-            f"plots/temp/train_heatmap_{num_bins}bins_{dim}d_{gap_handling}_NEW.png",
+            f"plots/temp/train_heatmap_{n_bins}bins_{dim}d_{gap_handling}.png",
         )
 
     elif dim == 3:  # now we add in z variable
@@ -616,29 +626,29 @@ def get_correction_lookup(
 
         # Can use np.histogram2d to get the linear bin edges for 2D
         xedges = (
-            np.logspace(0, np.log10(x.max()), num_bins + 1) - 0.01
+            np.logspace(0, np.log10(x.max()), n_bins + 1) - 0.01
         )  # so that first lag bin starts just before 1
         xedges[-1] = x.max() + 1
-        yedges = np.linspace(0, 100, num_bins + 1)  # Missing prop
-        zedges = np.logspace(-2, 1, num_bins + 1)  # ranges from 0.01 to 10
+        yedges = np.linspace(0, 100, n_bins + 1)  # Missing prop
+        zedges = np.logspace(-2, 1, n_bins + 1)  # ranges from 0.01 to 10
 
         # Calculate the mean value in each bin
         xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing
         yidx = np.digitize(y, yedges) - 1  # as above
         zidx = np.digitize(z, zedges) - 1  # as above
 
-        pe_mean = np.full((num_bins, num_bins, num_bins), fill_value=np.nan)
-        pe_min = np.full((num_bins, num_bins, num_bins), fill_value=np.nan)
-        pe_max = np.full((num_bins, num_bins, num_bins), fill_value=np.nan)
-        pe_std = np.full((num_bins, num_bins, num_bins), fill_value=np.nan)
-        n = np.full((num_bins, num_bins, num_bins), fill_value=np.nan)
-        scaling = np.full((num_bins, num_bins, num_bins), fill_value=np.nan)
-        scaling_lower = np.full((num_bins, num_bins, num_bins), fill_value=np.nan)
-        scaling_upper = np.full((num_bins, num_bins, num_bins), fill_value=np.nan)
+        pe_mean = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+        pe_min = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+        pe_max = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+        pe_std = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+        n = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+        scaling = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+        scaling_lower = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+        scaling_upper = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
 
-        for i in range(num_bins):
-            for j in range(num_bins):
-                for k in range(num_bins):
+        for i in range(n_bins):
+            for j in range(n_bins):
+                for k in range(n_bins):
                     if len(x[(xidx == i) & (yidx == j) & (zidx == k)]) > 0:
                         current_bin_vals = inputs["sf_2_pe"][
                             (xidx == i) & (yidx == j) & (zidx == k)
@@ -658,6 +668,16 @@ def get_correction_lookup(
                             1 + (pe_mean[i, j, k] - 1 * pe_std[i, j, k]) / 100
                         )
 
+                    else:  # If there are no values in the bin, set scaling to 1
+                        pe_mean[i, j, k] = np.nan
+                        pe_std[i, j, k] = np.nan
+                        pe_min[i, j, k] = np.nan
+                        pe_max[i, j, k] = np.nan
+                        n[i, j, k] = 0
+                        scaling[i, j, k] = 1
+                        scaling_lower[i, j, k] = 1
+                        scaling_upper[i, j, k] = 1
+
         # Export these arrays in an efficient manner
         correction_lookup = {
             "xedges": xedges,
@@ -673,13 +693,11 @@ def get_correction_lookup(
             "n": n,
         }
 
-        fig, ax = plt.subplots(
-            1, num_bins, figsize=(num_bins * 3, 3.5), tight_layout=True
-        )
+        fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
         # Remove spacing between subplots
         plt.subplots_adjust(wspace=0.2)
         plt.grid(False)
-        for i in range(num_bins):
+        for i in range(n_bins):
             ax[i].grid(False)
             c = ax[i].pcolormesh(
                 xedges,
@@ -694,27 +712,23 @@ def get_correction_lookup(
             plt.title("Distribution of missing proportion and lag")
             ax[i].set_facecolor("black")
             ax[i].semilogx()
-            ax[i].set_title(
-                f"Power bin {i+1}/{num_bins}".format(np.round(zedges[i], 2))
-            )
+            ax[i].set_title(f"Power bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)))
             ax[i].set_xlabel("Lag ($\\tau$)")
             # Remove y-axis labels for all but the first plot
             if i > 0:
                 ax[i].set_yticklabels([])
                 ax[i].set_ylabel("")
         plt.savefig(
-            f"plots/temp/train_heatmap_{num_bins}bins_3d_{gap_handling}_power_NEW.png",
+            f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_power.png",
             bbox_inches="tight",
         )
         plt.close()
 
-        fig, ax = plt.subplots(
-            1, num_bins, figsize=(num_bins * 3, 3.5), tight_layout=True
-        )
+        fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
         # Remove spacing between subplots
         plt.grid(False)
         plt.subplots_adjust(wspace=0.2)
-        for i in range(num_bins):
+        for i in range(n_bins):
             ax[i].grid(False)
             c = ax[i].pcolormesh(
                 yedges,
@@ -729,25 +743,23 @@ def get_correction_lookup(
             plt.title("Distribution of missing proportion and lag")
             ax[i].set_facecolor("black")
             ax[i].semilogy()
-            ax[i].set_title(f"Lag bin {i+1}/{num_bins}".format(np.round(zedges[i], 2)))
+            ax[i].set_title(f"Lag bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)))
             ax[i].set_xlabel("Missing prop")
             # Remove y-axis labels for all but the first plot
             if i > 0:
                 ax[i].set_yticklabels([])
                 ax[i].set_ylabel("")
         plt.savefig(
-            f"plots/temp/train_heatmap_{num_bins}bins_3d_{gap_handling}_lag_NEW.png",
+            f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_lag.png",
             bbox_inches="tight",
         )
         plt.close()
 
-        fig, ax = plt.subplots(
-            1, num_bins, figsize=(num_bins * 3, 3.5), tight_layout=True
-        )
+        fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
         # Remove spacing between subplots
         plt.grid(False)
         plt.subplots_adjust(wspace=0.2)
-        for i in range(num_bins):
+        for i in range(n_bins):
             ax[i].grid(False)
             c = ax[i].pcolormesh(
                 xedges,
@@ -762,7 +774,7 @@ def get_correction_lookup(
             ax[i].semilogx()
             ax[i].semilogy()
             ax[i].set_title(
-                f"Missing prop bin {i+1}/{num_bins}".format(np.round(zedges[i], 2))
+                f"Missing prop bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
             )
             ax[i].set_xlabel("Lag ($\\tau$)")
             ax[i].set_ylabel("Power")
@@ -771,176 +783,114 @@ def get_correction_lookup(
                 ax[i].set_yticklabels([])
                 ax[i].set_ylabel("")
         plt.savefig(
-            f"plots/temp/train_heatmap_{num_bins}bins_3d_{gap_handling}_missing_NEW.png",
+            f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_missing.png",
             bbox_inches="tight",
         )
         plt.close()
 
     # Export the lookup table as a pickle file
-    with open(f"correction_lookup_{dim}d_{num_bins}_bins.pkl", "wb") as f:
+    with open(f"correction_lookup_{dim}d_{n_bins}_bins.pkl", "wb") as f:
         pickle.dump(correction_lookup, f)
 
 
-def compute_scaling(bad_output, var, heatmap_vals, external_test_set=False):
-    """
-    Extracting values from each bin to create a look-up table. Note that due to binning we have to find the nearest value to get the corresponding MAPE for a given lag and proportion of pairs remaining. Using MPE as we want to maintaing the direction of the error for compensating.
-    """
-    df = heatmap_vals
-    bad_output = bad_output.copy()  # To avoid SettingWithCopyWarning
-    # If no nearest bin is found (len(nearest_row)=0), scaling will be 1 (the same)
-    bad_output["scaling"] = 1
-    bad_output["scaling_lower"] = 1
-    bad_output["scaling_upper"] = 1
+def compute_scaling(inputs, dim, correction_lookup, n_bins=25):
+    # Extract the elements of the lookup table
+    if dim == 2:
+        xedges = correction_lookup["xedges"]
+        yedges = correction_lookup["yedges"]
+        scaling = correction_lookup["scaling"]
+        scaling_lower = correction_lookup["scaling_lower"]
+        scaling_upper = correction_lookup["scaling_upper"]
 
-    for i, row in bad_output.iterrows():
-        desired_prop = row[var]
-        desired_lag = row["lag"]
+        print(f"Loaded {dim}D lookup table with {n_bins} bins")
 
-        # Compute absolute differences
-        # Using numpy arrays for speedup
+        # Apply the correction factor to the original data
+        inputs = inputs.copy()
+        inputs = inputs[inputs["gap_handling"] == "lint"]
 
-        lag_diff = np.abs(df["lag"].to_numpy() - desired_lag)
-        prop_diff = np.abs(df[var].to_numpy() - desired_prop)
+        x = inputs["lag"]
+        y = inputs["missing_percent"]
 
-        # Find the nearest row in Eucledian space
-        # (note different scaling for lag and prop, but should be OK)
-        combined_distance = np.sqrt(lag_diff**2 + prop_diff**2)
-        # Get index of minimum value of the array
-        nearest_index = np.argmin(
-            combined_distance
-        )  # Will pick first if multiple minima
-        nearest_row = df.loc[nearest_index]
+        xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing
+        yidx = np.digitize(y, yedges) - 1  # as above
 
-        if len(nearest_row) == 0:
-            print("No nearest bin found!")
-            continue
+        # Stick with original value if no bins available
+        inputs["sf_2_corrected_2d"] = inputs["sf_2"].copy()
+        inputs["sf_2_lower_corrected_2d"] = inputs[
+            "sf_2"
+        ].copy()  # Named in this slightly unwieldy way for better consistency in later wrangling
+        inputs["sf_2_upper_corrected_2d"] = inputs["sf_2"].copy()
 
-        else:
-            result = nearest_row
-            scaling = result["scaling"]
-            scaling_lower = result["scaling_lower"]
-            scaling_upper = result["scaling_upper"]
+        for i in range(n_bins):
+            for j in range(n_bins):
+                # If there are any values, calculate the mean for that bin
+                if len(x[(xidx == i) & (yidx == j)]) > 0:
+                    inputs.loc[(xidx == i) & (yidx == j), "sf_2_corrected_2d"] = (
+                        inputs["sf_2"][(xidx == i) & (yidx == j)] * scaling[i, j]
+                    )
+                    inputs.loc[(xidx == i) & (yidx == j), "sf_2_lower_corrected_2d"] = (
+                        inputs["sf_2"][(xidx == i) & (yidx == j)] * scaling_lower[i, j]
+                    )
+                    inputs.loc[(xidx == i) & (yidx == j), "sf_2_upper_corrected_2d"] = (
+                        inputs["sf_2"][(xidx == i) & (yidx == j)] * scaling_upper[i, j]
+                    )
 
-        bad_output.at[i, "scaling"] = scaling
-        bad_output.at[i, "scaling_lower"] = scaling_lower
-        bad_output.at[i, "scaling_upper"] = scaling_upper
+        # Smoothed version
+        inputs["sf_2_corrected_2d_smoothed"] = (
+            inputs["sf_2_corrected_2d"].rolling(50).mean()
+        )
 
-    # if external_test_set is False:
-    #     bad_output.loc[bad_output["sf_2_pe"] == 0, "scaling"] = (
-    #         1  # Catching rows where there is no error (only for repeated data),
-    #         # so scaling should be 1
-    #     )
+    elif dim == 3:
+        xedges = correction_lookup["xedges"]
+        yedges = correction_lookup["yedges"]
+        zedges = correction_lookup["zedges"]
+        scaling = correction_lookup["scaling"]
+        scaling_lower = correction_lookup["scaling_lower"]
+        scaling_upper = correction_lookup["scaling_upper"]
 
-    bad_output["sf_2_corrected_2d"] = bad_output["sf_2"] * bad_output["scaling"]
-    bad_output["sf_2_lower_corrected_2d"] = (
-        bad_output["sf_2"] * bad_output["scaling_lower"]
-    )
-    bad_output["sf_2_upper_corrected_2d"] = (
-        bad_output["sf_2"] * bad_output["scaling_upper"]
-    )
-    # Smoothing potentially jumpy correction
-    bad_output["scaling_smoothed"] = (
-        bad_output["scaling"].rolling(window=20, min_periods=1).mean()
-    )
-    bad_output["scaling_lower_smoothed"] = (
-        bad_output["scaling_lower"].rolling(window=20, min_periods=1).mean()
-    )
-    bad_output["scaling_upper_smoothed"] = (
-        bad_output["scaling_upper"].rolling(window=20, min_periods=1).mean()
-    )
-    bad_output["sf_2_corrected_2d_smoothed"] = (
-        bad_output["sf_2"] * bad_output["scaling_smoothed"]
-    )
-    bad_output["sf_2_lower_corrected_2d_smoothed"] = (
-        bad_output["sf_2"] * bad_output["scaling_lower_smoothed"]
-    )
-    bad_output["sf_2_upper_corrected_2d_smoothed"] = (
-        bad_output["sf_2"] * bad_output["scaling_upper_smoothed"]
-    )
+        print(f"Loaded {dim}D lookup table with {n_bins} bins")
 
-    return bad_output
+        # Apply the correction factor to the original data
+        inputs = inputs[inputs["gap_handling"] == "lint"]
 
+        x = inputs["lag"]
+        y = inputs["missing_percent"]
+        z = inputs["sf_2"]
 
-def compute_scaling_3d(bad_output, var, heatmap_vals, smoothing_method="linear"):
-    """
-    Extracting values from each bin to create a look-up table. Note that due to binning we have to find the nearest value to get the corresponding MAPE for a given lag and proportion of pairs remaining. Using MPE as we want to maintaing the direction of the error for compensating."""
-    df = heatmap_vals
-    bad_output = bad_output.copy()  # To avoid SettingWithCopyWarning
+        xidx = np.digitize(x, xedges) - 1
+        yidx = np.digitize(y, yedges) - 1
+        zidx = np.digitize(z, zedges) - 1
 
-    # Precompute scaling factors
-    df["scaling"] = 1 / (1 + df["mpe"] / 100)
-    df["scaling_lower"] = 1 / (1 + (df["mpe"] + 10 * df["mpe_sd"]) / 100)
-    df["scaling_upper"] = 1 / (1 + (df["mpe"] - 10 * df["mpe_sd"]) / 100)
+        # Stick with original value if no bins available
+        inputs = inputs.copy()
+        inputs["sf_2_corrected_3d"] = inputs["sf_2"].copy()
+        inputs["sf_2_lower_corrected_3d"] = inputs["sf_2"].copy()
+        inputs["sf_2_upper_corrected_3d"] = inputs["sf_2"].copy()
 
-    # If no nearest bin is found (len(nearest_row)=0), scaling will be 1 (the same)
-    bad_output["scaling"] = 1
-    bad_output["scaling_lower"] = 1
-    bad_output["scaling_upper"] = 1
+        for i in range(n_bins):
+            for j in range(n_bins):
+                for k in range(n_bins):
+                    # If there are any values, calculate the mean for that bin
+                    if len(x[(xidx == i) & (yidx == j) & (zidx == k)]) > 0:
+                        inputs.loc[
+                            (xidx == i) & (yidx == j) & (zidx == k), "sf_2_corrected_3d"
+                        ] = (
+                            inputs["sf_2"][(xidx == i) & (yidx == j) & (zidx == k)]
+                            * scaling[i, j, k]
+                        )
+                        inputs.loc[
+                            (xidx == i) & (yidx == j) & (zidx == k),
+                            "sf_2_lower_corrected_3d",
+                        ] = (
+                            inputs["sf_2"][(xidx == i) & (yidx == j) & (zidx == k)]
+                            * scaling_lower[i, j, k]
+                        )
+                        inputs.loc[
+                            (xidx == i) & (yidx == j) & (zidx == k),
+                            "sf_2_upper_corrected_3d",
+                        ] = (
+                            inputs["sf_2"][(xidx == i) & (yidx == j) & (zidx == k)]
+                            * scaling_upper[i, j, k]
+                        )
 
-    for i, row in bad_output.iterrows():
-        desired_prop = row[var]
-        desired_lag = row["lag"]
-        desired_sf_2 = row["sf_2"]
-
-        # Compute absolute differences
-        lag_diff = np.abs(df["lag"] - desired_lag)
-        prop_diff = np.abs(df[var] - desired_prop)
-        sf_2_diff = np.abs(df["sf_2"] - desired_sf_2)
-
-        # Find the nearest row
-        min_lag_diff = lag_diff.min()
-        min_prop_diff = prop_diff.min()
-        min_sf_2_diff = sf_2_diff.min()
-        nearest_row = df.loc[
-            (lag_diff == min_lag_diff)
-            & (prop_diff == min_prop_diff)
-            & (sf_2_diff == min_sf_2_diff)
-        ]
-
-        if len(nearest_row) == 0:
-            # print("No nearest bin found!")
-            continue
-
-        # elif len(nearest_row) > 1:
-        # print("More than one nearest bin found!")
-
-        else:
-            result = nearest_row.head(1)
-            scaling = result["scaling"].values[0]
-            scaling_lower = result["scaling_lower"].values[0]
-            scaling_upper = result["scaling_upper"].values[0]
-
-        bad_output.at[i, "scaling"] = scaling
-        bad_output.at[i, "scaling_lower"] = scaling_lower
-        bad_output.at[i, "scaling_upper"] = scaling_upper
-
-    # bad_output.loc[bad_output["sf_2_pe"] == 0, "scaling"] = 1  # Catching 0 errors
-
-    bad_output["sf_2_corrected_3d"] = bad_output["sf_2"] * bad_output["scaling"]
-    bad_output["sf_2_lower_corrected_3d"] = (
-        bad_output["sf_2"] * bad_output["scaling_lower"]
-    )
-    bad_output["sf_2_upper_corrected_3d"] = (
-        bad_output["sf_2"] * bad_output["scaling_upper"]
-    )
-    # Smoothing potentially jumpy correction
-    bad_output["scaling_3d_smoothed"] = (
-        bad_output["scaling"].rolling(window=20, min_periods=1).mean()
-    )
-
-    bad_output["scaling_lower_3d_smoothed"] = (
-        bad_output["scaling_lower"].rolling(window=20, min_periods=1).mean()
-    )
-    bad_output["scaling_upper_3d_smoothed"] = (
-        bad_output["scaling_upper"].rolling(window=20, min_periods=1).mean()
-    )
-    bad_output["sf_2_corrected_3d_smoothed"] = (
-        bad_output["sf_2"] * bad_output["scaling_3d_smoothed"]
-    )
-    bad_output["sf_2_lower_corrected_3d_smoothed"] = (
-        bad_output["sf_2"] * bad_output["scaling_lower_3d_smoothed"]
-    )
-    bad_output["sf_2_upper_corrected_3d_smoothed"] = (
-        bad_output["sf_2"] * bad_output["scaling_upper_3d_smoothed"]
-    )
-    return bad_output
+    return inputs

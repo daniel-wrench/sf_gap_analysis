@@ -7,8 +7,8 @@ import src.params as params
 
 np.random.seed(123)  # For reproducibility
 
-dir = "raapoi_test"
-times_to_gap = 25
+dir = ""  # end with / if not empty
+times_to_gap = 5
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=16)
@@ -20,7 +20,7 @@ n_bins = sys.argv[2]
 
 data_path_prefix = params.data_path_prefix
 
-output_file_path = f"data/processed/{dir}/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
+output_file_path = f"data/processed/{dir}test_corrected_{spacecraft}_{n_bins}_bins.pkl"
 
 # Read in the file that has just been exported above
 with open(output_file_path, "rb") as f:
@@ -92,7 +92,7 @@ plt.tight_layout()
 
 plt.suptitle("")  # Remove the default title to avoid overlap
 plt.savefig(
-    f"plots/temp/{dir}/test_{spacecraft}_boxplots_{n_bins}_bins.png",
+    f"plots/temp/{dir}test_{spacecraft}_boxplots_{n_bins}_bins.png",
     bbox_inches="tight",
 )
 
@@ -243,7 +243,7 @@ plt.suptitle(
 
 
 plt.savefig(
-    f"plots/temp/{dir}/test_{spacecraft}_scatterplots_{n_bins}_bins.png",
+    f"plots/temp/{dir}test_{spacecraft}_scatterplots_{n_bins}_bins.png",
     bbox_inches="tight",
 )
 

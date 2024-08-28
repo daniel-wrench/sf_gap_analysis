@@ -291,37 +291,37 @@ else:
     fig, ax1 = plt.subplots(figsize=(9, 3))
     ax2 = ax1.twinx()
 
-    ax1.plot(df, alpha=0.3, c="black", lw=0.1)
+    ax1.plot(df["Bx"], color="grey")
     ax1.axvline(df.index[0], c="black", linestyle="dashed")
     [
         ax1.axvline(interval.index[-1], c="black", linestyle="dashed")
         for interval in ints
     ]
-    [ax2.plot(interval, c="black", lw=0.1) for interval in ints]
+    [ax2.plot(interval["Bx"], color="black") for interval in ints]
     ax2.axhline(0, c="black", linewidth=0.5, linestyle="--")
     ax1.set_xlabel("Time")
     ax1.xaxis.set_major_formatter(
         mdates.ConciseDateFormatter(ax1.xaxis.get_major_locator())
     )
-    ax1.set_ylabel("B")
+    ax1.set_ylabel("Bx", color="grey")
 
-    ax2.set_ylabel("B (standardised)")
-
+    ax2.set_ylabel("Bx (standardised)")
+    # Make the y-axis label, ticks and tick labels match the line color.
+    ax1.tick_params("y", colors="grey")
+    ax2.set_ylim(-10, 10)
     plt.suptitle(
         f"Standardised solar wind interval/s from {spacecraft.upper()}, given local conditions",
         y=1.1,
-        fontsize=20,
+        fontsize=18,
     )
     plt.title(
         f"{tc_n}$\lambda_C$ ($\lambda_C=${int(tc)}s) across {interval_length} points, $\langle x \\rangle=0$, $\sigma=1$"
     )
-
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/temp")
         .replace(".cdf", "_ints_int.png")
     )
-
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
 

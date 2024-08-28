@@ -7,11 +7,7 @@
 - Computed heatmap for 50 days worth of PSP data (200 files)
     - Average slope of 0.55, average tc of 1100s = 3km
     - Average intervals/file = 3.5
-- *Currently computing heatmaps for 8 months of PSP data (1000 files), testing scaling once more before full 2 years of training data*
-- **Now, parallelise heatmap calculation. Correct 100 wind files and 100 PSP files to check the reqs for this. Then download, confirming local pipeline, and tidy up plots, while waiting for heatmap to run**.
-
 - Trained on 20,000 intervals, 25x785 PSP intervals (=2.5 months, coming from first 300 processed files), 15,20,25 bins, outdated slope range *takes about 3.5 hours*
-
 
 ![alt text](train_psp_heatmap_10bins_3d_lint_lag.png) 
 ![alt text](train_psp_heatmap_10bins_3d_lint_missing.png) 
@@ -24,7 +20,7 @@
 
 - Tested on 25x40 Wind intervals (=20 days, coming from first 20 raw files, as above)
 
-![alt text](plots/temp/test_wind_scatterplots_25_bins.png)
+![alt text](plots/temp/test_wind_scatterplots_25_bins_old.png)
 
 - Draft manuscript completed with these results; likely to be only minor updates with latest numbers and figs. Important to scale up analysis to populate heatmaps better, as well as using vector stats and better range (50-500 lags = 5-50% of $\lambda_C$)
 - *NB: Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints*
@@ -33,31 +29,25 @@
 ## To-do
 ### Analysis
 
-1. ~~Make very clear description of current state and next steps for Tulasi at meeting (and me), referring to my UN notebook~~
-2. ~~Come up with more streamlined pipeline, mainly to speed up plotting at the end.~~
-2. ~~Get correlations on each method in test set~~
-2. ~~Delete outputs and test new pipeline with updated slope range and streamlined outputs~~
-1. ~~Updating step 1~~
-    - ~~Do consistent missing data check *before* calculating ACF~~
-    - ~~Switch to vector integral scale~~
-    - ~~Save name of bad files to list and move out of main data dir during initial processing~~
-    - ~~Test gapping fn: can we actually get up to 95% missing?~~
-    - ~~Switch to vector SF (but prob just plot radial component for case studies)~~
-    - ~~Diagnose error with interpolation~~
-    - ~~Get error messages in failed file~~
-    - ~~Check 2019 psp bad wasn't missing 20% before resampling~~
-2. ~~Test updated pipeline locally: should have more gaps now~~
-2. ~~Switch to May-July for Wind test set, much cleaner than Jan~~
-3. Scaling study on NESI, now with vector stats, updated slope range, S4, better parallel imports, stats and plots, streamlined outputs
-    - ~~Process 300 files of Wind data~~
-    - Use heatmap from subset to test remainder of pipeline, figure out time for steps 3+
-3. Run on all PSP data we can (don't worry about calculating kurtosis as well for now)
+1. **Parallelise heatmap calculation.** 
+    - ~~Simplify heatmap part~~
+    - ~~Simplify correction part~~
+    - ~~Move existing plots~~
+    - ~~Test new pipeline~~
+    - Run old pipeline on NESI subset on tiny subset
+    - Note time and download stats, pull
+    - Run again, compare time and stats
+    - Make parallel, using gpt help: test locally, running for different ranges of lags then outputting these subranges, then merging them together again
+    - Test locally
+    - Push
+    - Run again, compare time and stats
+    - Scaling study of this step 
+    - Tidy up plots and work on manuscript, while waiting for heatmap to run.
 4. **Choose #bins based on PSP data, report final results on Wind data**
 3. Potentially investigate smoothing and error bars - do they look OK as is?
-3. Plot lag x-axes in units of $\lambda_C$?
+11. Send completed draft manuscript to Tulasi. Print out, talk through with Marcus. Don't worry about Voyager just yet.3. Plot lag x-axes in units of $\lambda_C$?
 3. Think about how to study Frat's method, and verify Burger's results
 4. **Kurtosis** analysis
-11. Send completed draft manuscript to Tulasi. Print out, talk through with Marcus. Don't worry about Voyager just yet.
 12. Implement Fraternale's sample size threshold for fitting slopes, and send to him
 13. Read Ruzmaikin
 
@@ -66,10 +56,7 @@
 *Chat with Tulasi when have final figures*
 
 1. ~~Finish first draft of paper~~
-2. For standardisation demo, use secondary y-axis; add to Overleaf
-2. Change boxplot linetype
-2. Note correlation between correlation scales from Reynolds
-2. Depending on final results, prob remove slope APE from scatterplots, just have boxplots separately. Potentially make corrected taylor scale 
+2. Depending on final results, prob remove slope APE from scatterplots, just have boxplots separately. Potentially make corrected taylor scale style plot
 2. Check Google Doc, Notion for notes, comments
 3. Improve variogram clouds plot: what are we saying that isn't already covered by case study plots. And whatever that is, make it clear with good examples (probably same length as analysis intervals) and make the style consistent 
 2. Make consistent (Latex) font, and specify sizes to match specifications in Overleaf

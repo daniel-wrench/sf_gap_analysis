@@ -22,8 +22,8 @@ import warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 # DELETE FOLLOWING ON HPC
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=16)
+# plt.rc("text", usetex=True)
+# plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # For current Wind importing
 sys_arg_dict = {
@@ -299,12 +299,12 @@ else:
         for interval in ints
     ]
     [ax2.plot(interval["Bx"], color="black") for interval in ints]
-    ax2.axhline(0, c="black", linewidth=0.5, linestyle="--")
+    # ax2.axhline(0, c="black", linewidth=0.5, linestyle="--")
     ax1.set_xlabel("Time")
     ax1.xaxis.set_major_formatter(
         mdates.ConciseDateFormatter(ax1.xaxis.get_major_locator())
     )
-    ax1.set_ylabel("Bx", color="grey")
+    ax1.set_ylabel("$B_R$", color="grey")
 
     # Add a vertical dotted line at t1 + tc
     for i in range(10):
@@ -315,21 +315,21 @@ else:
             lw=1,
         )
 
-    ax2.set_ylabel("Bx (standardised)")
+    ax2.set_ylabel("$B_R$ (standardised)")
     # Make the y-axis label, ticks and tick labels match the line color.
     ax1.tick_params("y", colors="grey")
     ax2.set_ylim(-10, 10)
-    plt.suptitle(
-        f"Standardised solar wind interval/s from {spacecraft.upper()}, given local conditions",
-        y=1.1,
-        fontsize=18,
-    )
-    plt.title(
-        f"{tc_n}$\lambda_C$ ($\lambda_C=${int(tc)}s) across {interval_length} points, $\langle x \\rangle=0$, $\sigma=1$"
-    )
+    # plt.suptitle(
+    #     f"Standardised solar wind interval/s from {spacecraft.upper()}, given local conditions",
+    #     y=1.1,
+    #     fontsize=18,
+    # )
+    # plt.title(
+    #     f"{tc_n}$\lambda_C$ ($\lambda_C=${int(tc)}s) across {interval_length} points, $\langle x \\rangle=0$, $\sigma=1$"
+    # )
     output_file_path = (
         raw_file_list[file_index]
-        .replace("data/raw", "plots/temp")
+        .replace("data/raw", "plots/final")
         .replace(".cdf", "_ints_int.png")
     )
     plt.savefig(output_file_path, bbox_inches="tight")

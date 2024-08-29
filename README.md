@@ -34,8 +34,9 @@
     - ~~Simplify correction part~~
     - ~~Move existing plots~~
     - ~~Test new pipeline~~
-    - Run old pipeline on NESI subset on tiny subset
-    - Note time and download stats, pull
+    - ~~Run old pipeline on NESI subset on tiny subset~~
+    - ~~Do all plots locally with proper Latex~~
+    - ~~Note time and download stats, pull~~
     - Run again, compare time and stats
     - Make parallel, using gpt help: test locally, running for different ranges of lags then outputting these subranges, then merging them together again
     - Test locally
@@ -57,6 +58,7 @@
 
 1. ~~Finish first draft of paper~~
 2. Depending on final results, prob remove slope APE from scatterplots, just have boxplots separately. Potentially make corrected taylor scale style plot
+3. Get Latex error trend lines for subset of full results, still shows same pattern
 2. Check Google Doc, Notion for notes, comments
 3. Improve variogram clouds plot: what are we saying that isn't already covered by case study plots. And whatever that is, make it clear with good examples (probably same length as analysis intervals) and make the style consistent 
 2. Make consistent (Latex) font, and specify sizes to match specifications in Overleaf
@@ -164,11 +166,11 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     `sbatch 2b_compute_heatmap.sh`
 
-    - 10 files, 15,20,25 bins **=1350 gapped ints = 5min 2GB**
+    - 10 files, 15,20,25 bins **=1350 gapped ints = 7min 3GB**
     - 20 files '': 15min, 5GB **=2300 gapped ints = 9min 4GB**
     - **AVERAGE OF 5 INTERVALS PER FILE**
 
-    - 7min, 2GB per 10 files.
+    - **10min, 3GB per 10 files (1750 gapped ints).**
     - For 200 files, = **=17,700 gapped ints = 135min, 32GB**
     - For 1000 files **latest results here**
 
@@ -179,10 +181,11 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     HPC: `sbatch 3_correct_test_sfs.sh`
 
     - 20min and 1GB/file (15,20,25 bins)
+    - **0-3min (prev 4-11) and 200-600MB/file (15,20)**
 
 6. **Compute the statistical results for all (corrected) test set files**
 
-    `python 4_compute_test_results.py $spacecraft $n_bins`
+    `sbatch 4_compute_test_results.sh`
 
     Reqs: 
 

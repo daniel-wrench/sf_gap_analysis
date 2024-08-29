@@ -64,13 +64,44 @@ print(
 )
 
 
-# Also get the 2d heatmap for final case study correction figure, by undoing the above operation
+# Also do publication-read plots for heatmaps (as least the LINT versions; we haven't output the correction
+# lookup for the naive versions, but we do have plots of these on the HPC from step 2b)
+for dim in [2, 3]:
+    with open(f"data/processed/correction_lookup_{dim}d_{n_bins}_bins.pkl", "rb") as f:
+        correction_lookup = pickle.load(f)
 
-with open(f"data/processed/{dir}heatmap_2d_{n_bins}bins.pkl", "rb") as f:
-    data = pickle.load(f)
+    sf.plot_correction_heatmap(correction_lookup, dim, "LINT", n_bins)
 
-heatmap_bin_vals_2d = data["heatmap_bin_vals_2d"]
-heatmap_bin_edges_2d = data["heatmap_bin_edges_2d"]
+# Load just the 2D Lint version for use in later case study plots
+with open(f"data/processed/correction_lookup_2d_{n_bins}_bins.pkl", "rb") as f:
+    correction_lookup = pickle.load(f)
+    xedges = correction_lookup["xedges"]
+    yedges = correction_lookup["yedges"]
+    pe_mean = correction_lookup["pe_mean"]
+
+
+# Count of pairs per bin (same for both)
+# fig, ax = plt.subplots(figsize=(7, 5))
+# plt.grid(False)
+# plt.pcolormesh(
+#     heatmap_bin_edges_2d[0],
+#     heatmap_bin_edges_2d[1],
+#     heatmap_bin_counts_2d.T,
+#     cmap="Greens",
+# )
+# # Remove gridlines
+# plt.grid(False)
+# plt.colorbar(label="Count of intervals")
+# plt.xlabel("Lag ($\\tau$)")
+# plt.ylabel("Missing percentage")
+# plt.title("Distribution of missing proportion and lag", y=1.1)
+# ax.set_facecolor("black")
+# ax.set_xscale("log")
+# plt.savefig(
+#     f"plots/temp/train_{spacecraft}_heatmap_{n_bins}bins_2d_counts.png",
+#     bbox_inches="tight",
+# )
+
 
 # Parameters for the case study plots
 
@@ -481,9 +512,9 @@ for ax_index, version in enumerate(versions_to_plot):
     # PLOTTING HEATMAP IN FIRST PANEL
 
     c = ax0.pcolormesh(
-        heatmap_bin_edges_2d[0],
-        heatmap_bin_edges_2d[1],  # convert to \% Missing
-        heatmap_bin_vals_2d.T,
+        xedges,
+        yedges,  # convert to \% Missing
+        pe_mean.T,
         cmap="bwr",
     )
     # fig.colorbar(c, ax=ax0, label="MPE")

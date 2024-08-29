@@ -597,27 +597,6 @@ def get_correction_lookup(inputs, missing_measure, dim, gap_handling="lint", n_b
             "n": n,
         }
 
-        fig, ax = plt.subplots(figsize=(7, 5))
-        plt.grid(False)
-        plt.pcolormesh(
-            xedges,
-            yedges,
-            pe_mean.T,
-            cmap="bwr",
-        )
-        plt.grid(False)
-        plt.colorbar(label="MPE")
-        plt.clim(-100, 100)
-        plt.xlabel("Lag ($\\tau$)")
-        plt.ylabel("Missing percentage")
-        plt.title(f"Distribution of missing proportion and lag ({gap_handling})", y=1.1)
-        ax.set_facecolor("black")
-        ax.set_xscale("log")
-
-        plt.savefig(
-            f"plots/temp/train_heatmap_{n_bins}bins_{dim}d_{gap_handling}.png",
-        )
-
     elif dim == 3:  # now we add in z variable
         inputs = inputs[inputs["gap_handling"] == gap_handling]
         x = inputs["lag"]
@@ -692,6 +671,42 @@ def get_correction_lookup(inputs, missing_measure, dim, gap_handling="lint", n_b
             "pe_max": pe_max,
             "n": n,
         }
+
+    return correction_lookup
+
+
+def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=25):
+    if dim == 2:
+        xedges = correction_lookup["xedges"]
+        yedges = correction_lookup["yedges"]
+        pe_mean = correction_lookup["pe_mean"]
+
+        fig, ax = plt.subplots(figsize=(7, 5))
+        plt.grid(False)
+        plt.pcolormesh(
+            xedges,
+            yedges,
+            pe_mean.T,
+            cmap="bwr",
+        )
+        plt.grid(False)
+        plt.colorbar(label="MPE")
+        plt.clim(-100, 100)
+        plt.xlabel("Lag ($\\tau$)")
+        plt.ylabel("Missing percentage")
+        plt.title(f"Distribution of missing proportion and lag ({gap_handling})", y=1.1)
+        ax.set_facecolor("black")
+        ax.set_xscale("log")
+
+        plt.savefig(
+            f"plots/temp/train_heatmap_{n_bins}bins_{dim}d_{gap_handling}.png",
+        )
+
+    elif dim == 3:
+        xedges = correction_lookup["xedges"]
+        yedges = correction_lookup["yedges"]
+        zedges = correction_lookup["zedges"]
+        pe_mean = correction_lookup["pe_mean"]
 
         fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
         # Remove spacing between subplots
@@ -787,10 +802,6 @@ def get_correction_lookup(inputs, missing_measure, dim, gap_handling="lint", n_b
             bbox_inches="tight",
         )
         plt.close()
-
-    # Export the lookup table as a pickle file
-    with open(f"correction_lookup_{dim}d_{n_bins}_bins.pkl", "wb") as f:
-        pickle.dump(correction_lookup, f)
 
 
 def compute_scaling(inputs, dim, correction_lookup, n_bins=25):

@@ -7,8 +7,8 @@ import src.params as params
 
 np.random.seed(123)  # For reproducibility
 
-dir = ""  # end with / if not empty
-times_to_gap = 5
+dir = "raapoi_test/"  # end with / if not empty
+times_to_gap = 25
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=16)
@@ -247,7 +247,7 @@ plt.savefig(
     bbox_inches="tight",
 )
 
-# Error trendlines
+# Error trendlines (REQUIRE FULL CORRECTED SFS, NOT CURRENTLY OUTPUT FROM HPC)
 
 # for gap_handling in sfs_gapped_corrected.gap_handling.unique():
 #     sf.plot_error_trend_line(

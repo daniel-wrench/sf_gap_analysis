@@ -21,8 +21,9 @@ import warnings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
-# plt.rc("text", usetex=True)
-# plt.rc("font", family="serif", serif="Computer Modern", size=16)
+# DELETE FOLLOWING ON HPC
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # For current Wind importing
 sys_arg_dict = {
@@ -304,6 +305,15 @@ else:
         mdates.ConciseDateFormatter(ax1.xaxis.get_major_locator())
     )
     ax1.set_ylabel("Bx", color="grey")
+
+    # Add a vertical dotted line at t1 + tc
+    for i in range(10):
+        ax1.axvline(
+            df.index[0] + pd.Timedelta(tc * i, "s"),
+            color="black",
+            linestyle="dotted",
+            lw=1,
+        )
 
     ax2.set_ylabel("Bx (standardised)")
     # Make the y-axis label, ticks and tick labels match the line color.

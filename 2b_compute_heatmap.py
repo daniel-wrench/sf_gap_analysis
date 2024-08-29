@@ -82,8 +82,7 @@ sfs_gapped["sf_2_pe"] = (
 )
 
 
-# Compute and export heatmaps
-
+# Compute and export correction factors, plot as heatmaps
 
 n_bins_list = params.n_bins_list
 
@@ -95,13 +94,28 @@ for n_bins in n_bins_list:
                     dim, gap_handling, n_bins
                 )
             )
-            sf.get_correction_lookup(
+            correction_lookup = sf.get_correction_lookup(
                 sfs_gapped,
                 "missing_percent",
                 dim,
                 gap_handling,
                 n_bins,
             )
+
+            # Export the LINT lookup tables as a pickle file
+            if gap_handling == "lint":
+                with open(
+                    f"data/processed/correction_lookup_{dim}d_{n_bins}_bins.pkl", "wb"
+                ) as f:
+                    pickle.dump(correction_lookup, f)
+
+            # Plot a heatmap of the correction lookup table
+
+            if gap_handling == "naive" and dim == 3:
+                # Not interested in 3D heatmaps for this case
+                pass
+            else:
+                sf.plot_correction_heatmap(correction_lookup, dim, gap_handling, n_bins)
 
     # Potential future sample size analysis
 

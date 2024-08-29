@@ -1,8 +1,8 @@
 #!/bin/bash -e
 
-#SBATCH --job-name          3_correct_test_sfs_wind
+#SBATCH --job-name          3_correct_test_sfs_psp
 #SBATCH --mem               1G
-#SBATCH --array             0-42 #0-5 for wind
+#SBATCH --array             0-9 #0-5 for wind
 #SBATCH --time              00:15:00
 #SBATCH --output            logs/%x_%A_%3a.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
@@ -19,9 +19,10 @@ date
 
 spacecraft=psp
 file_index=$SLURM_ARRAY_TASK_ID # doesn't work if running locally
-n_bins=10
 
+for n_bins in 15 20; do
 python 3_correct_test_sfs.py $spacecraft $file_index $n_bins
+done
 
 echo "JOB FINISHED"
 date

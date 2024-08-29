@@ -30,8 +30,8 @@ test_files = processed_files[n_train:]
 os.makedirs(data_path_prefix + "data/processed/psp/train", exist_ok=True)
 
 # Delete any existing files in the 'train' subfolder
-for file in glob.glob(data_path_prefix + "data/processed/psp/train/psp_*.pkl"):
-    os.remove(file)
+#for file in glob.glob(data_path_prefix + "data/processed/psp/train/psp_*.pkl"):
+#    os.remove(file)
 
 # Move the training files into the 'train' subfolder
 for file in train_files:
@@ -41,8 +41,8 @@ for file in train_files:
 os.makedirs(data_path_prefix + "data/processed/psp/test", exist_ok=True)
 
 # Delete any existing files in the 'test' subfolder
-for file in glob.glob(data_path_prefix + "data/processed/psp/test/psp_*.pkl"):
-    os.remove(file)
+#for file in glob.glob(data_path_prefix + "data/processed/psp/test/psp_*.pkl"):
+#    os.remove(file)
 
 # Move the test files into the 'test' subfolder
 for file in test_files:

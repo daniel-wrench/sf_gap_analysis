@@ -1,8 +1,8 @@
 #!/bin/bash -e
 
 #SBATCH --job-name          4_compute_test_results
-#SBATCH --mem               10G
-#SBATCH --time              00:20:00
+#SBATCH --mem               5G
+#SBATCH --time              00:02:00
 #SBATCH --output            logs/%x_%j.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
@@ -16,9 +16,10 @@ echo "JOB STARTED"
 date
 
 spacecraft=psp
-n_bins=10
 
+for n_bins in 15 20; do
 python 4_compute_test_results.py $spacecraft $n_bins
+done
 
 echo "JOB FINISHED"
 date

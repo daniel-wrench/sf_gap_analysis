@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 
 data_path_prefix = params.data_path_prefix
 
+
 spacecraft = "psp"
 input_file_list = [
     sorted(
@@ -28,8 +29,10 @@ input_file_list = [
     )
 ][0]
 
-# Randomly shuffle the list of files
+# Randomly shuffle the list of files, to get a better distribution of # intervals within files when testing with 
+# just a sample
 np.random.shuffle(input_file_list)
+
 
 (
     files_metadata,
@@ -39,7 +42,7 @@ np.random.shuffle(input_file_list)
     ints_gapped,
     sfs,
     sfs_gapped,
-) = sf.load_and_concatenate_dataframes(input_file_list)
+) = sf.load_and_concatenate_dataframes(input_file_list[:10]) ######## LIMIT HERE ! ! ! #########
 
 print(
     "Successfully read in and concatenated {} files, starting with {}\nThese comprise a total of {} gapped intervals".format(

@@ -45,7 +45,7 @@ else:
 ) = sf.load_and_concatenate_dataframes(input_file_list)
 
 print(
-    f"Successfully read in and concatenated {len(input_file_list)} files, starting with {input_file_list[0]}\n \
+    f"Successfully read in and concatenated {len(files_metadata)} files, starting with {input_file_list[0]}\n \
     Now calculating statistics of results for the {len(ints_metadata)}x{times_to_gap} intervals contained within"
 )
 

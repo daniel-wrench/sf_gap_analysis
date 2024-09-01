@@ -42,11 +42,9 @@ except ImportError:
             return data
 
     MPI = FakeMPI()
-
 comm = MPI.COMM_WORLD if mpi_available else MPI
 rank = comm.Get_rank()
 size = comm.Get_size()
-
 
 data_path_prefix = params.data_path_prefix
 
@@ -112,6 +110,21 @@ if rank == 0:
         (sfs_gapped["sf_2"] - sfs_gapped["sf_2_orig"]) / sfs_gapped["sf_2_orig"] * 100
     )
 
+    for gap_handling in sfs_gapped.gap_handling.unique():
+        sf.plot_error_trend_line(
+            sfs_gapped[sfs_gapped["gap_handling"] == gap_handling],
+            estimator="sf_2",
+            title=f"SF estimation error ({gap_handling}) vs. lag and global sparsity",
+            y_axis_log=True,
+        )
+        plt.savefig(
+            f"plots/temp/train_{spacecraft}_error_trend_{gap_handling}.png",
+            bbox_inches="tight",
+        )
+
+else:
+    sfs_gapped = None  # Placeholder for the data
+
 # Broadcast the data to all ranks, if MPI is available
 if mpi_available:
     sfs_gapped = comm.bcast(sfs_gapped, root=0)
@@ -145,6 +158,9 @@ for n_bins in n_bins_list:
                     sfs_gapped, "missing_percent", dim, comm, gap_handling, n_bins
                 )
             elif dim == 3:
+                if gap_handling == "naive":
+                    # Not interested in 3D heatmaps for this case
+                    pass
                 (
                     xedges,
                     yedges,
@@ -247,15 +263,3 @@ for n_bins in n_bins_list:
     # Also, for the correction part, note when there is no corresponding bin.
 
 # Other plots of error trends
-
-for gap_handling in sfs_gapped.gap_handling.unique():
-    sf.plot_error_trend_line(
-        sfs_gapped[sfs_gapped["gap_handling"] == gap_handling],
-        estimator="sf_2",
-        title=f"SF estimation error ({gap_handling}) vs. lag and global sparsity",
-        y_axis_log=True,
-    )
-    plt.savefig(
-        f"plots/temp/train_{spacecraft}_error_trend_{gap_handling}.png",
-        bbox_inches="tight",
-    )

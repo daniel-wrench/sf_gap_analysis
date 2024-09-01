@@ -112,9 +112,9 @@ if rank == 0:
         (sfs_gapped["sf_2"] - sfs_gapped["sf_2_orig"]) / sfs_gapped["sf_2_orig"] * 100
     )
 
-# Broadcast the data to all ranks, if MPI is available
-if mpi_available:
-    sfs_gapped = comm.bcast(sfs_gapped, root=0)
+    # Broadcast the data to all ranks, if MPI is available
+    if mpi_available:
+        sfs_gapped = comm.bcast(sfs_gapped, root=0)
 
 # Compute and export correction factors, plot as heatmaps
 

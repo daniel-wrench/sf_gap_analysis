@@ -65,9 +65,9 @@ if rank == 0:
     (
         files_metadata,
         ints_metadata,
-        ints,
+        _,
         ints_gapped_metadata,
-        ints_gapped,
+        _,
         sfs,
         sfs_gapped,
     ) = sf.load_and_concatenate_dataframes(
@@ -90,15 +90,6 @@ if rank == 0:
 
     # Calculate lag-scale errors (sf_2_pe)
     # Join original and copies dataframes and do column operation
-
-    ints_gapped_metadata = pd.merge(
-        ints_metadata,
-        ints_gapped_metadata,
-        how="inner",
-        on=["file_index", "int_index"],
-        suffixes=("_orig", ""),
-    )
-
     sfs_gapped = pd.merge(
         sfs,
         sfs_gapped,

@@ -1,8 +1,9 @@
 #!/bin/bash
 
 #SBATCH --job-name          2b_compute_heatmap
-#SBATCH --mem               30G 
-#SBATCH --time              01:00:00
+#SBATCH --mem-per-cpu       4GB 
+#SBATCH --ntasks	    15
+#SBATCH --time              00:10:00
 #SBATCH --output            logs/%x_%j.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
@@ -15,7 +16,7 @@ source venv/bin/activate
 echo "JOB STARTED"
 date
 
-python 2b_compute_heatmap.py # runs on PSP training data 
+srun python 2b_compute_heatmap.py # runs on PSP training data 
 
 echo "JOB FINISHED"
 date

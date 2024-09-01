@@ -71,8 +71,8 @@ if rank == 0:
         sfs,
         sfs_gapped,
     ) = sf.load_and_concatenate_dataframes(
-        input_file_list[:10]
-    )  ######## LIMIT HERE ! ! ! #########
+        input_file_list[:10], limit=True
+    )  ######## LIMIT N FILES HERE ! ! ! #########
 
     print(
         "Successfully read in and concatenated {} files, starting with {}\nThese comprise a total of {} gapped intervals".format(
@@ -112,6 +112,8 @@ if rank == 0:
             f"plots/temp/train_{spacecraft}_error_trend_{gap_handling}.png",
             bbox_inches="tight",
         )
+
+        del sfs, ints_gapped_metadata
 
 else:
     sfs_gapped = None  # Placeholder for the data

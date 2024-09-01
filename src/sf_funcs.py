@@ -379,7 +379,7 @@ def plot_sample(
 # into one big dataframe for each of the four dataframes
 
 
-def load_and_concatenate_dataframes(pickle_files):
+def load_and_concatenate_dataframes(pickle_files, limit=False):
     concatenated_dataframes = {
         "files_metadata": [],
         "ints_metadata": [],
@@ -423,6 +423,12 @@ def load_and_concatenate_dataframes(pickle_files):
     ints_gapped = concatenated_dataframes["ints_gapped"]
     sfs = concatenated_dataframes["sfs"]
     sfs_gapped = concatenated_dataframes["sfs_gapped"]
+
+    if limit is True:
+        sfs_gapped = sfs_gapped[
+            ["file_index", "int_index", "lag", "sf_2", "missing_percent"]
+        ]
+        sfs = sfs[["file_index", "int_index", "lag", "sf_2", "missing_percent"]]
 
     return (
         files_metadata,

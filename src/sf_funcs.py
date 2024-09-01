@@ -4,32 +4,6 @@ import numpy as np
 import pandas as pd
 import warnings
 
-# For parallel correction calculation
-try:
-    from mpi4py import MPI
-
-    mpi_available = True
-except ImportError:
-    mpi_available = False
-
-    class FakeMPI:
-        def __init__(self):
-            self.COMM_WORLD = self
-
-        def Get_rank(self):
-            return 0
-
-        def Get_size(self):
-            return 1
-
-        def gather(self, data, root=0):
-            return [data]
-
-        def bcast(self, data, root=0):
-            return data
-
-    MPI = FakeMPI()
-
 
 # plt.rc("text", usetex=True)
 # plt.rc("font", family="serif", serif="Computer Modern", size=16)
@@ -549,13 +523,15 @@ def plot_error_trend_scatter(
     # plt.show()
 
 
-def get_correction_lookup(inputs, missing_measure, dim, gap_handling="lint", n_bins=25):
+def get_correction_lookup(
+    inputs, missing_measure, dim, comm, gap_handling="lint", n_bins=25
+):
     """Extract the mean error for each bin of lag and missing measure.
     Args:
         n_bins: The number of bins to use in each direction (x and y)
     """
 
-    comm = MPI.COMM_WORLD if mpi_available else MPI
+    comm = comm
     rank = comm.Get_rank()
     size = comm.Get_size()
 
@@ -563,6 +539,9 @@ def get_correction_lookup(inputs, missing_measure, dim, gap_handling="lint", n_b
     bins_per_rank = n_bins // size
     start_bin = rank * bins_per_rank
     end_bin = (rank + 1) * bins_per_rank if rank < size - 1 else n_bins
+
+    # Print out the start and end bin for each rank
+    print(f"Process {rank} calculating values for lag bins {start_bin}-{end_bin}")
 
     if dim == 2:
         # Technically we only need rank 0 to do the following set-up,
@@ -622,6 +601,19 @@ def get_correction_lookup(inputs, missing_measure, dim, gap_handling="lint", n_b
                     scaling[i, j] = 1
                     scaling_lower[i, j] = 1
                     scaling_upper[i, j] = 1
+
+        return (
+            xedges,
+            yedges,
+            pe_mean,
+            pe_std,
+            pe_min,
+            pe_max,
+            n,
+            scaling,
+            scaling_lower,
+            scaling_upper,
+        )
 
     elif dim == 3:  # now we add in z variable
         inputs = inputs[inputs["gap_handling"] == gap_handling]
@@ -683,61 +675,19 @@ def get_correction_lookup(inputs, missing_measure, dim, gap_handling="lint", n_b
                         scaling_lower[i, j, k] = 1
                         scaling_upper[i, j, k] = 1
 
-    # Gather results from all ranks
-    all_pe_mean = comm.gather(pe_mean, root=0)
-    all_pe_std = comm.gather(pe_std, root=0)
-    all_pe_min = comm.gather(pe_min, root=0)
-    all_pe_max = comm.gather(pe_max, root=0)
-    all_n = comm.gather(n, root=0)
-    all_scaling = comm.gather(scaling, root=0)
-    all_scaling_lower = comm.gather(scaling_lower, root=0)
-    all_scaling_upper = comm.gather(scaling_upper, root=0)
-
-    # Combine results from all ranks
-    if rank == 0:
-        # I expect to see RuntimeWarnings in this block
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            pe_mean = np.nanmean(all_pe_mean, axis=0)
-            pe_std = np.nanmean(all_pe_std, axis=0)
-            pe_min = np.nanmean(all_pe_min, axis=0)
-            pe_max = np.nanmean(all_pe_max, axis=0)
-            n = np.nanmean(all_n, axis=0)
-            scaling = np.nanmean(all_scaling, axis=0)
-            scaling_lower = np.nanmean(all_scaling_lower, axis=0)
-            scaling_upper = np.nanmean(all_scaling_upper, axis=0)
-
-        if dim == 2:
-            # Export these arrays in an efficient manner
-            correction_lookup = {
-                "xedges": xedges,
-                "yedges": yedges,
-                "scaling": scaling,
-                "scaling_lower": scaling_lower,
-                "scaling_upper": scaling_upper,
-                "pe_mean": pe_mean,
-                "pe_std": pe_std,
-                "pe_min": pe_min,
-                "pe_max": pe_max,
-                "n": n,
-            }
-        elif dim == 3:  # has zedges too
-            # Export these arrays in an efficient manner
-            correction_lookup = {
-                "xedges": xedges,
-                "yedges": yedges,
-                "zedges": zedges,
-                "scaling": scaling,
-                "scaling_lower": scaling_lower,
-                "scaling_upper": scaling_upper,
-                "pe_mean": pe_mean,
-                "pe_std": pe_std,
-                "pe_min": pe_min,
-                "pe_max": pe_max,
-                "n": n,
-            }
-
-    return correction_lookup
+        return (
+            xedges,
+            yedges,
+            zedges,
+            pe_mean,
+            pe_std,
+            pe_min,
+            pe_max,
+            n,
+            scaling,
+            scaling_lower,
+            scaling_upper,
+        )
 
 
 def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=25):
@@ -762,6 +712,7 @@ def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=
         plt.title(f"Distribution of missing proportion and lag ({gap_handling})", y=1.1)
         ax.set_facecolor("black")
         ax.set_xscale("log")
+
         plt.savefig(
             f"plots/temp/train_heatmap_{n_bins}bins_{dim}d_{gap_handling}.png",
         )
@@ -797,6 +748,7 @@ def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=
             if i > 0:
                 ax[i].set_yticklabels([])
                 ax[i].set_ylabel("")
+
         plt.savefig(
             f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_power.png",
             bbox_inches="tight",
@@ -828,6 +780,7 @@ def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=
             if i > 0:
                 ax[i].set_yticklabels([])
                 ax[i].set_ylabel("")
+
         plt.savefig(
             f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_lag.png",
             bbox_inches="tight",
@@ -861,6 +814,7 @@ def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=
             if i > 0:
                 ax[i].set_yticklabels([])
                 ax[i].set_ylabel("")
+
         plt.savefig(
             f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_missing.png",
             bbox_inches="tight",

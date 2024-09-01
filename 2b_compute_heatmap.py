@@ -46,6 +46,8 @@ comm = MPI.COMM_WORLD if mpi_available else MPI
 rank = comm.Get_rank()
 size = comm.Get_size()
 
+print(f"Process {rank} of {size} reporting for duty")
+
 data_path_prefix = params.data_path_prefix
 
 if rank == 0:
@@ -255,4 +257,3 @@ for n_bins in n_bins_list:
     # For each heatmap, print these stats.
     # Also, for the correction part, note when there is no corresponding bin.
 
-# Other plots of error trends

@@ -17,9 +17,9 @@ pwrl_range = params.pwrl_range  # Should be 200-800 probably
 data_path_prefix = params.data_path_prefix
 
 # Importing lookup table
-with open(f"correction_lookup_2d_{n_bins}_bins.pkl", "rb") as f:
+with open(f"data/processed/correction_lookup_2d_{n_bins}_bins.pkl", "rb") as f:
     correction_lookup_2d = pickle.load(f)
-with open(f"correction_lookup_3d_{n_bins}_bins.pkl", "rb") as f:
+with open(f"data/processed/correction_lookup_3d_{n_bins}_bins.pkl", "rb") as f:
     correction_lookup_3d = pickle.load(f)
 
 

@@ -228,7 +228,7 @@ tc, fig, ax = utils.compute_outer_scale_integral(time_lags_lr, r_vec_lr, plot=Tr
 output_file_path = (
     raw_file_list[file_index]
     .replace("data/raw", "plots/temp")
-    .replace(".cdf", "_acf_int.png")
+    .replace(".cdf", "_acf.png")
 )
 plt.savefig(output_file_path, bbox_inches="tight")
 plt.close()
@@ -329,8 +329,8 @@ else:
     # )
     output_file_path = (
         raw_file_list[file_index]
-        .replace("data/raw", "plots/final")
-        .replace(".cdf", "_ints_int.png")
+        .replace("data/raw", "plots/temp")
+        .replace(".cdf", "_ints_std.png")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
@@ -418,7 +418,7 @@ else:
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/temp")
-        .replace(".cdf", "_sf_example_vect.png")
+        .replace(".cdf", "_sf_example.png")
     )
 
     plt.savefig(output_file_path, bbox_inches="tight")

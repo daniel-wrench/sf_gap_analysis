@@ -191,7 +191,7 @@ elif spacecraft == "wind":
     nlags = 20000
 
 tc_n = 10  # Number of actual (computed) correlation times we want in our standardised interval...
-interval_length = 10000  # ...across this many points
+interval_length = params.int_length  # ...across this many points
 
 df = df_raw.resample(str(cadence_approx) + "S").mean()
 
@@ -360,7 +360,7 @@ else:
 
     # Analyse intervals (get true SF and slope)
 
-    lags = np.arange(1, 0.2 * len(ints[0]))
+    lags = np.arange(1, params.max_lag_prop * params.int_length)
 
     # Logarithmically-spaced lags?
     # vals = np.logspace(0, 0.2 * len(ints[0]), 50)

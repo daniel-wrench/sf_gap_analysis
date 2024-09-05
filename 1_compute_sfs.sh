@@ -3,7 +3,7 @@
 #SBATCH --job-name          1_compute_sfs
 #SBATCH --mem               1G
 #SBATCH --array             0-169
-#SBATCH --time              03:00:00
+#SBATCH --time              00:05:00
 #SBATCH --output            logs/%x_%A_%3a.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
@@ -29,7 +29,7 @@ echo "TOTAL FILES: $total_files"
 n_files=4 # Adjust this value as needed (should really be defined based on number of job array tasks)
 task_id=$SLURM_ARRAY_TASK_ID
 
-# Calculate start index for this task (need to set to 0 if running on a single node)
+# Calculate start index for this task ($task_id if on HPC, 0 if local)
 start_index=0
 
 # Calculate the stride (number of files to skip between reads)

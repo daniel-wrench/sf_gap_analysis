@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-#SBATCH --job-name          3_correct_test_sfs_psp
+#SBATCH --job-name          5_correct_test_sfs
 #SBATCH --mem               1G
 #SBATCH --array             0-9 #0-5 for wind
 #SBATCH --time              00:15:00

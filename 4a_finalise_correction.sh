@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name          4a_finalise_correction
-#SBATCH --mem               30G 
-#SBATCH --time              01:00:00
+#SBATCH --mem               1 
+#SBATCH --time              00:05:00
 #SBATCH --output            logs/%x_%j.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
@@ -12,7 +12,7 @@ source venv/bin/activate
 # If running (locally) on Windows, may need to change above lines to the following: 
 #source venv/Scripts/activate
 
-dim=3
+dim=2
 echo "DIM: $dim"
 n_bins=10
 echo "N_BINS: $n_bins"

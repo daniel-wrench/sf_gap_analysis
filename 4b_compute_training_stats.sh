@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name          4b_compute_training_stats
-#SBATCH --mem               30G 
-#SBATCH --time              01:00:00
+#SBATCH --mem               1G 
+#SBATCH --time              00:05:00
 #SBATCH --output            logs/%x_%j.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz

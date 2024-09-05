@@ -192,16 +192,16 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 5. **Perform the correction on the test set, file by file**
 
-    Local: `for i in $(seq 0 5); do python 3_correct_test_sfs.py $spacecraft $i $n_bins; done`
+    Local: `for i in $(seq 0 1); do python 5_correct_test_sfs.py $spacecraft $i $n_bins; done`
 
-    HPC: `sbatch 3_correct_test_sfs.sh`
+    HPC: `sbatch 5_correct_test_sfs.sh`
 
     - 20min and 1GB/file (15,20,25 bins)
     - **0-3min (prev 4-11) and 200-600MB/file (15,20)**
 
 6. **Compute the statistical results for all (corrected) test set files**
 
-    `sbatch 4_compute_test_results.sh`
+    `bash/sbatch 6_compute_test_stats.sh`
 
     Reqs: 
 
@@ -217,6 +217,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 7.  **Plot the test set results**
      (If on an HPC, download the above output at this step, as well as the heatmaps  and the **FIRST**  2-3 individual corrected pickle files for plotting case studies from) 
-    `python 5a_plot_test_overall.py {spacecraft} {n_bins}`
+    `python 7a_plot_test_overall.py {spacecraft} {n_bins}`
 
-    `python 5b_plot_test_case_studies.py  {spacecraft} {n_bins}`
+    `python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`
+
+    *For some reason this last one throws an error if running from the terminal, but is fine if running interactively*

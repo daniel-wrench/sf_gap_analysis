@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name          1_compute_sfs
+#SBATCH --job-name          3_bin_errors
 #SBATCH --mem               1G
 #SBATCH --array             0-169
 #SBATCH --time              03:00:00
@@ -18,15 +18,16 @@ source venv/bin/activate
 echo "JOB STARTED"
 date
 
-spacecraft=wind
-echo "SPACECRAFT: $spacecraft"
+dim=3
+echo "DIM: $dim"
+n_bins=10
+echo "N_BINS: $n_bins"
 
 # Specify total number of files
-total_files=4
-echo "TOTAL FILES: $total_files"
+total_files=3
 
 # Set number of files to be processed by each task
-n_files=4 # Adjust this value as needed (should really be defined based on number of job array tasks)
+n_files=3 # Adjust this value as needed (should really be defined based on number of job array tasks)
 task_id=$SLURM_ARRAY_TASK_ID
 
 # Calculate start index for this task (need to set to 0 if running on a single node)
@@ -40,7 +41,7 @@ echo "Task ID: $task_id processing every $stride th file, starting from $start_i
 # Process each file based on the stride
 for ((file_index=$start_index; file_index < total_files; file_index+=$stride)); do
   echo Core $task_id about to read file $file_index
-  python 1_compute_sfs.py $spacecraft $file_index
+  python 3_bin_errors.py $file_index $dim $n_bins
 done
 
 echo "JOB FINISHED"

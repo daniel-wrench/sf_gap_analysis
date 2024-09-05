@@ -1,8 +1,8 @@
-#!/bin/bash -e
+#!/bin/bash
 
-#SBATCH --job-name          4_compute_test_results
-#SBATCH --mem               5G
-#SBATCH --time              00:02:00
+#SBATCH --job-name          4b_compute_training_stats
+#SBATCH --mem               30G 
+#SBATCH --time              01:00:00
 #SBATCH --output            logs/%x_%j.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
@@ -15,11 +15,7 @@ source venv/bin/activate
 echo "JOB STARTED"
 date
 
-spacecraft=psp
-
-for n_bins in 15 20; do
-python 4_compute_test_results.py $spacecraft $n_bins
-done
+python 4b_compute_training_stats.py
 
 echo "JOB FINISHED"
 date

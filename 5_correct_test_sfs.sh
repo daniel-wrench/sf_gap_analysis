@@ -18,10 +18,12 @@ echo "JOB STARTED"
 date
 
 spacecraft=psp
+echo "SPACECRAFT: $spacecraft"
 file_index=$SLURM_ARRAY_TASK_ID # doesn't work if running locally
 
-for n_bins in 15 20; do
-python 3_correct_test_sfs.py $spacecraft $file_index $n_bins
+for n_bins in 10; do
+echo "Number of bins: $n_bins"
+python 5_correct_test_sfs.py $spacecraft $file_index $n_bins
 done
 
 echo "JOB FINISHED"

@@ -3,7 +3,6 @@
 
 import pickle
 import glob
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import sys
@@ -74,7 +73,7 @@ except Exception as e:
     print(f"An unexpected pe {e} occurred with file: {file}. Skipping this file.")
 
 print(
-    f"Grouping sf errors using {gap_handling} into {dim}x{n_bins} bins for {input_file_list[file_index_test]}"
+    f"Grouping sf errors using {gap_handling.upper()} into {dim}x{n_bins} bins for {input_file_list[file_index_test]}"
 )
 
 # Calculate lag-scale pe (sf_2_pe)
@@ -135,7 +134,7 @@ elif dim == 3:
 output_file_path = (
     input_file_list[file_index_test]
     .replace("train", "train/errors")
-    .replace(".pkl", f"_pe_{dim}d_{n_bins}_bins_{gap_handling}.pkl")
+    .replace(".pkl", f"_pe_{dim}d_{n_bins}_bins_{gap_handling.upper()}.pkl")
 )
 # Export the pe array in an efficient manner
 with open(

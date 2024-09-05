@@ -88,10 +88,16 @@ if dim == 2:
     plt.clim(-100, 100)
     plt.xlabel("Lag ($\\tau$)")
     plt.ylabel("Missing percentage")
-    plt.title(f"Distribution of missing proportion and lag ({gap_handling})", y=1.1)
+    plt.title(
+        f"Distribution of missing proportion and lag ({gap_handling.upper()})", y=1.1
+    )
     ax.set_facecolor("black")
     ax.set_xscale("log")
-    plt.show()
+    plt.savefig(
+        f"plots/temp/train_{spacecraft}_heatmap_{n_bins}bins_2d.png",
+        bbox_inches="tight",
+    )
+    plt.close()
 
     fig, ax = plt.subplots(figsize=(7, 5))
     plt.grid(False)
@@ -109,11 +115,11 @@ if dim == 2:
     plt.title("Distribution of missing proportion and lag", y=1.1)
     ax.set_facecolor("black")
     ax.set_xscale("log")
-    plt.show()
-    # plt.savefig(
-    #     f"plots/temp/train_{spacecraft}_heatmap_{n_bins}bins_2d_counts.png",
-    #     bbox_inches="tight",
-    # )
+    plt.savefig(
+        f"plots/temp/train_{spacecraft}_heatmap_{n_bins}bins_2d_counts.png",
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
 elif dim == 3:  # has zedges too
@@ -188,12 +194,11 @@ elif dim == 3:  # has zedges too
             ax[i].set_yticklabels([])
             ax[i].set_ylabel("")
 
-    plt.show()
-    # plt.savefig(
-    #     f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_power.png",
-    #     bbox_inches="tight",
-    # )
-    # plt.close()
+    plt.savefig(
+        f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.png",
+        bbox_inches="tight",
+    )
+    plt.close()
 
     fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
     # Remove spacing between subplots
@@ -221,12 +226,11 @@ elif dim == 3:  # has zedges too
             ax[i].set_yticklabels([])
             ax[i].set_ylabel("")
 
-    plt.show()
-    # plt.savefig(
-    #     f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_lag.png",
-    #     bbox_inches="tight",
-    # )
-    # plt.close()
+    plt.savefig(
+        f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.png",
+        bbox_inches="tight",
+    )
+    plt.close()
 
     fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
     # Remove spacing between subplots
@@ -256,17 +260,16 @@ elif dim == 3:  # has zedges too
             ax[i].set_yticklabels([])
             ax[i].set_ylabel("")
 
-    plt.show()
-    # plt.savefig(
-    #     f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_missing.png",
-    #     bbox_inches="tight",
-    # )
-    # plt.close()
+    plt.savefig(
+        f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.png",
+        bbox_inches="tight",
+    )
+    plt.close()
 
 # Export the LINT lookup tables as a pickle file
 if gap_handling == "lint":
     with open(
-        f"data/processed/correction_lookup_{dim}d_{n_bins}_bins_TEST.pkl",
+        f"data/processed/correction_lookup_{dim}d_{n_bins}_bins.pkl",
         "wb",
     ) as f:
         pickle.dump(correction_lookup, f)

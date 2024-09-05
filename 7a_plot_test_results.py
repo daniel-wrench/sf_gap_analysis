@@ -5,10 +5,16 @@ import seaborn as sns
 import sys
 import src.params as params
 
+import warnings
+import numpy as np
+
+# Suppress the specific RankWarning from numpy - occurs with fitting slope sometimes
+warnings.filterwarnings("ignore", category=np.RankWarning)
+
 np.random.seed(123)  # For reproducibility
 
-dir = "raapoi_test/"  # end with / if not empty
-times_to_gap = 25
+dir = ""  # end with / if not empty
+times_to_gap = params.times_to_gap
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=16)
@@ -238,7 +244,7 @@ ax[1, 0].spines["left"].set_visible(True)
 
 # Add title
 plt.suptitle(
-    f"Error vs. \% missing data for the {str.upper(spacecraft)} test set ({n_bins} bins)"
+    f"Error vs. \% missing data for the {spacecraft.upper()} test set ({n_bins} bins)"
 )
 
 
@@ -253,10 +259,10 @@ plt.savefig(
 #     sf.plot_error_trend_line(
 #         sfs_gapped_corrected[sfs_gapped_corrected["gap_handling"] == gap_handling],
 #         estimator="sf_2",
-#         title=f"SF estimation error ({gap_handling}) vs. lag and global sparsity",
+#         title=f"SF estimation error ({gap_handling.upper()}) vs. lag and global sparsity",
 #         y_axis_log=True,
 #     )
 #     plt.savefig(
-#         f"plots/temp/test_{spacecraft}_error_trend_{gap_handling}_{n_bins}_bins.png",
+#         f"plots/temp/test_{spacecraft}_error_trend_{gap_handling.upper()}_{n_bins}_bins.png",
 #         bbox_inches="tight",
 #     )

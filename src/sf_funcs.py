@@ -424,12 +424,6 @@ def load_and_concatenate_dataframes(pickle_files, limit=False):
     sfs = concatenated_dataframes["sfs"]
     sfs_gapped = concatenated_dataframes["sfs_gapped"]
 
-    if limit is True:
-        sfs_gapped = sfs_gapped[
-            ["file_index", "int_index", "lag", "sf_2", "missing_percent"]
-        ]
-        sfs = sfs[["file_index", "int_index", "lag", "sf_2", "missing_percent"]]
-
     return (
         files_metadata,
         ints_metadata,
@@ -537,31 +531,10 @@ def get_correction_lookup(
         n_bins: The number of bins to use in each direction (x and y)
     """
 
-    comm = comm
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
-    # Split mean calculation across ranks
-    bins_per_rank = n_bins // size
-    start_bin = rank * bins_per_rank
-    end_bin = (rank + 1) * bins_per_rank if rank < size - 1 else n_bins
-
-    # Print out the start and end bin for each rank
-    print(f"Process {rank} calculating values for lag bins {start_bin}-{end_bin}")
-
     if dim == 2:
         # Technically we only need rank 0 to do the following set-up,
         # but it's easier to have all ranks do it in parallel and avoid broadcasting
         inputs = inputs[inputs["gap_handling"] == gap_handling]
-        x = inputs["lag"]
-        y = inputs[missing_measure]
-
-        # Can use np.histogram2d to get the linear bin edges for 2D
-        xedges = (
-            np.logspace(0, np.log10(x.max()), n_bins + 1) - 0.01
-        )  # so that first lag bin starts just before 1
-        xedges[-1] = x.max() + 1
-        yedges = np.linspace(0, 100, n_bins + 1)  # Missing prop
 
         # Calculate the mean value in each bin
         xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing

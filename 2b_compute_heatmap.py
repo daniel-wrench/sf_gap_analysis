@@ -1,21 +1,14 @@
-# 2b. FOR ALL INTERVALS IN TRAINING SET: calculate correction
+# Read in just the "sfs_gapped" key value from a pickle file
+# and print it to stdout
 
 import pickle
-import pandas as pd
-import numpy as np
-import src.sf_funcs as sf
 import glob
+from matplotlib import pyplot as plt
+import numpy as np
+import pandas as pd
+import sys
+
 import src.params as params
-import matplotlib.pyplot as plt
-import warnings
-# import matplotlib.cbook
-
-# warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
-
-# Annoying deprecation warning
-
-# plt.rc("text", usetex=True)
-# plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # For parallel correction calculation
 try:
@@ -42,217 +35,112 @@ except ImportError:
             return data
 
     MPI = FakeMPI()
+
 comm = MPI.COMM_WORLD if mpi_available else MPI
 rank = comm.Get_rank()
 size = comm.Get_size()
 
+
 data_path_prefix = params.data_path_prefix
 
-if rank == 0:
-    spacecraft = "psp"
-    input_file_list = [
-        sorted(
-            glob.glob(
-                f"{data_path_prefix}data/processed/{spacecraft}/train/{spacecraft}_*.pkl"
-            )
-        )
-    ][0]
+spacecraft = "psp"
+gap_handling = "lint"
+missing_measure = "missing_percent"
 
-    # Randomly shuffle the list of files, to get a better distribution of # intervals within files when testing with
-    # just a sample
-    np.random.shuffle(input_file_list)
+file_index_test = int(sys.argv[1])
+dim = int(sys.argv[2])
+n_bins = int(sys.argv[3])
 
-    (
-        files_metadata,
-        ints_metadata,
-        _,
-        ints_gapped_metadata,
-        _,
-        sfs,
-        sfs_gapped,
-    ) = sf.load_and_concatenate_dataframes(
-        input_file_list[:10], limit=True
-    )  ######## LIMIT N FILES HERE ! ! ! #########
 
-    print(
-        "Successfully read in and concatenated {} files, starting with {}\nThese comprise a total of {} gapped intervals".format(
-            len(files_metadata), input_file_list[0], len(ints_gapped_metadata)
+input_file_list = [
+    sorted(
+        glob.glob(
+            f"{data_path_prefix}data/processed/{spacecraft}/train/{spacecraft}_*v02.pkl"
         )
     )
+][0]
 
-    # Print summary stats of tc
-    print("\nSummary stats of correlation time, across original files:")
-    print(files_metadata["tc"].describe())
+try:
+    with open(input_file_list[file_index_test], "rb") as file:
+        data = pickle.load(file)
+        sfs_gapped = data["sfs_gapped"]
+        sfs = data["sfs"]
+        del data
+except pickle.UnpicklingError:
+    print(f"UnpicklingError encountered in file: {file}. Skipping this file.")
+except EOFError:
+    print(f"EOFError encountered in file: {file}. Skipping this file.")
+except Exception as e:
+    print(f"An unexpected pe {e} occurred with file: {file}. Skipping this file.")
 
-    # Print summary stats of slope
-    print("\nSummary stats of slope, across original (sub-)intervals:")
-    print(ints_metadata["slope"].describe())
+print(
+    f"Grouping sf errors using {gap_handling} into {dim}x{n_bins} bins for {input_file_list[file_index_test]}"
+)
 
-    # Calculate lag-scale errors (sf_2_pe)
-    # Join original and copies dataframes and do column operation
-    sfs_gapped = pd.merge(
-        sfs,
-        sfs_gapped,
-        how="inner",
-        on=["file_index", "int_index", "lag"],
-        suffixes=("_orig", ""),
-    )
-    sfs_gapped["sf_2_pe"] = (
-        (sfs_gapped["sf_2"] - sfs_gapped["sf_2_orig"]) / sfs_gapped["sf_2_orig"] * 100
-    )
+# Calculate lag-scale pe (sf_2_pe)
+# Join original and copies dataframes and do column operation
+sfs_gapped = pd.merge(
+    sfs,
+    sfs_gapped,
+    how="inner",
+    on=["file_index", "int_index", "lag"],
+    suffixes=("_orig", ""),
+)
+sfs_gapped["sf_2_pe"] = (
+    (sfs_gapped["sf_2"] - sfs_gapped["sf_2_orig"]) / sfs_gapped["sf_2_orig"] * 100
+)
 
-    for gap_handling in sfs_gapped.gap_handling.unique():
-        sf.plot_error_trend_line(
-            sfs_gapped[sfs_gapped["gap_handling"] == gap_handling],
-            estimator="sf_2",
-            title=f"SF estimation error ({gap_handling}) vs. lag and global sparsity",
-            y_axis_log=True,
-        )
-        plt.savefig(
-            f"plots/temp/train_{spacecraft}_error_trend_{gap_handling}.png",
-            bbox_inches="tight",
-        )
+inputs = sfs_gapped[sfs_gapped["gap_handling"] == gap_handling]
 
-        del sfs, ints_gapped_metadata
+x = inputs["lag"]
+y = inputs[missing_measure]
+z = inputs["sf_2"]
 
-else:
-    sfs_gapped = None  # Placeholder for the data
+# Can use np.histogram2d to get the linear bin edges for 2D
+max_lag = params.int_length * params.max_lag_prop
+xedges = (
+    np.logspace(0, np.log10(max_lag), n_bins + 1) - 0.01
+)  # so that first lag bin starts just before 1
+xedges[-1] = max_lag + 1
+yedges = np.linspace(0, 100, n_bins + 1)  # Missing prop
+zedges = np.logspace(-2, 1, n_bins + 1)  # ranges from 0.01 to 10
 
-# Broadcast the data to all ranks, if MPI is available
-if mpi_available:
-    sfs_gapped = comm.bcast(sfs_gapped, root=0)
+# Calculate the mean value in each bin
+xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing
+yidx = np.digitize(y, yedges) - 1  # as above
+zidx = np.digitize(z, zedges) - 1
 
-# Compute and export correction factors, plot as heatmaps
+if dim == 2:
+    pe = np.full((n_bins, n_bins), dtype=object, fill_value=np.nan)
 
-n_bins_list = params.n_bins_list
+    # For every x and y bin, save all the values of sf_2_pe (not the mean) in those bins to an array
+    for i in range(n_bins):
+        for j in range(n_bins):
+            if len(x[(xidx == i) & (yidx == j)]) > 0:
+                pe[i, j] = inputs["sf_2_pe"][(xidx == i) & (yidx == j)].values
 
-for n_bins in n_bins_list:
-    for gap_handling in ["naive", "lint"]:
-        for dim in [2, 3]:
-            print(
-                "Process {} calculating {}D heatmap for {} with {} bins".format(
-                    rank, dim, gap_handling, n_bins
-                )
-            )
+elif dim == 3:
+    if gap_handling == "lint":
+        pe = np.full((n_bins, n_bins, n_bins), dtype=object, fill_value=np.nan)
 
-            if dim == 2:
-                (
-                    xedges,
-                    yedges,
-                    pe_mean,
-                    pe_std,
-                    pe_min,
-                    pe_max,
-                    n,
-                    scaling,
-                    scaling_lower,
-                    scaling_upper,
-                ) = sf.get_correction_lookup(
-                    sfs_gapped, "missing_percent", dim, comm, gap_handling, n_bins
-                )
-            elif dim == 3:
-                if gap_handling == "naive":
-                    # Not interested in 3D heatmaps for this case
-                    pass
-                (
-                    xedges,
-                    yedges,
-                    zedges,
-                    pe_mean,
-                    pe_std,
-                    pe_min,
-                    pe_max,
-                    n,
-                    scaling,
-                    scaling_lower,
-                    scaling_upper,
-                ) = sf.get_correction_lookup(
-                    sfs_gapped, "missing_percent", dim, comm, gap_handling, n_bins
-                )
+        for i in range(n_bins):
+            for j in range(n_bins):
+                for k in range(n_bins):
+                    if len(x[(xidx == i) & (yidx == j) & (zidx == k)]) > 0:
+                        pe[i, j, k] = inputs["sf_2_pe"][
+                            (xidx == i) & (yidx == j) & (zidx == k)
+                        ].values
 
-            if mpi_available:
-                # Gather results from all ranks
-                all_pe_mean = comm.gather(pe_mean, root=0)
-                all_pe_std = comm.gather(pe_std, root=0)
-                all_pe_min = comm.gather(pe_min, root=0)
-                all_pe_max = comm.gather(pe_max, root=0)
-                all_n = comm.gather(n, root=0)
-                all_scaling = comm.gather(scaling, root=0)
-                all_scaling_lower = comm.gather(scaling_lower, root=0)
-                all_scaling_upper = comm.gather(scaling_upper, root=0)
 
-            if rank == 0:
-                # I expect to see RuntimeWarnings in this block
-                if mpi_available:
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", category=RuntimeWarning)
-                        pe_mean = np.nanmean(all_pe_mean, axis=0)
-                        pe_std = np.nanmean(all_pe_std, axis=0)
-                        pe_min = np.nanmean(all_pe_min, axis=0)
-                        pe_max = np.nanmean(all_pe_max, axis=0)
-                        n = np.nanmean(all_n, axis=0)
-                        scaling = np.nanmean(all_scaling, axis=0)
-                        scaling_lower = np.nanmean(all_scaling_lower, axis=0)
-                        scaling_upper = np.nanmean(all_scaling_upper, axis=0)
-
-                if dim == 2:
-                    # Export these arrays in an efficient manner
-                    correction_lookup = {
-                        "xedges": xedges,
-                        "yedges": yedges,
-                        "scaling": scaling,
-                        "scaling_lower": scaling_lower,
-                        "scaling_upper": scaling_upper,
-                        "pe_mean": pe_mean,
-                        "pe_std": pe_std,
-                        "pe_min": pe_min,
-                        "pe_max": pe_max,
-                        "n": n,
-                    }
-
-                if dim == 3:  # has zedges too
-                    # Export these arrays in an efficient manner
-                    correction_lookup = {
-                        "xedges": xedges,
-                        "yedges": yedges,
-                        "zedges": zedges,
-                        "scaling": scaling,
-                        "scaling_lower": scaling_lower,
-                        "scaling_upper": scaling_upper,
-                        "pe_mean": pe_mean,
-                        "pe_std": pe_std,
-                        "pe_min": pe_min,
-                        "pe_max": pe_max,
-                        "n": n,
-                    }
-
-                # Export the LINT lookup tables as a pickle file
-                if gap_handling == "lint":
-                    with open(
-                        f"data/processed/correction_lookup_{dim}d_{n_bins}_bins.pkl",
-                        "wb",
-                    ) as f:
-                        pickle.dump(correction_lookup, f)
-
-                # Plot a heatmap of the correction lookup table
-
-                if gap_handling == "naive" and dim == 3:
-                    # Not interested in 3D heatmaps for this case
-                    pass
-                else:
-                    sf.plot_correction_heatmap(
-                        correction_lookup, dim, gap_handling, n_bins
-                    )
-
-    # Potential future sample size analysis
-
-    # Get proportion of nans in the flattened array
-    # print(np.isnan(heatmap_bin_counts_2d.flatten()).sum() / len(heatmap_bin_counts_2d.flatten())*100, "% of bins in the grid have no corresponding data")
-
-    # Summarise this array in terms of proportion of missing values, minimum value, and median value
-    # print(np.nanmedian(heatmap_bin_counts_2d), "is the median count of each bin")
-
-    # For each heatmap, print these stats.
-    # Also, for the correction part, note when there is no corresponding bin.
-
-# Other plots of error trends
+output_file_path = (
+    input_file_list[file_index_test]
+    .replace("train", "train/errors")
+    .replace(".pkl", f"_pe_{dim}d_{n_bins}_bins_{gap_handling}.pkl")
+)
+# Export the pe array in an efficient manner
+with open(
+    output_file_path,
+    "wb",
+) as f:
+    pickle.dump(pe, f)
+    print(f"Saved binned error array to {output_file_path}")

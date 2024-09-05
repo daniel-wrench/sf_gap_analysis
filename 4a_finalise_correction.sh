@@ -1,8 +1,8 @@
-#!/bin/bash -e
+#!/bin/bash
 
-#SBATCH --job-name          4_compute_test_results
-#SBATCH --mem               5G
-#SBATCH --time              00:02:00
+#SBATCH --job-name          4a_finalise_correction
+#SBATCH --mem               1 
+#SBATCH --time              00:05:00
 #SBATCH --output            logs/%x_%j.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
@@ -12,14 +12,16 @@ source venv/bin/activate
 # If running (locally) on Windows, may need to change above lines to the following: 
 #source venv/Scripts/activate
 
+dim=2
+echo "DIM: $dim"
+n_bins=10
+echo "N_BINS: $n_bins"
+
+
 echo "JOB STARTED"
 date
 
-spacecraft=psp
-
-for n_bins in 15 20; do
-python 4_compute_test_results.py $spacecraft $n_bins
-done
+python 4a_finalise_correction.py $dim $n_bins
 
 echo "JOB FINISHED"
 date

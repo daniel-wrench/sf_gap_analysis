@@ -215,9 +215,9 @@ def plot_sample(
         ax[i, 0].plot(good_input[input_ind].values, color="grey", lw=0.8)
         ax[i, 0].plot(other_inputs_plot[i], color="black", lw=0.8)
 
-        # Add the missing \% as an annotation in the top left
+        # Add the missing % as an annotation in the top left
         ax[i, 0].annotate(
-            f"{missing*100:.2f}\% missing",
+            f"{missing*100:.2f}% missing",
             xy=(1, 1),
             xycoords="axes fraction",
             xytext=(0.05, 0.9),
@@ -251,7 +251,7 @@ def plot_sample(
             ax[i, ncols - 1].plot(
                 other_outputs_plot[i]["missing_prop"] * 100,
                 color="black",
-                label="\% pairs missing",
+                label="% pairs missing",
             )
             ax[i, ncols - 1].semilogx()
             ax[i, ncols - 1].set_ylim(0, 100)
@@ -261,7 +261,7 @@ def plot_sample(
             ax2.plot(
                 other_outputs_plot[i][estimator + "_pe"],
                 color=colors[est_ind],
-                label="\% error",
+                label="% error",
                 lw=0.8,
             )
 
@@ -270,7 +270,7 @@ def plot_sample(
             ax2.axhline(0, color="C0", linestyle="--")
             if i == 0:
                 ax2.annotate(
-                    "\% error",
+                    "% error",
                     xy=(1, 1),
                     xycoords="axes fraction",
                     xytext=(0.75, 0.9),
@@ -357,7 +357,7 @@ def plot_sample(
     # ax[0, 1].legend(loc="lower right", frameon=True)
 
     ax[0, ncols - 1].annotate(
-        "\% pairs missing",
+        "% pairs missing",
         xy=(1, 1),
         xycoords="axes fraction",
         xytext=(0.05, 0.9),
@@ -424,12 +424,6 @@ def load_and_concatenate_dataframes(pickle_files, limit=False):
     sfs = concatenated_dataframes["sfs"]
     sfs_gapped = concatenated_dataframes["sfs_gapped"]
 
-    if limit is True:
-        sfs_gapped = sfs_gapped[
-            ["file_index", "int_index", "lag", "sf_2", "missing_percent"]
-        ]
-        sfs = sfs[["file_index", "int_index", "lag", "sf_2", "missing_percent"]]
-
     return (
         files_metadata,
         ints_metadata,
@@ -460,8 +454,8 @@ def plot_error_trend_line(
     )
     # median_error = other_outputs_df.groupby("lag")[estimator + "_pe"].median()
     mean_error = other_outputs_df.groupby("lag")[estimator + "_pe"].mean()
-    # plt.plot(median_error, color="g", lw=4, label="Median \% error")
-    plt.plot(mean_error, color="c", lw=4, label="Mean \% error")
+    # plt.plot(median_error, color="g", lw=4, label="Median % error")
+    plt.plot(mean_error, color="c", lw=4, label="Mean % error")
 
     # plt.annotate(
     #     "MAPE = {0:.2f}".format(other_outputs_df[estimator + "_pe"].abs().mean()),
@@ -473,7 +467,7 @@ def plot_error_trend_line(
     # )
 
     cb = plt.colorbar()
-    cb.set_label("\% missing overall")
+    cb.set_label("% missing overall")
     # Change range of color bar
     plt.hlines(0, 1, other_outputs_df.lag.max(), color="black", linestyle="--")
     plt.clim(0, 100)
@@ -482,13 +476,13 @@ def plot_error_trend_line(
     if y_axis_log is True:
         plt.yscale("symlog", linthresh=1e2)
     plt.xlabel("Lag ($\\tau$)")
-    plt.ylabel("\% error")
+    plt.ylabel("% error")
     plt.legend(loc="upper left")
     # plt.show()
 
 
 def plot_error_trend_scatter(
-    bad_outputs_df, interp_outputs_df, title="Overall \% error vs. sparsity"
+    bad_outputs_df, interp_outputs_df, title="Overall % error vs. sparsity"
 ):
     fig, ax = plt.subplots(figsize=(6, 3), tight_layout=True)
     sfn_mape = bad_outputs_df.groupby("missing_percent_overall")["sf_2_pe"].agg(
@@ -529,171 +523,150 @@ def plot_error_trend_scatter(
     # plt.show()
 
 
-def get_correction_lookup(
-    inputs, missing_measure, dim, comm, gap_handling="lint", n_bins=25
-):
-    """Extract the mean error for each bin of lag and missing measure.
-    Args:
-        n_bins: The number of bins to use in each direction (x and y)
-    """
+# def get_correction_lookup(
+#     inputs, missing_measure, dim, comm, gap_handling="lint", n_bins=25
+# ):
+#     """Extract the mean error for each bin of lag and missing measure.
+#     Args:
+#         n_bins: The number of bins to use in each direction (x and y)
+#     """
 
-    comm = comm
-    rank = comm.Get_rank()
-    size = comm.Get_size()
+#     if dim == 2:
+#         # Technically we only need rank 0 to do the following set-up,
+#         # but it's easier to have all ranks do it in parallel and avoid broadcasting
+#         inputs = inputs[inputs["gap_handling"] == gap_handling]
 
-    # Split mean calculation across ranks
-    bins_per_rank = n_bins // size
-    start_bin = rank * bins_per_rank
-    end_bin = (rank + 1) * bins_per_rank if rank < size - 1 else n_bins
+#         # Calculate the mean value in each bin
+#         xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing
+#         yidx = np.digitize(y, yedges) - 1  # as above
 
-    # Print out the start and end bin for each rank
-    print(f"Process {rank} calculating values for lag bins {start_bin}-{end_bin}")
+#         pe_mean = np.full((n_bins, n_bins), fill_value=np.nan)
+#         pe_min = np.full((n_bins, n_bins), fill_value=np.nan)
+#         pe_max = np.full((n_bins, n_bins), fill_value=np.nan)
+#         pe_std = np.full((n_bins, n_bins), fill_value=np.nan)
+#         n = np.full((n_bins, n_bins), fill_value=np.nan)
+#         scaling = np.full((n_bins, n_bins), fill_value=np.nan)
+#         scaling_lower = np.full((n_bins, n_bins), fill_value=np.nan)
+#         scaling_upper = np.full((n_bins, n_bins), fill_value=np.nan)
 
-    if dim == 2:
-        # Technically we only need rank 0 to do the following set-up,
-        # but it's easier to have all ranks do it in parallel and avoid broadcasting
-        inputs = inputs[inputs["gap_handling"] == gap_handling]
-        x = inputs["lag"]
-        y = inputs[missing_measure]
+#         # Loop over every combination of bin: if there are any values
+#         # in that bin, calculate the mean and standard deviation
 
-        # Can use np.histogram2d to get the linear bin edges for 2D
-        xedges = (
-            np.logspace(0, np.log10(x.max()), n_bins + 1) - 0.01
-        )  # so that first lag bin starts just before 1
-        xedges[-1] = x.max() + 1
-        yedges = np.linspace(0, 100, n_bins + 1)  # Missing prop
+#         for i in range(start_bin, end_bin):
+#             for j in range(n_bins):
+#                 if len(x[(xidx == i) & (yidx == j)]) > 0:
+#                     current_bin_vals = inputs["sf_2_pe"][(xidx == i) & (yidx == j)]
 
-        # Calculate the mean value in each bin
-        xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing
-        yidx = np.digitize(y, yedges) - 1  # as above
+#                     pe_mean[i, j] = np.nanmean(current_bin_vals)
+#                     pe_std[i, j] = np.nanstd(current_bin_vals)
+#                     pe_min[i, j] = np.nanmin(current_bin_vals)
+#                     pe_max[i, j] = np.nanmax(current_bin_vals)
+#                     n[i, j] = len(current_bin_vals)
 
-        pe_mean = np.full((n_bins, n_bins), fill_value=np.nan)
-        pe_min = np.full((n_bins, n_bins), fill_value=np.nan)
-        pe_max = np.full((n_bins, n_bins), fill_value=np.nan)
-        pe_std = np.full((n_bins, n_bins), fill_value=np.nan)
-        n = np.full((n_bins, n_bins), fill_value=np.nan)
-        scaling = np.full((n_bins, n_bins), fill_value=np.nan)
-        scaling_lower = np.full((n_bins, n_bins), fill_value=np.nan)
-        scaling_upper = np.full((n_bins, n_bins), fill_value=np.nan)
+#                     scaling[i, j] = 1 / (1 + pe_mean[i, j] / 100)
+#                     scaling_lower[i, j] = 1 / (
+#                         1 + (pe_mean[i, j] + 1 * pe_std[i, j]) / 100
+#                     )
+#                     scaling_upper[i, j] = 1 / (
+#                         1 + (pe_mean[i, j] - 1 * pe_std[i, j]) / 100
+#                     )
 
-        # Loop over every combination of bin: if there are any values
-        # in that bin, calculate the mean and standard deviation
+#                 else:  # If there are no values in the bin, set scaling to 1
+#                     pe_mean[i, j] = np.nan
+#                     pe_std[i, j] = np.nan
+#                     pe_min[i, j] = np.nan
+#                     pe_max[i, j] = np.nan
+#                     n[i, j] = 0
+#                     scaling[i, j] = 1
+#                     scaling_lower[i, j] = 1
+#                     scaling_upper[i, j] = 1
 
-        for i in range(start_bin, end_bin):
-            for j in range(n_bins):
-                if len(x[(xidx == i) & (yidx == j)]) > 0:
-                    current_bin_vals = inputs["sf_2_pe"][(xidx == i) & (yidx == j)]
+#         return (
+#             xedges,
+#             yedges,
+#             pe_mean,
+#             pe_std,
+#             pe_min,
+#             pe_max,
+#             n,
+#             scaling,
+#             scaling_lower,
+#             scaling_upper,
+#         )
 
-                    pe_mean[i, j] = np.nanmean(current_bin_vals)
-                    pe_std[i, j] = np.nanstd(current_bin_vals)
-                    pe_min[i, j] = np.nanmin(current_bin_vals)
-                    pe_max[i, j] = np.nanmax(current_bin_vals)
-                    n[i, j] = len(current_bin_vals)
+#     elif dim == 3:  # now we add in z variable
+#         inputs = inputs[inputs["gap_handling"] == gap_handling]
+#         x = inputs["lag"]
+#         y = inputs[missing_measure]
+#         z = inputs["sf_2"]
 
-                    scaling[i, j] = 1 / (1 + pe_mean[i, j] / 100)
-                    scaling_lower[i, j] = 1 / (
-                        1 + (pe_mean[i, j] + 1 * pe_std[i, j]) / 100
-                    )
-                    scaling_upper[i, j] = 1 / (
-                        1 + (pe_mean[i, j] - 1 * pe_std[i, j]) / 100
-                    )
+#         # Can use np.histogram2d to get the linear bin edges for 2D
+#         xedges = (
+#             np.logspace(0, np.log10(x.max()), n_bins + 1) - 0.01
+#         )  # so that first lag bin starts just before 1
+#         xedges[-1] = x.max() + 1
+#         yedges = np.linspace(0, 100, n_bins + 1)  # Missing prop
+#         zedges = np.logspace(-2, 1, n_bins + 1)  # ranges from 0.01 to 10
 
-                else:  # If there are no values in the bin, set scaling to 1
-                    pe_mean[i, j] = np.nan
-                    pe_std[i, j] = np.nan
-                    pe_min[i, j] = np.nan
-                    pe_max[i, j] = np.nan
-                    n[i, j] = 0
-                    scaling[i, j] = 1
-                    scaling_lower[i, j] = 1
-                    scaling_upper[i, j] = 1
+#         # Calculate the mean value in each bin
+#         xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing
+#         yidx = np.digitize(y, yedges) - 1  # as above
+#         zidx = np.digitize(z, zedges) - 1  # as above
 
-        return (
-            xedges,
-            yedges,
-            pe_mean,
-            pe_std,
-            pe_min,
-            pe_max,
-            n,
-            scaling,
-            scaling_lower,
-            scaling_upper,
-        )
+#         pe_mean = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+#         pe_min = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+#         pe_max = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+#         pe_std = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+#         n = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+#         scaling = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+#         scaling_lower = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+#         scaling_upper = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
 
-    elif dim == 3:  # now we add in z variable
-        inputs = inputs[inputs["gap_handling"] == gap_handling]
-        x = inputs["lag"]
-        y = inputs[missing_measure]
-        z = inputs["sf_2"]
+#         for i in range(start_bin, end_bin):
+#             for j in range(n_bins):
+#                 for k in range(n_bins):
+#                     if len(x[(xidx == i) & (yidx == j) & (zidx == k)]) > 0:
+#                         current_bin_vals = inputs["sf_2_pe"][
+#                             (xidx == i) & (yidx == j) & (zidx == k)
+#                         ]
 
-        # Can use np.histogram2d to get the linear bin edges for 2D
-        xedges = (
-            np.logspace(0, np.log10(x.max()), n_bins + 1) - 0.01
-        )  # so that first lag bin starts just before 1
-        xedges[-1] = x.max() + 1
-        yedges = np.linspace(0, 100, n_bins + 1)  # Missing prop
-        zedges = np.logspace(-2, 1, n_bins + 1)  # ranges from 0.01 to 10
+#                         pe_mean[i, j, k] = np.nanmean(current_bin_vals)
+#                         pe_std[i, j, k] = np.nanstd(current_bin_vals)
+#                         pe_min[i, j, k] = np.nanmin(current_bin_vals)
+#                         pe_max[i, j, k] = np.nanmax(current_bin_vals)
+#                         n[i, j, k] = len(current_bin_vals)
 
-        # Calculate the mean value in each bin
-        xidx = np.digitize(x, xedges) - 1  # correcting for annoying 1-indexing
-        yidx = np.digitize(y, yedges) - 1  # as above
-        zidx = np.digitize(z, zedges) - 1  # as above
+#                         scaling[i, j, k] = 1 / (1 + pe_mean[i, j, k] / 100)
+#                         scaling_lower[i, j, k] = 1 / (
+#                             1 + (pe_mean[i, j, k] + 1 * pe_std[i, j, k]) / 100
+#                         )
+#                         scaling_upper[i, j, k] = 1 / (
+#                             1 + (pe_mean[i, j, k] - 1 * pe_std[i, j, k]) / 100
+#                         )
 
-        pe_mean = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
-        pe_min = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
-        pe_max = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
-        pe_std = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
-        n = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
-        scaling = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
-        scaling_lower = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
-        scaling_upper = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
+#                     else:  # If there are no values in the bin, set scaling to 1
+#                         pe_mean[i, j, k] = np.nan
+#                         pe_std[i, j, k] = np.nan
+#                         pe_min[i, j, k] = np.nan
+#                         pe_max[i, j, k] = np.nan
+#                         n[i, j, k] = 0
+#                         scaling[i, j, k] = 1
+#                         scaling_lower[i, j, k] = 1
+#                         scaling_upper[i, j, k] = 1
 
-        for i in range(start_bin, end_bin):
-            for j in range(n_bins):
-                for k in range(n_bins):
-                    if len(x[(xidx == i) & (yidx == j) & (zidx == k)]) > 0:
-                        current_bin_vals = inputs["sf_2_pe"][
-                            (xidx == i) & (yidx == j) & (zidx == k)
-                        ]
-
-                        pe_mean[i, j, k] = np.nanmean(current_bin_vals)
-                        pe_std[i, j, k] = np.nanstd(current_bin_vals)
-                        pe_min[i, j, k] = np.nanmin(current_bin_vals)
-                        pe_max[i, j, k] = np.nanmax(current_bin_vals)
-                        n[i, j, k] = len(current_bin_vals)
-
-                        scaling[i, j, k] = 1 / (1 + pe_mean[i, j, k] / 100)
-                        scaling_lower[i, j, k] = 1 / (
-                            1 + (pe_mean[i, j, k] + 1 * pe_std[i, j, k]) / 100
-                        )
-                        scaling_upper[i, j, k] = 1 / (
-                            1 + (pe_mean[i, j, k] - 1 * pe_std[i, j, k]) / 100
-                        )
-
-                    else:  # If there are no values in the bin, set scaling to 1
-                        pe_mean[i, j, k] = np.nan
-                        pe_std[i, j, k] = np.nan
-                        pe_min[i, j, k] = np.nan
-                        pe_max[i, j, k] = np.nan
-                        n[i, j, k] = 0
-                        scaling[i, j, k] = 1
-                        scaling_lower[i, j, k] = 1
-                        scaling_upper[i, j, k] = 1
-
-        return (
-            xedges,
-            yedges,
-            zedges,
-            pe_mean,
-            pe_std,
-            pe_min,
-            pe_max,
-            n,
-            scaling,
-            scaling_lower,
-            scaling_upper,
-        )
+#         return (
+#             xedges,
+#             yedges,
+#             zedges,
+#             pe_mean,
+#             pe_std,
+#             pe_min,
+#             pe_max,
+#             n,
+#             scaling,
+#             scaling_lower,
+#             scaling_upper,
+#         )
 
 
 def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=25):
@@ -715,12 +688,15 @@ def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=
         plt.clim(-100, 100)
         plt.xlabel("Lag ($\\tau$)")
         plt.ylabel("Missing percentage")
-        plt.title(f"Distribution of missing proportion and lag ({gap_handling})", y=1.1)
+        plt.title(
+            f"Distribution of missing proportion and lag ({gap_handling.upper()})",
+            y=1.1,
+        )
         ax.set_facecolor("black")
         ax.set_xscale("log")
 
         plt.savefig(
-            f"plots/temp/train_heatmap_{n_bins}bins_{dim}d_{gap_handling}.png",
+            f"plots/temp/train_heatmap_{n_bins}bins_{dim}d_{gap_handling.upper()}.png",
         )
 
     elif dim == 3:
@@ -756,7 +732,7 @@ def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=
                 ax[i].set_ylabel("")
 
         plt.savefig(
-            f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_power.png",
+            f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.png",
             bbox_inches="tight",
         )
         plt.close()
@@ -788,7 +764,7 @@ def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=
                 ax[i].set_ylabel("")
 
         plt.savefig(
-            f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_lag.png",
+            f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.png",
             bbox_inches="tight",
         )
         plt.close()
@@ -822,7 +798,7 @@ def plot_correction_heatmap(correction_lookup, dim, gap_handling="lint", n_bins=
                 ax[i].set_ylabel("")
 
         plt.savefig(
-            f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling}_missing.png",
+            f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.png",
             bbox_inches="tight",
         )
         plt.close()

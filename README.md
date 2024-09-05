@@ -9,18 +9,7 @@
     - Average intervals/file = 3.5
 - Trained on 20,000 intervals, 25x785 PSP intervals (=2.5 months, coming from first 300 processed files), 15,20,25 bins, outdated slope range *takes about 3.5 hours*
 
-![alt text](train_psp_heatmap_10bins_3d_lint_lag.png) 
-![alt text](train_psp_heatmap_10bins_3d_lint_missing.png) 
-![alt text](train_psp_heatmap_10bins_3d_lint_power.png)
-
-
-- Tested on 25x175 PSP intervals (=43 days)
-
-![alt text](plots/temp/test_psp_scatterplots_25_bins.png)
-
-- Tested on 25x40 Wind intervals (=20 days, coming from first 20 raw files, as above)
-
-![alt text](plots/temp/test_wind_scatterplots_25_bins_old.png)
+![alt text](plots/temp/raapoi_test/test_wind_scatterplots_25_bins.png)
 
 - Draft manuscript completed with these results; likely to be only minor updates with latest numbers and figs. Important to scale up analysis to populate heatmaps better, as well as using vector stats and better range (50-500 lags = 5-50% of $\lambda_C$)
 - *NB: Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints*
@@ -30,6 +19,8 @@
 ### Analysis
 
 1. **Parallelise heatmap calculation.** 
+    - **NEW APPROACH: Do by file instead, each core reads a number of files: saves the errors in a 20x20x20 array.**
+    - Then when they're all merged in a serial job, we can calculate the mean, std, median, whatever we want, and get the correction intervals.
     - ~~Simplify heatmap part~~
     - ~~Simplify correction part~~
     - ~~Move existing plots~~
@@ -37,12 +28,13 @@
     - ~~Run old pipeline on NESI subset on tiny subset~~
     - ~~Do all plots locally with proper Latex~~
     - ~~Note time and download stats, pull~~
-    - Run again, compare time and stats
-    - Make parallel, using gpt help: test locally, running for different ranges of lags then outputting these subranges, then merging them together again
-    - Test locally
-    - Push
-    - Run again, compare time and stats
+    - ~~Run again, compare time and stats~~
+    - ~~Make parallel, using gpt help: test locally, running for different ranges of lags then outputting these subranges, then merging them together again~~
+    - ~~Test locally~~
+    - ~~Push~~
+    - ~~Run again, compare time and stats~~
     - Scaling study of this step 
+    - *Rank 0 is likely causing very uneven mem usage across processes. Scale back to 10 files, and try to reduce this imbalance by only reading in necessary data objects.
     - Tidy up plots and work on manuscript, while waiting for heatmap to run.
 4. **Choose #bins based on PSP data, report final results on Wind data**
 3. Potentially investigate smoothing and error bars - do they look OK as is?
@@ -57,6 +49,7 @@
 *Chat with Tulasi when have final figures*
 
 1. ~~Finish first draft of paper~~
+2. Change colours of standardisation plot, make more obvious
 2. Depending on final results, prob remove slope APE from scatterplots, just have boxplots separately. Potentially make corrected taylor scale style plot
 3. Get Latex error trend lines for subset of full results, still shows same pattern
 2. Check Google Doc, Notion for notes, comments
@@ -64,6 +57,7 @@
 2. Make consistent (Latex) font, and specify sizes to match specifications in Overleaf
 
 ### Notes
+- Calculate sf_2_pe in 1_compute_sfs? Currently not to have somewhat simpler calculation once corrected, but also leading to some duplication of code, especially if we want the error trend line plots.
 - Look at nn_seff files in more depth: likely want to run multiple files/core on step 3 due to low mem usage
 - Processed PSP and Wind files are between 32 (~400MB used in step 1) and 156MB (~300MB) each
 - ~~Add true SFs to case study plots. Will require re-jig of `ints` df~~
@@ -157,35 +151,57 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     (make sure you have `module load`ed Python if on an HPC first)
 
-    `python 2a_train_test_split.py`
+    `python 2_train_test_split.py`
 
 
 4. **Compute the correction factor from all training set files**
 
-    `python 2b_compute_heatmap.py`
+    Local:
 
-    `sbatch 2b_compute_heatmap.sh`
+    In `3_bin_errors.sh`, change `start_index` to 0 
+    
+    `bash 3_bin_errors.sh`
 
+    HPC: 
+    
+    In `3_bin_errors.py`, adjust `data_prefix_path`, depending on where you are storing the data
+
+    `sbatch 3_bin_errors.sh`
+    
     - 10 files, 15,20,25 bins **=1350 gapped ints = 7min 3GB**
     - 20 files '': 15min, 5GB **=2300 gapped ints = 9min 4GB**
     - **AVERAGE OF 5 INTERVALS PER FILE**
 
-    - **10min, 3GB per 10 files (1750 gapped ints).**
+    - ***10min, 3GB per 10 files (1750 gapped ints).***
+    - ***PARALLEL: 5min, 3GB/core for 10 files, 5 cores***\
+    - ***PARALLEL: 3min, 4GB/core for 15 files, 15 cores***
+
+
     - For 200 files, = **=17,700 gapped ints = 135min, 32GB**
     - For 1000 files **latest results here**
 
+4. **Merge the binned errors and calculate the correction factor**
+
+    Local: `bash 4a_finalise_correction.sh`
+
+    HPC: `sbatch 4a_finalise_correction.sh`
+
+5. **Calculate the stats (average slope and corr time, error trend lines) for the training set** (not necessary for correction factor)
+
+    `bash 4b_compute_training_stats.sh`
+
 5. **Perform the correction on the test set, file by file**
 
-    Local: `for i in $(seq 0 5); do python 3_correct_test_sfs.py $spacecraft $i $n_bins; done`
+    Local: `for i in $(seq 0 1); do python 5_correct_test_sfs.py $spacecraft $i $n_bins; done`
 
-    HPC: `sbatch 3_correct_test_sfs.sh`
+    HPC: `sbatch 5_correct_test_sfs.sh`
 
     - 20min and 1GB/file (15,20,25 bins)
     - **0-3min (prev 4-11) and 200-600MB/file (15,20)**
 
 6. **Compute the statistical results for all (corrected) test set files**
 
-    `sbatch 4_compute_test_results.sh`
+    `bash/sbatch 6_compute_test_stats.sh`
 
     Reqs: 
 
@@ -201,6 +217,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 7.  **Plot the test set results**
      (If on an HPC, download the above output at this step, as well as the heatmaps  and the **FIRST**  2-3 individual corrected pickle files for plotting case studies from) 
-    `python 5a_plot_test_overall.py {spacecraft} {n_bins}`
+    `python 7a_plot_test_overall.py {spacecraft} {n_bins}`
 
-    `python 5b_plot_test_case_studies.py  {spacecraft} {n_bins}`
+    `python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`
+
+    *For some reason this last one throws an error if running from the terminal, but is fine if running interactively*

@@ -14,8 +14,10 @@ times_to_gap = params.times_to_gap
 pwrl_range = params.pwrl_range
 data_path_prefix = params.data_path_prefix
 n_bins_list = params.n_bins_list
-spacecraft=sys.argv[1]
-file_index_test=int(sys.argv[2])
+spacecraft = sys.argv[1]
+file_index_test = int(sys.argv[2])
+
+full_output = True
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
@@ -29,16 +31,29 @@ elif spacecraft == "psp":
 else:
     raise ValueError("Spacecraft must be 'psp' or 'wind'")
 
-(
-    files_metadata,
-    ints_metadata,
-    ints,
-    ints_gapped_metadata,
-    ints_gapped,
-    sfs,
-    sfs_gapped,
-) = sf.load_and_concatenate_dataframes([input_file_list[file_index_test]])
-print(f"Loaded {input_file_list[file_index_test]}")
+file = input_file_list[file_index_test]
+try:
+    with open(file, "rb") as f:
+        data = pickle.load(f)
+except pickle.UnpicklingError:
+    print(f"UnpicklingError encountered in file: {file}.")
+except EOFError:
+    print(f"EOFError encountered in file: {file}.")
+except Exception as e:
+    print(f"An unexpected error {e} occurred with file: {file}.")
+
+# Unpack the dictionary
+files_metadata = data["files_metadata"]
+ints_metadata = data["ints_metadata"]
+ints = data["ints"]
+ints_gapped_metadata = data["ints_gapped_metadata"]
+ints_gapped = data["ints_gapped"]
+sfs = data["sfs"]
+sfs_gapped = data["sfs_gapped"]
+
+print(
+    f"Successfully read in {input_file_list[file_index_test]}. This contains {len(ints_metadata)}x{times_to_gap} intervals"
+)
 
 
 for n_bins in n_bins_list:
@@ -48,7 +63,6 @@ for n_bins in n_bins_list:
     with open(f"data/processed/correction_lookup_3d_{n_bins}_bins.pkl", "rb") as f:
         correction_lookup_3d = pickle.load(f)
 
-
     spacecraft = sys.argv[1]  # "psp" or "wind"
     file_index_test = int(sys.argv[2])
     # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
@@ -57,7 +71,9 @@ for n_bins in n_bins_list:
     print(
         f"Correcting {len(ints_metadata)} intervals using 2D error heatmap with {n_bins} bins"
     )
-    sfs_lint_corrected_2d = sf.compute_scaling(sfs_gapped, 2, correction_lookup_2d, n_bins)
+    sfs_lint_corrected_2d = sf.compute_scaling(
+        sfs_gapped, 2, correction_lookup_2d, n_bins
+    )
 
     print(
         f"Correcting {len(ints_metadata)} intervals using 3D error heatmap with {n_bins} bins"
@@ -65,7 +81,6 @@ for n_bins in n_bins_list:
     sfs_lint_corrected_2d_3d = sf.compute_scaling(
         sfs_lint_corrected_2d, 3, correction_lookup_3d, n_bins
     )
-
 
     correction_wide = sfs_lint_corrected_2d_3d[
         [
@@ -113,9 +128,15 @@ for n_bins in n_bins_list:
         correction_long,
         correction_bounds_long,
         how="inner",
-        on=["file_index", "int_index", "version", "lag", "missing_percent", "gap_handling"],
+        on=[
+            "file_index",
+            "int_index",
+            "version",
+            "lag",
+            "missing_percent",
+            "gap_handling",
+        ],
     ).reset_index()
-
 
     # Adding the corrections, now as a form of "gap_handling", back to the gapped SF dataframe
     sfs_gapped_corrected = pd.concat([sfs_gapped, corrections_long])
@@ -129,12 +150,10 @@ for n_bins in n_bins_list:
         suffixes=("_orig", ""),
     )
 
-
     # Calculate lag-scale errors (sf_2_pe)
     # This is the first time we calculate these errors, for this specific dataset (they were calculated before for the training set)
     #
     # Previously this didn't work as we had two sf_2_orig columns as the result of merging a dataframe that had already previously been merged. However, this initial merge is no longer taking place, as it is only now that we are calculating any errors *of any sort, including lag-specific ones*, for this particular dataset.
-
 
     sfs_gapped_corrected["sf_2_pe"] = (
         (sfs_gapped_corrected["sf_2"] - sfs_gapped_corrected["sf_2_orig"])
@@ -142,10 +161,8 @@ for n_bins in n_bins_list:
         * 100
     )
 
-
     # Calculate interval-scale errors
     # This is the first time we do this. We do not need these values for the training set, because we only use that for calculating the correction factor, which uses lag-scale errors..
-
 
     # Adding rows as placeholders for when we correct with 2D and 3D heatmaps and want to calculate errors
 
@@ -153,7 +170,6 @@ for n_bins in n_bins_list:
         ["naive", "lint"], ["corrected_2d", "corrected_3d"]
     )
     ints_gapped_metadata = pd.concat([ints_gapped_metadata, dup_df])
-
 
     for i in files_metadata.file_index.unique():
         for j in range(len(ints_metadata["file_index"] == i)):
@@ -173,7 +189,9 @@ for n_bins in n_bins_list:
                                 (sfs_gapped_corrected["file_index"] == i)
                                 & (sfs_gapped_corrected["int_index"] == j)
                                 & (sfs_gapped_corrected["version"] == k)
-                                & (sfs_gapped_corrected["gap_handling"] == gap_handling),
+                                & (
+                                    sfs_gapped_corrected["gap_handling"] == gap_handling
+                                ),
                                 "sf_2_pe",
                             ]
                         )
@@ -231,7 +249,6 @@ for n_bins in n_bins_list:
                         "slope",
                     ] = slope
 
-
     slope = np.polyfit(
         np.log(
             current_int.loc[
@@ -250,7 +267,6 @@ for n_bins in n_bins_list:
         1,
     )[0]
 
-
     # Calculate slope errors
     ints_gapped_metadata = pd.merge(
         ints_gapped_metadata,
@@ -259,7 +275,6 @@ for n_bins in n_bins_list:
         on=["file_index", "int_index"],
         suffixes=("", "_orig"),
     )
-
 
     # maybe come back to this method of getting true slopes, could be fun
 
@@ -270,7 +285,6 @@ for n_bins in n_bins_list:
     # df1['composite_key'] = list(zip(df1['key1'], df1['key2']))
     # df1['value2'] = df1['composite_key'].map(value2_dict)
 
-
     ints_gapped_metadata["slope_pe"] = (
         (ints_gapped_metadata["slope"] - ints_gapped_metadata["slope_orig"])
         / ints_gapped_metadata["slope_orig"]
@@ -278,25 +292,38 @@ for n_bins in n_bins_list:
     )
     ints_gapped_metadata["slope_ape"] = np.abs(ints_gapped_metadata["slope_pe"])
 
-
     # Export the dataframes in one big pickle file
-    output_file_path = input_file_list[file_index_test].replace(
-        ".pkl", f"_corrected_{n_bins}_bins.pkl"
-    )
 
-    with open(output_file_path, "wb") as f:
-        pickle.dump(
-            {
-                "files_metadata": files_metadata,
-                "ints_metadata": ints_metadata,
-#                "ints": ints,
-                "ints_gapped_metadata": ints_gapped_metadata,
-#                "ints_gapped": ints_gapped,
-#                "sfs": sfs,
-#                "sfs_gapped": sfs_gapped_corrected,
-            },
-            f,
+    if full_output is True:
+        output_file_path = input_file_list[file_index_test].replace(
+            ".pkl", f"_corrected_{n_bins}_bins_FULL.pkl"
         )
+        with open(output_file_path, "wb") as f:
+            pickle.dump(
+                {
+                    "files_metadata": files_metadata,
+                    "ints_metadata": ints_metadata,
+                    "ints": ints,
+                    "ints_gapped_metadata": ints_gapped_metadata,
+                    "ints_gapped": ints_gapped,
+                    "sfs": sfs,
+                    "sfs_gapped_corrected": sfs_gapped_corrected,
+                },
+                f,
+            )
+    else:
+        output_file_path = input_file_list[file_index_test].replace(
+            ".pkl", f"_corrected_{n_bins}_bins.pkl"
+        )
+        with open(output_file_path, "wb") as f:
+            pickle.dump(
+                {
+                    "files_metadata": files_metadata,
+                    "ints_metadata": ints_metadata,
+                    "ints_gapped_metadata": ints_gapped_metadata,
+                },
+                f,
+            )
 
     # CORRECTION CHECKING PLOT
     # import matplotlib.pyplot as plt

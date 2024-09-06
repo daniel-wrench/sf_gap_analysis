@@ -2,8 +2,6 @@ import pickle
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import warnings
-
 
 # plt.rc("text", usetex=True)
 # plt.rc("font", family="serif", serif="Computer Modern", size=16)
@@ -379,60 +377,102 @@ def plot_sample(
 # into one big dataframe for each of the four dataframes
 
 
-def load_and_concatenate_dataframes(pickle_files, limit=False):
-    concatenated_dataframes = {
-        "files_metadata": [],
-        "ints_metadata": [],
-        "ints": [],
-        "ints_gapped_metadata": [],
-        "ints_gapped": [],
-        "sfs": [],
-        "sfs_gapped": [],
-    }
+def get_all_metadata(pickle_files, include_sfs=False):
+    if include_sfs is True:
+        concatenated_dataframes = {
+            "files_metadata": [],
+            "ints_metadata": [],
+            "ints_gapped_metadata": [],
+            "sfs": [],
+            "sfs_gapped": [],
+        }
 
-    for file in pickle_files:
-        try:
-            with open(file, "rb") as f:
-                data = pickle.load(f)
-                for key in concatenated_dataframes.keys():
-                    concatenated_dataframes[key].append(data[key])
-        except pickle.UnpicklingError:
-            print(f"UnpicklingError encountered in file: {file}. Skipping this file.")
-        except EOFError:
-            print(f"EOFError encountered in file: {file}. Skipping this file.")
-        except Exception as e:
-            print(
-                f"An unexpected error {e} occurred with file: {file}. Skipping this file."
-            )
+        for file in pickle_files:
+            try:
+                with open(file, "rb") as f:
+                    data = pickle.load(f)
+                    for key in concatenated_dataframes.keys():
+                        concatenated_dataframes[key].append(data[key])
+            except pickle.UnpicklingError:
+                print(
+                    f"UnpicklingError encountered in file: {file}. Skipping this file."
+                )
+            except EOFError:
+                print(f"EOFError encountered in file: {file}. Skipping this file.")
+            except Exception as e:
+                print(
+                    f"An unexpected error {e} occurred with file: {file}. Skipping this file."
+                )
 
-    for key in concatenated_dataframes.keys():
-        if (
-            key == "ints"
-        ):  # Ints is a list of list of pd.Series, not a list of dataframes
-            concatenated_dataframes[key] = concatenated_dataframes[key]
-        else:
-            concatenated_dataframes[key] = pd.concat(
-                concatenated_dataframes[key], ignore_index=True
-            )
+        for key in concatenated_dataframes.keys():
+            if (
+                key == "ints"
+            ):  # Ints is a list of list of pd.Series, not a list of dataframes
+                concatenated_dataframes[key] = concatenated_dataframes[key]
+            else:
+                concatenated_dataframes[key] = pd.concat(
+                    concatenated_dataframes[key], ignore_index=True
+                )
 
-    # Access the concatenated DataFrames
-    files_metadata = concatenated_dataframes["files_metadata"]
-    ints_metadata = concatenated_dataframes["ints_metadata"]
-    ints = concatenated_dataframes["ints"]
-    ints_gapped_metadata = concatenated_dataframes["ints_gapped_metadata"]
-    ints_gapped = concatenated_dataframes["ints_gapped"]
-    sfs = concatenated_dataframes["sfs"]
-    sfs_gapped = concatenated_dataframes["sfs_gapped"]
+        # Access the concatenated DataFrames
+        files_metadata = concatenated_dataframes["files_metadata"]
+        ints_metadata = concatenated_dataframes["ints_metadata"]
+        ints_gapped_metadata = concatenated_dataframes["ints_gapped_metadata"]
+        sfs = concatenated_dataframes["sfs"]
+        sfs_gapped = concatenated_dataframes["sfs_gapped"]
 
-    return (
-        files_metadata,
-        ints_metadata,
-        ints,
-        ints_gapped_metadata,
-        ints_gapped,
-        sfs,
-        sfs_gapped,
-    )
+        return (
+            files_metadata,
+            ints_metadata,
+            ints_gapped_metadata,
+            sfs,
+            sfs_gapped,
+        )
+
+    else:
+        concatenated_dataframes = {
+            "files_metadata": [],
+            "ints_metadata": [],
+            "ints_gapped_metadata": [],
+        }
+
+        for file in pickle_files:
+            try:
+                with open(file, "rb") as f:
+                    data = pickle.load(f)
+                    for key in concatenated_dataframes.keys():
+                        concatenated_dataframes[key].append(data[key])
+            except pickle.UnpicklingError:
+                print(
+                    f"UnpicklingError encountered in file: {file}. Skipping this file."
+                )
+            except EOFError:
+                print(f"EOFError encountered in file: {file}. Skipping this file.")
+            except Exception as e:
+                print(
+                    f"An unexpected error {e} occurred with file: {file}. Skipping this file."
+                )
+
+        for key in concatenated_dataframes.keys():
+            if (
+                key == "ints"
+            ):  # Ints is a list of list of pd.Series, not a list of dataframes
+                concatenated_dataframes[key] = concatenated_dataframes[key]
+            else:
+                concatenated_dataframes[key] = pd.concat(
+                    concatenated_dataframes[key], ignore_index=True
+                )
+
+        # Access the concatenated DataFrames
+        files_metadata = concatenated_dataframes["files_metadata"]
+        ints_metadata = concatenated_dataframes["ints_metadata"]
+        ints_gapped_metadata = concatenated_dataframes["ints_gapped_metadata"]
+
+        return (
+            files_metadata,
+            ints_metadata,
+            ints_gapped_metadata,
+        )
 
 
 def plot_error_trend_line(

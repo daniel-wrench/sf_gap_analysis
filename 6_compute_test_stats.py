@@ -28,7 +28,8 @@ for n_bins in n_bins_list:
     elif spacecraft == "wind":
         input_file_list = sorted(
             glob.glob(
-                data_path_prefix + f"data/processed/wind/wi_*_corrected_{n_bins}_bins.pkl"
+                data_path_prefix
+                + f"data/processed/wind/wi_*_corrected_{n_bins}_bins.pkl"
             )
         )
     else:
@@ -37,22 +38,18 @@ for n_bins in n_bins_list:
     (
         files_metadata,
         ints_metadata,
-        _,
         ints_gapped_metadata,
-        _,
-        _,
-        _,
-    ) = sf.load_and_concatenate_dataframes(input_file_list[:20]) # LIMIT HERE!!
+    ) = sf.get_all_metadata(input_file_list[:20])  # LIMIT HERE!!
 
     print(
         f"Successfully read in and concatenated {len(files_metadata)} files, starting with {input_file_list[0]}\n \
-        Now calculating statistics of results for the {len(ints_metadata)}x{times_to_gap} intervals contained within"
+            Now calculating statistics of results for the {len(ints_metadata)}x{times_to_gap} copies intervals contained within"
     )
 
     # Print summary stats of tc
     print("\nSummary stats of correlation time, across original files:")
     print(files_metadata["tc"].describe())
-    
+
     # Print summary stats of slope
     print("\nSummary stats of slope (original SFs):")
     print(ints_metadata["slope"].describe())

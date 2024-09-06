@@ -1,4 +1,5 @@
-# 2b. FOR ALL INTERVALS IN TRAINING SET: calculate correction
+# COMPUTE SOME STATS FOR TRAINING DATA
+# Likely can only run this on a subset of the data, due to memory constraints
 
 import src.sf_funcs as sf
 import glob
@@ -26,13 +27,12 @@ input_file_list = [
 (
     files_metadata,
     ints_metadata,
-    _,
     ints_gapped_metadata,
-    _,
     sfs,
     sfs_gapped,
-) = sf.load_and_concatenate_dataframes(
-    input_file_list, limit=True
+) = sf.get_all_metadata(
+    input_file_list,
+    include_sfs=True,
 )  ######## LIMIT N FILES HERE ! ! ! #########
 
 print(

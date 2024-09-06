@@ -36,28 +36,39 @@ if spacecraft == "psp":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/processed/psp/test/{dir}psp_*_corrected_{n_bins}_bins.pkl"
+            + f"data/processed/psp/test/{dir}psp_*_corrected_{n_bins}_bins_FULL.pkl"
         )
     )
 elif spacecraft == "wind":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/processed/{dir}wind/wi_*_corrected_{n_bins}_bins.pkl"
+            + f"data/processed/{dir}wind/wi_*_corrected_{n_bins}_bins_FULL.pkl"
         )
     )
 else:
     raise ValueError("Spacecraft must be 'psp' or 'wind'")
 
-(
-    files_metadata,
-    ints_metadata,
-    ints,
-    ints_gapped_metadata,
-    ints_gapped,
-    sfs,
-    sfs_gapped_corrected,
-) = sf.load_and_concatenate_dataframes([input_file_list[index]])
+file = input_file_list[index]
+try:
+    with open(file, "rb") as f:
+        data = pickle.load(f)
+except pickle.UnpicklingError:
+    print(f"UnpicklingError encountered in file: {file}.")
+except EOFError:
+    print(f"EOFError encountered in file: {file}.")
+except Exception as e:
+    print(f"An unexpected error {e} occurred with file: {file}.")
+print(f"Loaded {file}")
+
+# Unpack the dictionary
+files_metadata = data["files_metadata"]
+ints_metadata = data["ints_metadata"]
+ints = data["ints"]
+ints_gapped_metadata = data["ints_gapped_metadata"]
+ints_gapped = data["ints_gapped"]
+sfs = data["sfs"]
+sfs_gapped_corrected = data["sfs_gapped_corrected"]
 
 print(
     f"Successfully read in {input_file_list[index]}. This contains {len(ints_metadata)}x{times_to_gap} intervals"
@@ -273,9 +284,14 @@ versions_to_plot = [
     # np.random.randint(0, times_to_gap),
 ]
 for ax_index, version in enumerate(versions_to_plot):
-    ax[ax_index, 0].plot(
-        ints[0][int_index][0]["Bx"].values, c="grey"
-    )  # Just plotting one component for simplicity
+    if len(ints) == 1:
+        ax[ax_index, 0].plot(
+            ints[0]["Bx"].values, c="grey"
+        )  # Just plotting one component for simplicity
+    else:
+        ax[ax_index, 0].plot(
+            ints[0][int_index][0]["Bx"].values, c="grey"
+        )  # Just plotting one component for simplicity
     # Not currently plotting due to indexing issue: need to be able to index
     # on both file_index and int_index
     ax[ax_index, 0].plot(

@@ -1,14 +1,12 @@
 #!/bin/bash
 
 #SBATCH --job-name          3_bin_errors
-#SBATCH --mem               1G
-#SBATCH --array             0-169
-#SBATCH --time              00:05:00
+#SBATCH --mem               500MB
+#SBATCH --array             0-59
+#SBATCH --time              00:20:00
 #SBATCH --output            logs/%x_%A_%3a.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
-
-mkdir -p logs/
 
 module load Python/3.10.5-gimkl-2022a
 source venv/bin/activate
@@ -18,20 +16,15 @@ source venv/bin/activate
 echo "JOB STARTED"
 date
 
-dim=2
-echo "DIM: $dim"
-n_bins=10
-echo "N_BINS: $n_bins"
-
 # Specify total number of files
-total_files=3
+total_files=4380
 
 # Set number of files to be processed by each task
-n_files=3 # Adjust this value as needed (should really be defined based on number of job array tasks)
+n_files=73 # Adjust this value as needed (should really be defined based on number of job array tasks)
 task_id=$SLURM_ARRAY_TASK_ID
 
 # Calculate start index for this task ($task_id if on HPC, 0 if local)
-start_index=0
+start_index=$task_id
 
 # Calculate the stride (number of files to skip between reads)
 stride=$(( total_files / n_files ))
@@ -41,7 +34,7 @@ echo "Task ID: $task_id processing every $stride th file, starting from $start_i
 # Process each file based on the stride
 for ((file_index=$start_index; file_index < total_files; file_index+=$stride)); do
   echo Core $task_id about to read file $file_index
-  python 3_bin_errors.py $file_index $dim $n_bins
+  python 3_bin_errors.py $file_index
 done
 
 echo "JOB FINISHED"

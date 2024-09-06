@@ -27,7 +27,7 @@ for dim in [2,3]:
         
         # Read in all pe arrays from data/processed and combine them in a list
         pe_list = []
-        for file in glob.glob(f"{data_path_prefix}data/processed/psp/train/errors/*pe_{dim}d_{n_bins}_bins_*.pkl")[:100]: # LIMIT HERE!!
+        for file in glob.glob(f"{data_path_prefix}data/processed/psp/train/errors/*pe_{dim}d_{n_bins}_bins_*.pkl"): # LIMIT HERE!!
             with open(file, "rb") as f:
                 pe_list.append(pickle.load(f))
                 print(f"Loaded {file}")

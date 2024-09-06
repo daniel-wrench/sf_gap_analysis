@@ -18,7 +18,7 @@
 ## To-do
 ### Analysis
 
-1. **Parallelise heatmap calculation.** 
+1. **~~Parallelise heatmap calculation.~~** 
     - **NEW APPROACH: Do by file instead, each core reads a number of files: saves the errors in a 20x20x20 array.**
     - Then when they're all merged in a serial job, we can calculate the mean, std, median, whatever we want, and get the correction intervals.
     - ~~Simplify heatmap part~~
@@ -33,10 +33,8 @@
     - ~~Test locally~~
     - ~~Push~~
     - ~~Run again, compare time and stats~~
-    - Scaling study of this step 
-    - *Rank 0 is likely causing very uneven mem usage across processes. Scale back to 10 files, and try to reduce this imbalance by only reading in necessary data objects.
-    - Tidy up plots and work on manuscript, while waiting for heatmap to run.
 4. **Choose #bins based on PSP data, report final results on Wind data**
+4. Work on streamling 4b.py so we can manage the memory as best as possible (keeping in mind we kinda want to do it locally for latex anyway)
 3. Potentially investigate smoothing and error bars - do they look OK as is?
 11. Send completed draft manuscript to Tulasi. Print out, talk through with Marcus. Don't worry about Voyager just yet.3. Plot lag x-axes in units of $\lambda_C$?
 3. Think about how to study Frat's method, and verify Burger's results
@@ -167,6 +165,13 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     In `3_bin_errors.py`, adjust `data_prefix_path`, depending on where you are storing the data
 
     `sbatch 3_bin_errors.sh`
+
+    - LATEST: 20 files/core, {2d, 3d} {15,20,25 bins} = 300MB, 3.5min
+    - 5o files/core "" = CONSTANT 500MB, no matter how many files, 15s/file
+
+
+---
+
     
     - 10 files, 15,20,25 bins **=1350 gapped ints = 7min 3GB**
     - 20 files '': 15min, 5GB **=2300 gapped ints = 9min 4GB**
@@ -186,15 +191,28 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     HPC: `sbatch 4a_finalise_correction.sh`
 
+    LATEST: 10 files (SERIAL JOB), {2d, 3d} {15,20,25 bins} = 200MB, 90s
+
+    100 files "" = 350MB, 120s
+    200 files "" = 500MB, 150s
+**    400 files "" = 820MB, 210s
+**    1000 files "" = 1.7G, 7min
+    22000 files "" = 
+
 5. **Calculate the stats (average slope and corr time, error trend lines) for the training set** (not necessary for correction factor)
 
     `bash 4b_compute_training_stats.sh`
 
 5. **Perform the correction on the test set, file by file**
 
+    THERE IS A VERSION FOR SAVING THE CORRECTED SFS, FOR COMPUTING OVERALL TEST RESULTS, AND A VERSION WITHOUT, FOR THE CASE STUDY PLOTS, TO BE RUN LOCALLY. NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE
+
     Local: `for i in $(seq 0 1); do python 5_correct_test_sfs.py $spacecraft $i $n_bins; done`
 
     HPC: `sbatch 5_correct_test_sfs.sh`
+
+    **LATEST: 1GB AND 3MIN/FILE**
+    ---
 
     - 20min and 1GB/file (15,20,25 bins)
     - **0-3min (prev 4-11) and 200-600MB/file (15,20)**
@@ -204,6 +222,10 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     `bash/sbatch 6_compute_test_stats.sh`
 
     Reqs: 
+
+    - 10 files (PSP) = 30s, 800MB (but needs around 5GB to read?)
+    - 20 "" = 
+    ---
 
     - 10 files (wind) = **13x25 ints=18s, 0MB**
     - 20 files (Wind) = 4GB, 7min

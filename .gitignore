@@ -3,3 +3,5 @@
 /venv
 /logs
 /src/__pycache__
+/old
+/__pycache__

@@ -15,7 +15,7 @@ missing_measure = "missing_percent"
 data_path_prefix = params.data_path_prefix
 n_bins_list = params.n_bins_list
 
-for dim in [2,3]:
+for dim in [2, 3]:
     for n_bins in n_bins_list:
         max_lag = params.int_length * params.max_lag_prop
         xedges = (
@@ -24,10 +24,12 @@ for dim in [2,3]:
         xedges[-1] = max_lag + 1
         yedges = np.linspace(0, 100, n_bins + 1)  # Missing prop
         zedges = np.logspace(-2, 1, n_bins + 1)  # ranges from 0.01 to 10
-        
+
         # Read in all pe arrays from data/processed and combine them in a list
         pe_list = []
-        for file in glob.glob(f"{data_path_prefix}data/processed/psp/train/errors/*pe_{dim}d_{n_bins}_bins_*.pkl"): # LIMIT HERE!!
+        for file in glob.glob(
+            f"{data_path_prefix}data/processed/psp/train/errors/*pe_{dim}d_{n_bins}_bins_*.pkl"
+        ):  # LIMIT HERE!!
             with open(file, "rb") as f:
                 pe_list.append(pickle.load(f))
                 print(f"Loaded {file}")
@@ -38,11 +40,13 @@ for dim in [2,3]:
             pe_max = np.full((n_bins, n_bins), fill_value=np.nan)
             pe_std = np.full((n_bins, n_bins), fill_value=np.nan)
             n = np.full((n_bins, n_bins), fill_value=np.nan)
-        
+
             for i in range(n_bins):
                 for j in range(n_bins):
                     all_pe = [
-                        array[i, j] for array in pe_list if not np.all(np.isnan(array[i, j]))
+                        array[i, j]
+                        for array in pe_list
+                        if not np.all(np.isnan(array[i, j]))
                     ]
                     if len(all_pe) != 0:
                         all_pe = np.concatenate(all_pe)
@@ -51,15 +55,15 @@ for dim in [2,3]:
                         pe_min[i, j] = np.nanmin(all_pe)
                         pe_max[i, j] = np.nanmax(all_pe)
                         n[i, j] = len(all_pe)
-        
+
             scaling = 1 / (1 + pe_mean / 100)
-            scaling_lower = 1 / (1 + (pe_mean + 1 * pe_std) / 100)
-            scaling_upper = 1 / (1 + (pe_mean - 1 * pe_std) / 100)
-        
+            scaling_lower = 1 / (1 + (pe_mean + 2 * pe_std) / 100)
+            scaling_upper = 1 / (1 + (pe_mean - 2 * pe_std) / 100)
+
             scaling[np.isnan(scaling)] = 1
             scaling_lower[np.isnan(scaling_lower)] = 1
             scaling_upper[np.isnan(scaling_upper)] = 1
-        
+
             # Export these arrays in an efficient manner
             correction_lookup = {
                 "xedges": xedges,
@@ -73,7 +77,7 @@ for dim in [2,3]:
                 "pe_max": pe_max,
                 "n": n,
             }
-        
+
             fig, ax = plt.subplots(figsize=(7, 5))
             plt.grid(False)
             plt.pcolormesh(
@@ -88,7 +92,8 @@ for dim in [2,3]:
             plt.xlabel("Lag ($\\tau$)")
             plt.ylabel("Missing percentage")
             plt.title(
-                f"Distribution of missing proportion and lag ({gap_handling.upper()})", y=1.1
+                f"Distribution of missing proportion and lag ({gap_handling.upper()})",
+                y=1.1,
             )
             ax.set_facecolor("black")
             ax.set_xscale("log")
@@ -97,7 +102,7 @@ for dim in [2,3]:
                 bbox_inches="tight",
             )
             plt.close()
-        
+
             fig, ax = plt.subplots(figsize=(7, 5))
             plt.grid(False)
             plt.pcolormesh(
@@ -119,15 +124,14 @@ for dim in [2,3]:
                 bbox_inches="tight",
             )
             plt.close()
-        
-        
+
         elif dim == 3:  # has zedges too
             pe_mean = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
             pe_min = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
             pe_max = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
             pe_std = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
             n = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)
-        
+
             for i in range(n_bins):
                 for j in range(n_bins):
                     for k in range(n_bins):
@@ -143,15 +147,15 @@ for dim in [2,3]:
                             pe_min[i, j, k] = np.nanmin(all_pe)
                             pe_max[i, j, k] = np.nanmax(all_pe)
                             n[i, j, k] = len(all_pe)
-        
+
             scaling = 1 / (1 + pe_mean / 100)
             scaling_lower = 1 / (1 + (pe_mean + 1 * pe_std) / 100)
             scaling_upper = 1 / (1 + (pe_mean - 1 * pe_std) / 100)
-        
+
             scaling[np.isnan(scaling)] = 1
             scaling_lower[np.isnan(scaling_lower)] = 1
             scaling_upper[np.isnan(scaling_upper)] = 1
-        
+
             # Export these arrays in an efficient manner
             correction_lookup = {
                 "xedges": xedges,
@@ -166,8 +170,10 @@ for dim in [2,3]:
                 "pe_max": pe_max,
                 "n": n,
             }
-        
-            fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
+
+            fig, ax = plt.subplots(
+                1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True
+            )
             # Remove spacing between subplots
             plt.subplots_adjust(wspace=0.2)
             plt.grid(False)
@@ -186,20 +192,24 @@ for dim in [2,3]:
                 plt.title("Distribution of missing proportion and lag")
                 ax[i].set_facecolor("black")
                 ax[i].semilogx()
-                ax[i].set_title(f"Power bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)))
+                ax[i].set_title(
+                    f"Power bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
+                )
                 ax[i].set_xlabel("Lag ($\\tau$)")
                 # Remove y-axis labels for all but the first plot
                 if i > 0:
                     ax[i].set_yticklabels([])
                     ax[i].set_ylabel("")
-        
+
             plt.savefig(
                 f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.png",
                 bbox_inches="tight",
             )
             plt.close()
-        
-            fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
+
+            fig, ax = plt.subplots(
+                1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True
+            )
             # Remove spacing between subplots
             plt.grid(False)
             plt.subplots_adjust(wspace=0.2)
@@ -218,20 +228,24 @@ for dim in [2,3]:
                 plt.title("Distribution of missing proportion and lag")
                 ax[i].set_facecolor("black")
                 ax[i].semilogy()
-                ax[i].set_title(f"Lag bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)))
+                ax[i].set_title(
+                    f"Lag bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
+                )
                 ax[i].set_xlabel("Missing prop")
                 # Remove y-axis labels for all but the first plot
                 if i > 0:
                     ax[i].set_yticklabels([])
                     ax[i].set_ylabel("")
-        
+
             plt.savefig(
                 f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.png",
                 bbox_inches="tight",
             )
             plt.close()
-        
-            fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
+
+            fig, ax = plt.subplots(
+                1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True
+            )
             # Remove spacing between subplots
             plt.grid(False)
             plt.subplots_adjust(wspace=0.2)
@@ -258,13 +272,13 @@ for dim in [2,3]:
                 if i > 0:
                     ax[i].set_yticklabels([])
                     ax[i].set_ylabel("")
-        
+
             plt.savefig(
                 f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.png",
                 bbox_inches="tight",
             )
             plt.close()
-        
+
         # Export the LINT lookup tables as a pickle file
         if gap_handling == "lint":
             with open(
@@ -272,4 +286,6 @@ for dim in [2,3]:
                 "wb",
             ) as f:
                 pickle.dump(correction_lookup, f)
-            print(f"Saved complete correction lookup table to data/processed/correction_lookup_{dim}d_{n_bins}_bins.pkl")
+            print(
+                f"Saved complete correction lookup table to data/processed/correction_lookup_{dim}d_{n_bins}_bins.pkl"
+            )

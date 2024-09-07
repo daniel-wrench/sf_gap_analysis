@@ -12,7 +12,7 @@ import src.params as params
 
 np.random.seed(123)  # For reproducibility
 
-dir = ""  # end with / if not empty
+dir = "hpc/"  # end with / if not empty
 times_to_gap = params.times_to_gap
 
 plt.rc("text", usetex=True)
@@ -25,7 +25,7 @@ n_bins = sys.argv[2]
 
 data_path_prefix = params.data_path_prefix
 
-index = 0  # For now, just getting first corrected file
+index = 1  # For now, just getting first corrected file
 # NOTE: THIS IS NOT THE SAME AS FILE INDEX!
 # due to train-test split, file indexes could be anything
 
@@ -230,7 +230,8 @@ for dim in [2, 3]:
 
 
 # Load just the 2D Lint version for use in later case study plots
-with open(f"data/processed/correction_lookup_2d_{n_bins}_bins.pkl", "rb") as f:
+# USING 15 BINS SO AS TO HIDE EMPTY BINS FROM PLOT
+with open("data/processed/correction_lookup_2d_15_bins.pkl", "rb") as f:
     correction_lookup = pickle.load(f)
     xedges = correction_lookup["xedges"]
     yedges = correction_lookup["yedges"]
@@ -275,13 +276,11 @@ print(
     int_index,
 )
 
-fig, ax = plt.subplots(2, 3, figsize=(16, 2 * 3))
+fig, ax = plt.subplots(2, 3, figsize=(15, 2 * 3))
 # will use consistent interval index, but choose random versions of it to plot
 versions_to_plot = [
-    0,
-    1,
-    # np.random.randint(0, times_to_gap),
-    # np.random.randint(0, times_to_gap),
+    23,  # 13 = 9% missing, 23 = 50% missing
+    8,
 ]
 for ax_index, version in enumerate(versions_to_plot):
     if len(ints) == 1:
@@ -322,7 +321,7 @@ for ax_index, version in enumerate(versions_to_plot):
         ],
         c="grey",
         label="True",
-        lw=5,
+        lw=4,
     )
 
     ax[ax_index, 1].plot(
@@ -490,15 +489,13 @@ def annotate_curve(ax, x, y, text, offset_scaling=(0.3, 0.1)):
         xytext=(x_text, y_text),
         # xycoords="axes fraction",
         # textcoords="axes fraction",
-        arrowprops=dict(
-            arrowstyle="->", connectionstyle="arc3,rad=.2", color="lightgrey"
-        ),
-        bbox=dict(facecolor="gray", edgecolor="lightgrey", boxstyle="round", alpha=0.7),
+        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2", color="gray"),
+        bbox=dict(facecolor="gray", edgecolor="gray", boxstyle="round", alpha=0.7),
         fontsize=20,
     )
 
 
-fig = plt.figure(figsize=(20, 6))
+fig = plt.figure(figsize=(13, 4))
 
 # Create a GridSpec layout with specified width ratios and horizontal space
 gs1 = GridSpec(1, 1, left=0.06, right=0.35)
@@ -523,7 +520,7 @@ for ax_index, version in enumerate(versions_to_plot):
         ],
         color="black",
         label="True",
-        lw=5,
+        lw=4,
         alpha=0.5,
     )
     ax.plot(
@@ -570,7 +567,7 @@ for ax_index, version in enumerate(versions_to_plot):
         ],
         color="black",
         lw=1,
-        label="Linear interp. ({:.1f})".format(
+        label="LINT ({:.1f})".format(
             ints_gapped_metadata.loc[
                 (ints_gapped_metadata["file_index"] == file_index)
                 & (ints_gapped_metadata["int_index"] == int_index)
@@ -580,33 +577,33 @@ for ax_index, version in enumerate(versions_to_plot):
             ].values[0]
         ),
     )
-    ax.plot(
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
-            "lag",
-        ],
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
-            "sf_2",
-        ],
-        color="blue",
-        lw=1,
-        label="Corrected (2D) ({:.1f})".format(
-            ints_gapped_metadata.loc[
-                (ints_gapped_metadata["file_index"] == file_index)
-                & (ints_gapped_metadata["int_index"] == int_index)
-                & (ints_gapped_metadata["version"] == version)
-                & (ints_gapped_metadata["gap_handling"] == "corrected_2d"),
-                "mape",
-            ].values[0]
-        ),
-    )
+    # ax.plot(
+    #     sfs_gapped_corrected.loc[
+    #         (sfs_gapped_corrected["file_index"] == file_index)
+    #         & (sfs_gapped_corrected["int_index"] == int_index)
+    #         & (sfs_gapped_corrected["version"] == version)
+    #         & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
+    #         "lag",
+    #     ],
+    #     sfs_gapped_corrected.loc[
+    #         (sfs_gapped_corrected["file_index"] == file_index)
+    #         & (sfs_gapped_corrected["int_index"] == int_index)
+    #         & (sfs_gapped_corrected["version"] == version)
+    #         & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
+    #         "sf_2",
+    #     ],
+    #     color="blue",
+    #     lw=1,
+    #     label="Corrected (2D) ({:.1f})".format(
+    #         ints_gapped_metadata.loc[
+    #             (ints_gapped_metadata["file_index"] == file_index)
+    #             & (ints_gapped_metadata["int_index"] == int_index)
+    #             & (ints_gapped_metadata["version"] == version)
+    #             & (ints_gapped_metadata["gap_handling"] == "corrected_2d"),
+    #             "mape",
+    #         ].values[0]
+    #     ),
+    # )
     ax.plot(
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
@@ -622,9 +619,9 @@ for ax_index, version in enumerate(versions_to_plot):
             & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "sf_2",
         ],
-        color="purple",
+        color="#1b9e77",
         lw=1,
-        label="Corrected (3D) ({:.1f})".format(
+        label="Corrected ({:.1f})".format(
             ints_gapped_metadata.loc[
                 (ints_gapped_metadata["file_index"] == file_index)
                 & (ints_gapped_metadata["int_index"] == int_index)
@@ -646,17 +643,17 @@ for ax_index, version in enumerate(versions_to_plot):
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
             & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
+            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "sf_2_lower",
         ],
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
             & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
+            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "sf_2_upper",
         ],
-        color="blue",
+        color="#1b9e77",
         alpha=0.2,
     )
 
@@ -722,11 +719,11 @@ for ax_index, version in enumerate(versions_to_plot):
             "missing_percent",
         ],
         f"{alphabet[ax_index]}",
-        offset_scaling=(0.8, -0.3),
+        offset_scaling=(0.8, -0.2),
     )
 
     ax.annotate(
-        f"{alphabet[ax_index]}: {float(missing[0]):.1f}\% missing overall",
+        f"{alphabet[ax_index]}: {float(missing[0]):.1f}\% missing",
         xy=(1, 1),
         xycoords="axes fraction",
         xytext=(0.1, 0.9),

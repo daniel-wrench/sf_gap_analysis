@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore", category=np.RankWarning)
 
 np.random.seed(123)  # For reproducibility
 
-dir = ""  # end with / if not empty
+dir = "hpc/"  # end with / if not empty
 times_to_gap = params.times_to_gap
 
 plt.rc("text", usetex=True)
@@ -56,7 +56,7 @@ fig, axes = plt.subplots(2, 2, figsize=(14, 8))
 axes = axes.flatten()
 
 custom_order = ["naive", "lint", "corrected_2d", "corrected_3d"]
-colors = ["indianred", "grey", "C0", "purple"]
+colors = ["indianred", "grey", "C0", "#1b9e77"]
 
 # Create boxplots for each column
 for col, ax in zip(columns, axes):
@@ -106,7 +106,7 @@ plt.savefig(
 # Paper figures, so removing sub-par 2D correction
 
 custom_order = ["naive", "lint", "corrected_3d"]
-colors = ["indianred", "grey", "purple"]
+colors = ["indianred", "grey", "#1b9e77"]
 
 # Make scatterplot of mape vs. missing_percent, coloured by gap handling
 palette = dict(zip(custom_order, colors))

@@ -48,6 +48,7 @@
 
 1. ~~Finish first draft of paper~~
 2. Change colours of standardisation plot, make more obvious
+3. Add in Wind interval #13 for case study, delete heatmap from corrected figure 
 2. Depending on final results, prob remove slope APE from scatterplots, just have boxplots separately. Potentially make corrected taylor scale style plot
 3. Get Latex error trend lines for subset of full results, still shows same pattern
 2. Check Google Doc, Notion for notes, comments
@@ -168,7 +169,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     - LATEST: 20 files/core, {2d, 3d} {15,20,25 bins} = 300MB, 3.5min
     - 5o files/core "" = CONSTANT 500MB, no matter how many files, 15s/file
-
+    - Basically 15min to do the whole lot across 60 cores (73 files/core)
 
 ---
 
@@ -195,15 +196,19 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     100 files "" = 350MB, 120s
     200 files "" = 500MB, 150s
-**    400 files "" = 820MB, 210s
-**    1000 files "" = 1.7G, 7min
-    22000 files "" = 
+    400 files "" = 820MB, 210s
+    1000 () files "" = 1.7G, 7min
+
+
+    - **4200 (all) files "" = 7G, 32min**
 
 5. **Calculate the stats (average slope and corr time, error trend lines) for the training set** (not necessary for correction factor)
 
     `bash 4b_compute_training_stats.sh`
 
 5. **Perform the correction on the test set, file by file**
+
+    *111 Wind files to correct: outputs are 12-22KB each = 3MB files**
 
     THERE IS A VERSION FOR SAVING THE CORRECTED SFS, FOR COMPUTING OVERALL TEST RESULTS, AND A VERSION WITHOUT, FOR THE CASE STUDY PLOTS, TO BE RUN LOCALLY. NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE
 
@@ -223,14 +228,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     Reqs: 
 
-    - 10 files (PSP) = 30s, 800MB (but needs around 5GB to read?)
-    - 20 "" = 
-    ---
-
-    - 10 files (wind) = **13x25 ints=18s, 0MB**
-    - 20 files (Wind) = 4GB, 7min
-    - 50 files (wind) = **68x25 ints = 12GB while running (WEIRD)**
-    - 32-44 files (psp) = **47-90 ints = 5GB, 1min**
+    (Now using simplified outputs)
+    - 30s and 100MB for the full 111 Wind files, containing 125 intervals
 
 
     43 files (PSP) = 12GB, 12min

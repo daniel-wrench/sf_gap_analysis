@@ -8,10 +8,10 @@
 # https://buildmedia.readthedocs.org/media/pdf/heliopy/0.6.0/heliopy.pdf
 
 times_to_gap = 25
-data_path_prefix = ""
+data_path_prefix = "/nesi/nobackup/vuw04187/"
 pwrl_range = [50, 500]
 minimum_missing_chunks = 0.7
-n_bins_list = [10]
+n_bins_list = [15, 20, 25]
 int_length = 10000
 max_lag_prop = 0.2
 

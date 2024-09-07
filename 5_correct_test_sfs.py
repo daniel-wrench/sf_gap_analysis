@@ -17,7 +17,7 @@ n_bins_list = params.n_bins_list
 spacecraft = sys.argv[1]
 file_index_test = int(sys.argv[2])
 
-full_output = True
+full_output = False
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
@@ -42,21 +42,23 @@ except EOFError:
 except Exception as e:
     print(f"An unexpected error {e} occurred with file: {file}.")
 
-# Unpack the dictionary
-files_metadata = data["files_metadata"]
-ints_metadata = data["ints_metadata"]
-ints = data["ints"]
-ints_gapped_metadata = data["ints_gapped_metadata"]
-ints_gapped = data["ints_gapped"]
-sfs = data["sfs"]
-sfs_gapped = data["sfs_gapped"]
-
-print(
-    f"Successfully read in {input_file_list[file_index_test]}. This contains {len(ints_metadata)}x{times_to_gap} intervals"
-)
-
 
 for n_bins in n_bins_list:
+
+    # Unpack the dictionary, fresh each time, esp. for ints_gapped_metadata re-writing
+    files_metadata = data["files_metadata"]
+    ints_metadata = data["ints_metadata"]
+    ints = data["ints"]
+    ints_gapped_metadata = data["ints_gapped_metadata"]
+    ints_gapped = data["ints_gapped"]
+    sfs = data["sfs"]
+    sfs_gapped = data["sfs_gapped"]
+
+    print(
+        f"Successfully read in {input_file_list[file_index_test]}. This contains {len(ints_metadata)}x{times_to_gap} intervals"
+    )
+
+
     # Importing lookup table
     with open(f"data/processed/correction_lookup_2d_{n_bins}_bins.pkl", "rb") as f:
         correction_lookup_2d = pickle.load(f)
@@ -248,24 +250,6 @@ for n_bins in n_bins_list:
                         & (ints_gapped_metadata["gap_handling"] == gap_handling),
                         "slope",
                     ] = slope
-
-    slope = np.polyfit(
-        np.log(
-            current_int.loc[
-                (current_int["lag"] >= pwrl_range[0])
-                & (current_int["lag"] <= pwrl_range[1]),
-                "lag",
-            ]
-        ),
-        np.log(
-            current_int.loc[
-                (current_int["lag"] >= pwrl_range[0])
-                & (current_int["lag"] <= pwrl_range[1]),
-                "sf_2",
-            ]
-        ),
-        1,
-    )[0]
 
     # Calculate slope errors
     ints_gapped_metadata = pd.merge(

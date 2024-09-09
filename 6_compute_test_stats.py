@@ -15,6 +15,7 @@ n_bins_list = params.n_bins_list
 times_to_gap = params.times_to_gap
 
 data_path_prefix = params.data_path_prefix
+output_path = params.output_path
 
 for n_bins in n_bins_list:
     print(f"Calculating stats for {spacecraft} data with {n_bins} bins")
@@ -57,7 +58,9 @@ for n_bins in n_bins_list:
     print("\nNow proceeding to calculate overall test set statistics")
 
     # Export final overall dataframes, combined from all outputs
-    output_file_path = f"data/processed/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
+    output_file_path = (
+        f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
+    )
 
     # NOT OUTPUTTING COMMENTED DFS DUE TO EXCESSIVE SIZE
     # The uncommented ones are sufficient for getting overall stats
@@ -88,7 +91,7 @@ for n_bins in n_bins_list:
             "mpe",
             "mape",
         ]
-    ].agg(["mean", "median", "std", "min", "max"])
+    ].agg(["count", "mean", "median", "std", "min", "max"])
 
     correction_corrs = ints_gapped_metadata.groupby("gap_handling")[
         [
@@ -104,10 +107,10 @@ for n_bins in n_bins_list:
 
     # Save as csv
     correction_stats.to_csv(
-        f"plots/temp/test_{spacecraft}_correction_stats_{n_bins}_bins.csv"
+        f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins_stats_.csv"
     )
     correction_corrs.to_csv(
-        f"plots/temp/test_{spacecraft}_correction_corrs_{n_bins}_bins.csv"
+        f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins_corrs_.csv"
     )
 
     print("Saved correction stats to csv")

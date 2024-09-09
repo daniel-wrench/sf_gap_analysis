@@ -63,7 +63,11 @@ data_path_prefix = params.data_path_prefix
 spacecraft = sys.argv[1]
 # Ensure necessary directories exist
 os.makedirs(f"{data_path_prefix}data/processed/{spacecraft}", exist_ok=True)
-os.makedirs(f"{data_path_prefix}plots/temp/{spacecraft}", exist_ok=True)
+os.makedirs(f"{data_path_prefix}plots/preprocessing/{spacecraft}", exist_ok=True)
+os.makedirs("plots/results/final", exist_ok=True)
+os.makedirs("plots/results/testing", exist_ok=True)
+os.makedirs("data/corrections", exist_ok=True)
+
 
 raw_file_list = sorted(
     glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf")
@@ -227,7 +231,7 @@ tc, fig, ax = utils.compute_outer_scale_integral(time_lags_lr, r_vec_lr, plot=Tr
 
 output_file_path = (
     raw_file_list[file_index]
-    .replace("data/raw", "plots/temp")
+    .replace("data/raw", "plots/preprocessing")
     .replace(".cdf", "_acf.png")
 )
 plt.savefig(output_file_path, bbox_inches="tight")
@@ -329,7 +333,7 @@ else:
     # )
     output_file_path = (
         raw_file_list[file_index]
-        .replace("data/raw", "plots/temp")
+        .replace("data/raw", "plots/preprocessing")
         .replace(".cdf", "_ints_std.png")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
@@ -417,7 +421,7 @@ else:
     plt.legend()
     output_file_path = (
         raw_file_list[file_index]
-        .replace("data/raw", "plots/temp")
+        .replace("data/raw", "plots/preprocessing")
         .replace(".cdf", "_sf_example.png")
     )
 

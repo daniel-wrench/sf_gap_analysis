@@ -13,11 +13,15 @@ import src.params as params
 times_to_gap = params.times_to_gap
 pwrl_range = params.pwrl_range
 data_path_prefix = params.data_path_prefix
+output_path = params.output_path
 n_bins_list = params.n_bins_list
+
 spacecraft = sys.argv[1]
 file_index_test = int(sys.argv[2])
+# this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
 
-full_output = False
+
+full_output = True
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
@@ -44,7 +48,6 @@ except Exception as e:
 
 
 for n_bins in n_bins_list:
-
     # Unpack the dictionary, fresh each time, esp. for ints_gapped_metadata re-writing
     files_metadata = data["files_metadata"]
     ints_metadata = data["ints_metadata"]
@@ -58,16 +61,15 @@ for n_bins in n_bins_list:
         f"Successfully read in {input_file_list[file_index_test]}. This contains {len(ints_metadata)}x{times_to_gap} intervals"
     )
 
-
     # Importing lookup table
-    with open(f"data/processed/correction_lookup_2d_{n_bins}_bins.pkl", "rb") as f:
+    with open(
+        f"data/corrections/{output_path}/correction_lookup_2d_{n_bins}_bins.pkl", "rb"
+    ) as f:
         correction_lookup_2d = pickle.load(f)
-    with open(f"data/processed/correction_lookup_3d_{n_bins}_bins.pkl", "rb") as f:
+    with open(
+        f"data/corrections/{output_path}/correction_lookup_3d_{n_bins}_bins.pkl", "rb"
+    ) as f:
         correction_lookup_3d = pickle.load(f)
-
-    spacecraft = sys.argv[1]  # "psp" or "wind"
-    file_index_test = int(sys.argv[2])
-    # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
 
     # Apply 2D and 3D scaling to test set, report avg errors
     print(
@@ -279,8 +281,16 @@ for n_bins in n_bins_list:
     # Export the dataframes in one big pickle file
 
     if full_output is True:
-        output_file_path = input_file_list[file_index_test].replace(
-            ".pkl", f"_corrected_{n_bins}_bins_FULL.pkl"
+        output_file_path = (
+            input_file_list[file_index_test]
+            .replace(
+                f"processed/{spacecraft}",
+                "corrections/testing",
+            )
+            .replace(
+                ".pkl",
+                f"_corrected_{n_bins}_bins_FULL.pkl",
+            )
         )
         with open(output_file_path, "wb") as f:
             pickle.dump(

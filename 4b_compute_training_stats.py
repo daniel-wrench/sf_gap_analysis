@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 # Annoying deprecation warning
 
 data_path_prefix = params.data_path_prefix
+output_path = params.output_path
 
 spacecraft = "psp"
 input_file_list = [
@@ -75,7 +76,7 @@ for gap_handling in sfs_gapped.gap_handling.unique():
         y_axis_log=True,
     )
     plt.savefig(
-        f"plots/temp/train_{spacecraft}_error_trend_{gap_handling.upper()}.png",
+        f"plots/results/{output_path}/train_{spacecraft}_error_trend_{gap_handling.upper()}.png",
         bbox_inches="tight",
     )
     plt.close()

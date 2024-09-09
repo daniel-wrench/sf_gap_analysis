@@ -4,16 +4,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
 import src.params as params
-
 import warnings
-import numpy as np
 
 # Suppress the specific RankWarning from numpy - occurs with fitting slope sometimes
 warnings.filterwarnings("ignore", category=np.RankWarning)
 
 np.random.seed(123)  # For reproducibility
 
-dir = "hpc/"  # end with / if not empty
+output_path = params.output_path
 times_to_gap = params.times_to_gap
 
 plt.rc("text", usetex=True)
@@ -26,7 +24,9 @@ n_bins = sys.argv[2]
 
 data_path_prefix = params.data_path_prefix
 
-output_file_path = f"data/processed/{dir}test_corrected_{spacecraft}_{n_bins}_bins.pkl"
+output_file_path = (
+    f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
+)
 
 # Read in the file that has just been exported above
 with open(output_file_path, "rb") as f:
@@ -98,7 +98,7 @@ plt.tight_layout()
 
 plt.suptitle("")  # Remove the default title to avoid overlap
 plt.savefig(
-    f"plots/temp/{dir}test_{spacecraft}_boxplots_{n_bins}_bins.png",
+    f"plots/results/{output_path}/test_{spacecraft}_boxplots_{n_bins}_bins.png",
     bbox_inches="tight",
 )
 
@@ -116,9 +116,9 @@ palette = dict(zip(custom_order, colors))
 sns.set_style("ticks")
 # Plotting the MAPE vs. missing percentage
 fig, ax = plt.subplots(
-    2,
+    1,
     len(custom_order) + 1,
-    figsize=(10, 5),
+    figsize=(10, 3),
     sharex="col",
     sharey="row",
     tight_layout=True,
@@ -139,12 +139,12 @@ for i, gap_handling_method in enumerate(custom_order):
         s=10,
         color=palette[gap_handling_method],
         label=gap_handling_method,
-        ax=ax[0, i],
+        ax=ax[i],
         legend=False,
     )
 
     # Create a secondary axis for the boxplot on the right-hand spine
-    ax_right = ax[0, i].inset_axes([1, 0, 0.1, 1], sharey=ax[0, i])
+    ax_right = ax[i].inset_axes([1, 0, 0.1, 1], sharey=ax[i])
     sns.boxplot(
         data=subset,
         y="mape",
@@ -175,72 +175,70 @@ for i, gap_handling_method in enumerate(custom_order):
         color=palette[gap_handling_method],
         label=gap_handling_method,
         order=2,
-        ax=ax[0, -1],
+        ax=ax[-1],
         ci=99,
     )
 
-    sns.scatterplot(
-        data=subset,
-        x="missing_percent_overall",
-        y="slope_ape",
-        alpha=0.3,
-        s=10,
-        color=palette[gap_handling_method],
-        label=gap_handling_method,
-        ax=ax[1, i],
-        legend=False,
-    )
+    # sns.scatterplot(
+    #     data=subset,
+    #     x="missing_percent_overall",
+    #     y="slope_ape",
+    #     alpha=0.3,
+    #     s=10,
+    #     color=palette[gap_handling_method],
+    #     label=gap_handling_method,
+    #     ax=ax[1, i],
+    #     legend=False,
+    # )
 
-    sns.regplot(
-        data=subset,
-        x="missing_percent_overall",
-        y="slope_ape",
-        scatter=False,
-        color=palette[gap_handling_method],
-        label=gap_handling_method,
-        order=2,
-        ax=ax[1, -1],
-        ci=99,
-    )
+    # sns.regplot(
+    #     data=subset,
+    #     x="missing_percent_overall",
+    #     y="slope_ape",
+    #     scatter=False,
+    #     color=palette[gap_handling_method],
+    #     label=gap_handling_method,
+    #     order=2,
+    #     ax=ax[1, -1],
+    #     ci=99,
+    # )
 
 
-ax[0, 0].set(xlabel="", ylabel="MAPE (\%)", title="Naive")
-ax[0, 1].set(xlabel="", ylabel="", title="LINT")
-ax[0, 2].set(xlabel="", ylabel="", title="Corrected")
-ax[0, 3].set(xlabel="", ylabel="", title="All")
+ax[0].set(xlabel="", ylabel="MAPE (\%)", title="Naive")
+ax[1].set(xlabel="", ylabel="", title="LINT")
+ax[2].set(xlabel="", ylabel="", title="Corrected")
+ax[3].set(xlabel="", ylabel="", title="All")
 
-ax[1, 0].set(xlabel="", ylabel="Slope APE (\%)", title="")
-ax[1, 1].set(xlabel="", ylabel="", title="")
-ax[1, 2].set(xlabel="", ylabel="", title="")
-ax[1, 3].set(xlabel="", ylabel="", title="")
+# ax[1, 0].set(xlabel="", ylabel="Slope APE (\%)", title="")
+# ax[1, 1].set(xlabel="", ylabel="", title="")
+# ax[1, 2].set(xlabel="", ylabel="", title="")
+# ax[1, 3].set(xlabel="", ylabel="", title="")
 # Remove gridlines and plot outlines
 
 # Make one x-axis label for all plots
 fig.text(0.5, 0.02, "\% missing", ha="center", va="center")
 
-for i in range(2):
-    for j in range(4):
-        ax[i, j].grid(False)
-        ax[i, j].set_xticks([0, 25, 50, 75, 100])
-        ax[i, j].set_xlim(-15, 105)
-        ax[i, j].spines["top"].set_visible(False)
-        # ax[i, j].spines["left"].set_visible(False)
-        ax[i, j].spines["right"].set_visible(False)
+# for i in range(2):
+for j in range(4):
+    ax[j].grid(False)
+    ax[j].set_xticks([0, 25, 50, 75, 100])
+    ax[j].set_xlim(-15, 105)
+    ax[j].spines["top"].set_visible(False)
+    # ax[j].spines["left"].set_visible(False)
+    ax[j].spines["right"].set_visible(False)
 
-# Set the same x-axis limits for all plots
-for i in range(4):
-    ax[1, i].set_ylim(0, 60)
-    ax[1, i].set_xlim(-15, 105)
-    ax[0, i].set_ylim(0, 150)
+    ax[j].set_ylim(0, 60)
+    ax[j].set_xlim(-15, 105)
+    ax[j].set_ylim(0, 150)
 
 # Remove ticks from all but first column
 # for i in range(1, 4):
-#     ax[0, i].set_yticks([])
+#     ax[i].set_yticks([])
 #     ax[1, i].set_yticks([])
 
 
-ax[0, 0].spines["left"].set_visible(True)
-ax[1, 0].spines["left"].set_visible(True)
+ax[0].spines["left"].set_visible(True)
+# ax[1, 0].spines["left"].set_visible(True)
 
 # Add title
 plt.suptitle(
@@ -249,7 +247,7 @@ plt.suptitle(
 
 
 plt.savefig(
-    f"plots/temp/{dir}test_{spacecraft}_scatterplots_{n_bins}_bins.png",
+    f"plots/results/{output_path}/test_{spacecraft}_scatterplots_{n_bins}_bins.png",
     bbox_inches="tight",
 )
 
@@ -263,6 +261,6 @@ plt.savefig(
 #         y_axis_log=True,
 #     )
 #     plt.savefig(
-#         f"plots/temp/test_{spacecraft}_error_trend_{gap_handling.upper()}_{n_bins}_bins.png",
+#         f"plots/results/test_{spacecraft}_error_trend_{gap_handling.upper()}_{n_bins}_bins.png",
 #         bbox_inches="tight",
 #     )

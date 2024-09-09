@@ -12,18 +12,18 @@ import src.params as params
 
 np.random.seed(123)  # For reproducibility
 
-dir = "hpc/"  # end with / if not empty
 times_to_gap = params.times_to_gap
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # Import all corrected (test) files
-spacecraft = sys.argv[1]
-n_bins = sys.argv[2]
+spacecraft = "wind"
+n_bins = 10
 # times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
+output_path = params.output_path
 
 index = 1  # For now, just getting first corrected file
 # NOTE: THIS IS NOT THE SAME AS FILE INDEX!
@@ -36,14 +36,14 @@ if spacecraft == "psp":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/processed/psp/test/{dir}psp_*_corrected_{n_bins}_bins_FULL.pkl"
+            + f"data/corrections/{output_path}/psp_*_corrected_{n_bins}_bins_FULL.pkl"
         )
     )
 elif spacecraft == "wind":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/processed/{dir}wind/wi_*_corrected_{n_bins}_bins_FULL.pkl"
+            + f"data/corrections/{output_path}/wi_*_corrected_{n_bins}_bins_FULL.pkl"
         )
     )
 else:
@@ -80,7 +80,10 @@ print(
 
 # Below is copied directly from 4a_finalise_correction.py
 for dim in [2, 3]:
-    with open(f"data/processed/correction_lookup_{dim}d_{n_bins}_bins.pkl", "rb") as f:
+    with open(
+        f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins.pkl",
+        "rb",
+    ) as f:
         correction_lookup = pickle.load(f)
         gap_handling = "lint"
 
@@ -109,7 +112,7 @@ for dim in [2, 3]:
             ax.set_facecolor("black")
             ax.set_xscale("log")
             plt.savefig(
-                f"plots/final/train_heatmap_{n_bins}bins_2d_{gap_handling.upper()}.png",
+                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d_{gap_handling.upper()}.png",
                 bbox_inches="tight",
             )
             plt.close()
@@ -151,7 +154,7 @@ for dim in [2, 3]:
                     ax[i].set_ylabel("")
 
             plt.savefig(
-                f"plots/final/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.png",
+                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.png",
                 bbox_inches="tight",
             )
             plt.close()
@@ -187,7 +190,7 @@ for dim in [2, 3]:
                     ax[i].set_ylabel("")
 
             plt.savefig(
-                f"plots/final/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.png",
+                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.png",
                 bbox_inches="tight",
             )
             plt.close()
@@ -223,7 +226,7 @@ for dim in [2, 3]:
                     ax[i].set_ylabel("")
 
             plt.savefig(
-                f"plots/final/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.png",
+                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.png",
                 bbox_inches="tight",
             )
             plt.close()
@@ -231,7 +234,9 @@ for dim in [2, 3]:
 
 # Load just the 2D Lint version for use in later case study plots
 # USING 15 BINS SO AS TO HIDE EMPTY BINS FROM PLOT
-with open("data/processed/correction_lookup_2d_15_bins.pkl", "rb") as f:
+with open(
+    f"data/corrections/{output_path}/correction_lookup_2d_15_bins.pkl", "rb"
+) as f:
     correction_lookup = pickle.load(f)
     xedges = correction_lookup["xedges"]
     yedges = correction_lookup["yedges"]
@@ -279,8 +284,10 @@ print(
 fig, ax = plt.subplots(2, 3, figsize=(15, 2 * 3))
 # will use consistent interval index, but choose random versions of it to plot
 versions_to_plot = [
-    23,  # 13 = 9% missing, 23 = 50% missing
-    8,
+    0,
+    1,
+    # 23,  # 13 = 9% missing, 23 = 50% missing
+    # 8,
 ]
 for ax_index, version in enumerate(versions_to_plot):
     if len(ints) == 1:
@@ -462,7 +469,7 @@ ax[0, 2].set_title("SF \% error and \% pairs missing")
 plt.subplots_adjust(wspace=0.4)
 
 plt.savefig(
-    f"plots/final/{dir}test_{spacecraft}_case_study_gapping_{file_index}_{int_index}.png",
+    f"plots/results/{output_path}/test_{spacecraft}_case_study_gapping_{file_index}_{int_index}.png",
     bbox_inches="tight",
 )
 
@@ -764,6 +771,6 @@ ax0.tick_params(axis="y", colors="grey")
 ax0.set_ylim(0, 100)
 
 plt.savefig(
-    f"plots/final/{dir}test_{spacecraft}_case_study_correcting_{file_index}_{int_index}_{n_bins}_bins.png",
+    f"plots/results/{output_path}/test_{spacecraft}_case_study_correcting_{file_index}_{int_index}_{n_bins}_bins.png",
     bbox_inches="tight",
 )

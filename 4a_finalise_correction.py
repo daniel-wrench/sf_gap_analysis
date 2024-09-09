@@ -13,6 +13,7 @@ spacecraft = "psp"
 gap_handling = "lint"
 missing_measure = "missing_percent"
 data_path_prefix = params.data_path_prefix
+output_path = params.output_path
 n_bins_list = params.n_bins_list
 
 for dim in [2, 3]:
@@ -98,7 +99,7 @@ for dim in [2, 3]:
             ax.set_facecolor("black")
             ax.set_xscale("log")
             plt.savefig(
-                f"plots/temp/train_heatmap_{n_bins}bins_2d.png",
+                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d.png",
                 bbox_inches="tight",
             )
             plt.close()
@@ -120,7 +121,7 @@ for dim in [2, 3]:
             ax.set_facecolor("black")
             ax.set_xscale("log")
             plt.savefig(
-                f"plots/temp/train_heatmap_{n_bins}bins_2d_counts.png",
+                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d_counts.png",
                 bbox_inches="tight",
             )
             plt.close()
@@ -202,7 +203,7 @@ for dim in [2, 3]:
                     ax[i].set_ylabel("")
 
             plt.savefig(
-                f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.png",
+                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.png",
                 bbox_inches="tight",
             )
             plt.close()
@@ -238,7 +239,7 @@ for dim in [2, 3]:
                     ax[i].set_ylabel("")
 
             plt.savefig(
-                f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.png",
+                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.png",
                 bbox_inches="tight",
             )
             plt.close()
@@ -274,7 +275,7 @@ for dim in [2, 3]:
                     ax[i].set_ylabel("")
 
             plt.savefig(
-                f"plots/temp/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.png",
+                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.png",
                 bbox_inches="tight",
             )
             plt.close()
@@ -282,10 +283,10 @@ for dim in [2, 3]:
         # Export the LINT lookup tables as a pickle file
         if gap_handling == "lint":
             with open(
-                f"data/processed/correction_lookup_{dim}d_{n_bins}_bins.pkl",
+                f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins.pkl",
                 "wb",
             ) as f:
                 pickle.dump(correction_lookup, f)
             print(
-                f"Saved complete correction lookup table to data/processed/correction_lookup_{dim}d_{n_bins}_bins.pkl"
+                f"Saved complete correction lookup table to data/corrections/correction_lookup_{dim}d_{n_bins}_bins.pkl"
             )

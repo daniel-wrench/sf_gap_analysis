@@ -296,30 +296,31 @@ else:
     fig, ax1 = plt.subplots(figsize=(5, 3))
     # ax2 = ax1.twinx()
 
-    ax1.plot(df["Bx"][: ints[0].index[-1]], color="grey")
+    ax1.plot(df["Bx"][: ints[0].index[-1]], color="grey", label="Original")
     # ax1.axvline(df.index[0], c="black", linestyle="dashed")
     # [
     #     ax1.axvline(interval.index[-1], c="black", linestyle="dashed")
     #     for interval in ints
     # ]
-    ax1.plot(ints[0]["Bx"], color="black")
+    ax1.plot(ints[0]["Bx"], color="black", label="Standardised")
     # ax2.axhline(0, c="black", linewidth=0.5, linestyle="--")
     ax1.set_xlabel("Time")
+    ax1.xaxis.set_major_locator(mdates.HourLocator(interval=2))
     ax1.xaxis.set_major_formatter(
         mdates.ConciseDateFormatter(ax1.xaxis.get_major_locator())
     )
     ax1.set_ylabel("$B_R$")
     ax1.set_xlim(ints[0].index[0], ints[0].index[-1])
     ax2 = ax1.twiny()
-    ax2.set_xlabel("Time (\lambda_C)")
+    ax2.set_xlabel("Time ($\lambda_C$)")
 
     # Set the secondary x-axis limits to cover the same range as the primary x-axis
     # ax2.set_xlim(ax1.get_xlim())
 
     # # Create tick marks and labels for the secondary x-axis
-    secondary_ticks = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 10)
+    secondary_ticks = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 11)
     ax2.set_xticks(secondary_ticks)
-    ax2.set_xticklabels(range(1, 11))
+    ax2.set_xticklabels(range(0, 11))
 
     # Add a vertical dotted line at t1 + tc
     for i in range(11):
@@ -330,9 +331,26 @@ else:
             lw=1,
         )
 
-    ax2.set_ylabel("$B_R$ (standardised)")
+    # Annotate the distance between two vertical lines as lambda_C
+    x0 = df.index[0] + pd.Timedelta(tc, "s")
+    x1 = df.index[0] + pd.Timedelta(tc * 2, "s")
+    # ax1.annotate(
+    #     r"$\lambda_C$",
+    #     xy=(x0 + (x1 - x0) / 2, -2.5),  # Midpoint and a little above the plot
+    #     # xytext=(0, 20),
+    #     # textcoords='offset points',
+    #     ha="center",
+    #     va="center",
+    # )
+    # ax1.annotate(
+    #     r"$	\longleftrightarrow$",
+    #     xy=(x0 + (x1 - x0) / 2, -3.5),  # Midpoint and a little above the plot
+    #     # xytext=(0, 20),
+    #     # textcoords='offset points',
+    #     ha="center",
+    #     va="center",
+    # )
     # # Make the y-axis label, ticks and tick labels match the line color.
-    ax2.set_ylim(-10, 10)
     # plt.suptitle(
     #     f"Standardised solar wind interval/s from {spacecraft.upper()}, given local conditions",
     #     y=1.1,
@@ -342,11 +360,11 @@ else:
     #     f"{tc_n}$\lambda_C$ ($\lambda_C=${int(tc)}s) across {interval_length} points, $\langle x \\rangle=0$, $\sigma=1$"
     # )
     # plt.show()
-
+    ax1.legend(loc="upper right", fontsize=14)
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/preprocessing")
-        .replace(".cdf", "_ints_std_test.png")
+        .replace(".cdf", "_ints_std_2_axes.png")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()

@@ -481,10 +481,15 @@ def plot_error_trend_line(
     title="SF estimation error vs. lag and global sparsity",
     y_axis_log=False,
 ):
-    fig, ax = plt.subplots(figsize=(8, 5), tight_layout=True)
-    plt.title(title)
+    fig, ax = plt.subplots(figsize=(8, 3), ncols=2, sharey=True, tight_layout=True)
+    # plt.title(title)
     # plt.plot(lag_error_mean_i, color="black", lw=3)
-    plt.scatter(
+
+    other_outputs_df = sfs_gapped[sfs_gapped["gap_handling"] == "lint"][:10000]
+    estimator = "sf_2"
+    y_axis_log = True
+
+    ax[0].scatter(
         other_outputs_df["lag"],
         other_outputs_df[estimator + "_pe"],
         c=other_outputs_df["missing_percent"],
@@ -495,7 +500,7 @@ def plot_error_trend_line(
     # median_error = other_outputs_df.groupby("lag")[estimator + "_pe"].median()
     mean_error = other_outputs_df.groupby("lag")[estimator + "_pe"].mean()
     # plt.plot(median_error, color="g", lw=4, label="Median % error")
-    plt.plot(mean_error, color="c", lw=4, label="Mean % error")
+    ax[0].plot(mean_error, color="c", lw=4, label="Mean \% error")
 
     # plt.annotate(
     #     "MAPE = {0:.2f}".format(other_outputs_df[estimator + "_pe"].abs().mean()),
@@ -506,19 +511,48 @@ def plot_error_trend_line(
     #     c="black",
     # )
 
-    cb = plt.colorbar()
-    cb.set_label("% missing overall")
+    # cb = fig.colorbar()
+    # cb.set_label("\% missing overall")
     # Change range of color bar
-    plt.hlines(0, 1, other_outputs_df.lag.max(), color="black", linestyle="--")
-    plt.clim(0, 100)
-    plt.ylim(-2e2, 6e2)
-    plt.semilogx()
+    ax[0].hlines(0, 1, other_outputs_df.lag.max(), color="black", linestyle="--")
+    ax[0].set_ylim(-2e2, 6e2)
+    ax[0].semilogx()
     if y_axis_log is True:
-        plt.yscale("symlog", linthresh=1e2)
-    plt.xlabel("Lag ($\\tau$)")
-    plt.ylabel("% error")
-    plt.legend(loc="upper left")
-    # plt.show()
+        ax[0].set_yscale("symlog", linthresh=1e2)
+    ax[0].set_title("LINT")
+    ax[0].set_xlabel("Lag ($\\tau$)")
+    ax[0].set_ylabel("\% error")
+    ax[0].legend(loc="upper left")
+
+    # Add second plot for scatter plot
+    other_outputs_df = sfs_gapped[sfs_gapped["gap_handling"] == "naive"][:10000]
+
+    sc = ax[1].scatter(
+        other_outputs_df["lag"],
+        other_outputs_df[estimator + "_pe"],
+        c=other_outputs_df["missing_percent"],
+        s=0.03,
+        alpha=0.4,
+        cmap="plasma",
+    )
+
+    # median_error = other_outputs_df.groupby("lag")[estimator + "_pe"].median()
+    mean_error = other_outputs_df.groupby("lag")[estimator + "_pe"].mean()
+    # plt.plot(median_error, color="g", lw=4, label="Median % error")
+    ax[1].plot(mean_error, color="c", lw=4, label="Mean \% error")
+    # Plot the colorbar
+    plt.colorbar(sc)
+    # Specify the limits of this colorbar
+    sc.set_clim(0, 100)
+    ax[1].set_title("Naive")
+    ax[1].hlines(0, 1, other_outputs_df.lag.max(), color="black", linestyle="--")
+    ax[1].set_xlabel("Lag ($\\tau$)")
+    # ax[1].set_ylim(-2e2, 6e2)
+    ax[1].semilogx()
+    if y_axis_log is True:
+        ax[1].set_yscale("symlog", linthresh=1e2)
+    plt.subplots_adjust(wspace=0)
+    plt.show()
 
 
 def plot_error_trend_scatter(

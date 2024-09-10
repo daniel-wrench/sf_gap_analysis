@@ -9,7 +9,7 @@
 
 times_to_gap = 25
 data_path_prefix = ""
-output_path = "testing"  # "final/" or "testing/"
+output_path = "final"  # "final/" or "testing/"
 pwrl_range = [50, 500]
 minimum_missing_chunks = 0.7
 n_bins_list = [10]

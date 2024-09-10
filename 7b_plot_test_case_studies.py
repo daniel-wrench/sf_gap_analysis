@@ -19,7 +19,7 @@ plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # Import all corrected (test) files
 spacecraft = "wind"
-n_bins = 10
+n_bins = 25
 # times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
@@ -75,163 +75,6 @@ print(
 )
 
 
-# Also do publication-read plots for heatmaps (as least the LINT versions; we haven't output the correction
-# lookup for the naive versions, but we do have plots of these on the HPC from step 2b)
-
-# Below is copied directly from 4a_finalise_correction.py
-for dim in [2, 3]:
-    with open(
-        f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins.pkl",
-        "rb",
-    ) as f:
-        correction_lookup = pickle.load(f)
-        gap_handling = "lint"
-
-        if dim == 2:
-            xedges = correction_lookup["xedges"]
-            yedges = correction_lookup["yedges"]
-            pe_mean = correction_lookup["pe_mean"]
-
-            fig, ax = plt.subplots(figsize=(7, 5))
-            plt.grid(False)
-            plt.pcolormesh(
-                xedges,
-                yedges,
-                pe_mean.T,
-                cmap="bwr",
-            )
-            plt.grid(False)
-            plt.colorbar(label="MPE")
-            plt.clim(-100, 100)
-            plt.xlabel("Lag ($\\tau$)")
-            plt.ylabel("Missing percentage")
-            plt.title(
-                f"Distribution of missing proportion and lag ({gap_handling.upper()})",
-                y=1.1,
-            )
-            ax.set_facecolor("black")
-            ax.set_xscale("log")
-            plt.savefig(
-                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d_{gap_handling.upper()}.png",
-                bbox_inches="tight",
-            )
-            plt.close()
-
-        elif dim == 3:
-            xedges = correction_lookup["xedges"]
-            yedges = correction_lookup["yedges"]
-            zedges = correction_lookup["zedges"]
-            pe_mean = correction_lookup["pe_mean"]
-
-            fig, ax = plt.subplots(
-                1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True
-            )
-            # Remove spacing between subplots
-            plt.subplots_adjust(wspace=0.2)
-            plt.grid(False)
-            for i in range(n_bins):
-                ax[i].grid(False)
-                c = ax[i].pcolormesh(
-                    xedges,
-                    yedges,
-                    pe_mean[:, :, i],
-                    cmap="bwr",
-                )
-                # plt.colorbar(label="MPE")
-                c.set_clim(-100, 100)
-                plt.xlabel("Lag ($\\tau$)")
-                plt.ylabel("Missing proportion")
-                plt.title("Distribution of missing proportion and lag")
-                ax[i].set_facecolor("black")
-                ax[i].semilogx()
-                ax[i].set_title(
-                    f"Power bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
-                )
-                ax[i].set_xlabel("Lag ($\\tau$)")
-                # Remove y-axis labels for all but the first plot
-                if i > 0:
-                    ax[i].set_yticklabels([])
-                    ax[i].set_ylabel("")
-
-            plt.savefig(
-                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.png",
-                bbox_inches="tight",
-            )
-            plt.close()
-
-            fig, ax = plt.subplots(
-                1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True
-            )
-            # Remove spacing between subplots
-            plt.grid(False)
-            plt.subplots_adjust(wspace=0.2)
-            for i in range(n_bins):
-                ax[i].grid(False)
-                c = ax[i].pcolormesh(
-                    yedges,
-                    zedges,
-                    pe_mean[i, :, :],
-                    cmap="bwr",
-                )
-                # plt.colorbar(label="MPE")
-                c.set_clim(-100, 100)
-                ax[i].set_xlabel("Missing prop")
-                ax[i].set_ylabel("Power")
-                plt.title("Distribution of missing proportion and lag")
-                ax[i].set_facecolor("black")
-                ax[i].semilogy()
-                ax[i].set_title(
-                    f"Lag bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
-                )
-                ax[i].set_xlabel("Missing prop")
-                # Remove y-axis labels for all but the first plot
-                if i > 0:
-                    ax[i].set_yticklabels([])
-                    ax[i].set_ylabel("")
-
-            plt.savefig(
-                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.png",
-                bbox_inches="tight",
-            )
-            plt.close()
-
-            fig, ax = plt.subplots(
-                1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True
-            )
-            # Remove spacing between subplots
-            plt.grid(False)
-            plt.subplots_adjust(wspace=0.2)
-            for i in range(n_bins):
-                ax[i].grid(False)
-                c = ax[i].pcolormesh(
-                    xedges,
-                    zedges,
-                    pe_mean[:, i, :],
-                    cmap="bwr",
-                )
-                # plt.colorbar(label="MPE")
-                c.set_clim(-100, 100)
-                plt.title("Distribution of missing proportion and lag")
-                ax[i].set_facecolor("black")
-                ax[i].semilogx()
-                ax[i].semilogy()
-                ax[i].set_title(
-                    f"Missing prop bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
-                )
-                ax[i].set_xlabel("Lag ($\\tau$)")
-                ax[i].set_ylabel("Power")
-                # Remove y-axis labels for all but the first plot
-                if i > 0:
-                    ax[i].set_yticklabels([])
-                    ax[i].set_ylabel("")
-
-            plt.savefig(
-                f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.png",
-                bbox_inches="tight",
-            )
-            plt.close()
-
-
 # Load just the 2D Lint version for use in later case study plots
 # USING 15 BINS SO AS TO HIDE EMPTY BINS FROM PLOT
 with open(
@@ -281,11 +124,11 @@ print(
     int_index,
 )
 
-fig, ax = plt.subplots(2, 3, figsize=(15, 2 * 3))
+fig, ax = plt.subplots(2, 3, figsize=(15, 2 * 3), sharey="col")
 # will use consistent interval index, but choose random versions of it to plot
 versions_to_plot = [
-    0,
-    1,
+    23,
+    8,
     # 23,  # 13 = 9% missing, 23 = 50% missing
     # 8,
 ]

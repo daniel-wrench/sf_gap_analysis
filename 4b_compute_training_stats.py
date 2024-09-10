@@ -68,6 +68,9 @@ print(
     f"\nMemory usage of sfs_gapped (for plotting trendline graphs): {sfs_gapped.memory_usage(deep=True).sum() / 1024 ** 2:.2f} MB\n"
 )
 
+# Export the sfs_gapped dataframe to a pickle file
+sfs_gapped.to_pickle(f"data/processed/{spacecraft}/train/{spacecraft}_sfs_gapped.pkl")
+
 for gap_handling in sfs_gapped.gap_handling.unique():
     sf.plot_error_trend_line(
         sfs_gapped[sfs_gapped["gap_handling"] == gap_handling],

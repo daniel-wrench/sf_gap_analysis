@@ -22,8 +22,8 @@ import warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 # DELETE FOLLOWING ON HPC
-# plt.rc("text", usetex=True)
-# plt.rc("font", family="serif", serif="Computer Modern", size=16)
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # For current Wind importing
 sys_arg_dict = {
@@ -293,25 +293,36 @@ else:
         "different ways",
     )
 
-    fig, ax1 = plt.subplots(figsize=(9, 3))
-    ax2 = ax1.twinx()
+    fig, ax1 = plt.subplots(figsize=(5, 3))
+    # ax2 = ax1.twinx()
 
-    ax1.plot(df["Bx"], color="grey")
-    ax1.axvline(df.index[0], c="black", linestyle="dashed")
-    [
-        ax1.axvline(interval.index[-1], c="black", linestyle="dashed")
-        for interval in ints
-    ]
-    [ax2.plot(interval["Bx"], color="black") for interval in ints]
+    ax1.plot(df["Bx"][: ints[0].index[-1]], color="grey")
+    # ax1.axvline(df.index[0], c="black", linestyle="dashed")
+    # [
+    #     ax1.axvline(interval.index[-1], c="black", linestyle="dashed")
+    #     for interval in ints
+    # ]
+    ax1.plot(ints[0]["Bx"], color="black")
     # ax2.axhline(0, c="black", linewidth=0.5, linestyle="--")
     ax1.set_xlabel("Time")
     ax1.xaxis.set_major_formatter(
         mdates.ConciseDateFormatter(ax1.xaxis.get_major_locator())
     )
-    ax1.set_ylabel("$B_R$", color="grey")
+    ax1.set_ylabel("$B_R$")
+    ax1.set_xlim(ints[0].index[0], ints[0].index[-1])
+    ax2 = ax1.twiny()
+    ax2.set_xlabel("Time (\lambda_C)")
+
+    # Set the secondary x-axis limits to cover the same range as the primary x-axis
+    # ax2.set_xlim(ax1.get_xlim())
+
+    # # Create tick marks and labels for the secondary x-axis
+    secondary_ticks = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 10)
+    ax2.set_xticks(secondary_ticks)
+    ax2.set_xticklabels(range(1, 11))
 
     # Add a vertical dotted line at t1 + tc
-    for i in range(10):
+    for i in range(11):
         ax1.axvline(
             df.index[0] + pd.Timedelta(tc * i, "s"),
             color="black",
@@ -320,8 +331,7 @@ else:
         )
 
     ax2.set_ylabel("$B_R$ (standardised)")
-    # Make the y-axis label, ticks and tick labels match the line color.
-    ax1.tick_params("y", colors="grey")
+    # # Make the y-axis label, ticks and tick labels match the line color.
     ax2.set_ylim(-10, 10)
     # plt.suptitle(
     #     f"Standardised solar wind interval/s from {spacecraft.upper()}, given local conditions",
@@ -331,10 +341,12 @@ else:
     # plt.title(
     #     f"{tc_n}$\lambda_C$ ($\lambda_C=${int(tc)}s) across {interval_length} points, $\langle x \\rangle=0$, $\sigma=1$"
     # )
+    # plt.show()
+
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/preprocessing")
-        .replace(".cdf", "_ints_std.png")
+        .replace(".cdf", "_ints_std_test.png")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()

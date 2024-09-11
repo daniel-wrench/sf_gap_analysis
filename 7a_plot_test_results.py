@@ -18,11 +18,11 @@ output_path = params.output_path
 times_to_gap = params.times_to_gap
 
 plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=16)
+plt.rc("font", family="serif", serif="Computer Modern", size=15)
 
 # Import all corrected (test) files
 spacecraft = sys.argv[1]
-n_bins = sys.argv[2]
+n_bins = int(sys.argv[2])
 # times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
@@ -219,7 +219,7 @@ ax[3].set(xlabel="", ylabel="", title="All")
 # Remove gridlines and plot outlines
 
 # Make one x-axis label for all plots
-fig.text(0.5, 0.02, "\% missing", ha="center", va="center")
+fig.text(0.5, 0.00, "\% missing", ha="center", va="center")
 
 # for i in range(2):
 for j in range(4):
@@ -346,10 +346,24 @@ for dim in [2, 3]:
         zedges = correction_lookup["zedges"]
         pe_mean = correction_lookup["pe_mean"]
 
-        fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
-        # Remove spacing between subplots
-        plt.subplots_adjust(wspace=0.2)
+        # Define the number of columns (you can adjust this as desired)
+        n_cols = 5  # Number of columns per row
+        n_rows = (n_bins + n_cols - 1) // n_cols  # Calculate number of rows needed
+
+        # Create subplots with multiple rows and columns
+        fig, ax = plt.subplots(
+            n_rows,
+            n_cols,
+            figsize=(n_cols * 2, n_rows * 2),
+            sharex=True,
+            sharey=True,
+        )
+        plt.subplots_adjust(wspace=0.1, hspace=0.3)
         plt.grid(False)
+
+        # Flatten the axis array to simplify indexing
+        ax = ax.flatten()
+
         for i in range(n_bins):
             ax[i].grid(False)
             c = ax[i].pcolormesh(
@@ -358,30 +372,52 @@ for dim in [2, 3]:
                 pe_mean[:, :, i],
                 cmap="bwr",
             )
-            # plt.colorbar(label="MPE")
             c.set_clim(-100, 100)
-            plt.xlabel("Lag ($\\tau$)")
-            plt.ylabel("Missing proportion")
-            plt.title("Distribution of missing proportion and lag")
+            ax[i].set_title(
+                f"Power bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)), fontsize=13
+            )
             ax[i].set_facecolor("black")
             ax[i].semilogx()
-            ax[i].set_title(f"Power bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)))
-            ax[i].set_xlabel("Lag ($\\tau$)")
-            # Remove y-axis labels for all but the first plot
-            if i > 0:
-                ax[i].set_yticklabels([])
-                ax[i].set_ylabel("")
+
+            # Remove y-axis labels for all but the first column plots
+            if i % n_cols == 0:
+                ax[i].set_ylabel("\% missing")
+        fig.text(
+            0.5, 0.00, "Lag ($\\tau$)", ha="center", va="center", fontsize=17
+        )  # Shared x-axis label
+        # Now do the same but for an overall plot title
+        plt.suptitle(
+            f"Error vs. \% missing data and lag for the {spacecraft.upper()} training set ({n_bins} bins)",
+            fontsize=17,
+            y=1.02,
+        )
+        # Hide any extra subplots if n_bins is not a multiple of n_cols
+        for j in range(n_bins, len(ax)):
+            fig.delaxes(ax[j])
+
+        # Add a color bar on the right-hand side of the figure, stretching down the entire height
+        cbar_ax = fig.add_axes(
+            [0.92, 0.105, 0.02, 0.78]
+        )  # [left, bottom, width, height] to cover full height
+        cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
+        cb.set_label("MPE")  # Optional: Label the color bar
 
         plt.savefig(
-            f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling}_power.png",
+            f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_power.png",
             bbox_inches="tight",
         )
         plt.close()
 
-        fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
-        # Remove spacing between subplots
+        # Create subplots with multiple rows and columns
+        fig, ax = plt.subplots(
+            n_rows, n_cols, figsize=(n_cols * 2, n_rows * 2), sharex=True, sharey=True
+        )
+        plt.subplots_adjust(wspace=0.1, hspace=0.1)
         plt.grid(False)
-        plt.subplots_adjust(wspace=0.2)
+
+        # Flatten the axis array to simplify indexing
+        ax = ax.flatten()
+
         for i in range(n_bins):
             ax[i].grid(False)
             c = ax[i].pcolormesh(
@@ -390,30 +426,45 @@ for dim in [2, 3]:
                 pe_mean[i, :, :],
                 cmap="bwr",
             )
-            # plt.colorbar(label="MPE")
             c.set_clim(-100, 100)
-            ax[i].set_xlabel("Missing prop")
-            ax[i].set_ylabel("Power")
             plt.title("Distribution of missing proportion and lag")
+            ax[i].set_title(f"Lag bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)))
             ax[i].set_facecolor("black")
             ax[i].semilogy()
-            ax[i].set_title(f"Lag bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)))
-            ax[i].set_xlabel("Missing prop")
-            # Remove y-axis labels for all but the first plot
-            if i > 0:
-                ax[i].set_yticklabels([])
-                ax[i].set_ylabel("")
+
+            # Remove y-axis labels for all but the first column plots
+            if i % n_cols == 0:
+                ax[i].set_ylabel("Power")
+        fig.text(
+            0.5, 0.00, "\% missing", ha="center", va="center", fontsize=17
+        )  # Shared x-axis label
+        # Hide any extra subplots if n_bins is not a multiple of n_cols
+        for j in range(n_bins, len(ax)):
+            fig.delaxes(ax[j])
+
+        # Add a color bar on the right-hand side of the figure, stretching down the entire height
+        cbar_ax = fig.add_axes(
+            [0.92, 0.1, 0.02, 0.8]
+        )  # [left, bottom, width, height] to cover full height
+        cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
+        cb.set_label("MPE")  # Optional: Label the color bar
 
         plt.savefig(
-            f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling}_lag.png",
+            f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_lag.png",
             bbox_inches="tight",
         )
         plt.close()
 
-        fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
-        # Remove spacing between subplots
+        # Create subplots with multiple rows and columns
+        fig, ax = plt.subplots(
+            n_rows, n_cols, figsize=(n_cols * 2, n_rows * 2), sharex=True, sharey=True
+        )
+        plt.subplots_adjust(wspace=0.1, hspace=0.1)
         plt.grid(False)
-        plt.subplots_adjust(wspace=0.2)
+
+        # Flatten the axis array to simplify indexing
+        ax = ax.flatten()
+
         for i in range(n_bins):
             ax[i].grid(False)
             c = ax[i].pcolormesh(
@@ -422,24 +473,34 @@ for dim in [2, 3]:
                 pe_mean[:, i, :],
                 cmap="bwr",
             )
-            # plt.colorbar(label="MPE")
             c.set_clim(-100, 100)
-            plt.title("Distribution of missing proportion and lag")
             ax[i].set_facecolor("black")
             ax[i].semilogx()
             ax[i].semilogy()
+            plt.title("Distribution of missing proportion and lag")
             ax[i].set_title(
                 f"Missing prop bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
             )
-            ax[i].set_xlabel("Lag ($\\tau$)")
-            ax[i].set_ylabel("Power")
-            # Remove y-axis labels for all but the first plot
-            if i > 0:
-                ax[i].set_yticklabels([])
-                ax[i].set_ylabel("")
+
+            # Remove y-axis labels for all but the first column plots
+            if i % n_cols == 0:
+                ax[i].set_ylabel("Power")
+        fig.text(
+            0.5, 0.00, "Lag", ha="center", va="center", fontsize=17
+        )  # Shared x-axis label
+        # Hide any extra subplots if n_bins is not a multiple of n_cols
+        for j in range(n_bins, len(ax)):
+            fig.delaxes(ax[j])
+
+        # Add a color bar on the right-hand side of the figure, stretching down the entire height
+        cbar_ax = fig.add_axes(
+            [0.92, 0.1, 0.02, 0.8]
+        )  # [left, bottom, width, height] to cover full height
+        cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
+        cb.set_label("MPE")  # Optional: Label the color bar
 
         plt.savefig(
-            f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling}_missing.png",
+            f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_missing.png",
             bbox_inches="tight",
         )
         plt.close()

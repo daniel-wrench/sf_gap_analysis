@@ -273,188 +273,187 @@ plt.savefig(
 # lookup for the naive versions, but we do have plots of these on the HPC from step 2b)
 
 # Below is copied directly from 4a_finalise_correction.py
-for gap_handling in ["lint", "naive"]:
-    for dim in [2]:
+for dim in [2, 3]:
+    if dim == 2:  # read both naive and LINT versions
         with open(
-            f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_{gap_handling}.pkl",
+            f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_naive.pkl",
+            "rb",
+        ) as f:
+            correction_lookup_naive = pickle.load(f)
+
+        with open(
+            f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_lint.pkl",
+            "rb",
+        ) as f:
+            correction_lookup_lint = pickle.load(f)
+
+        xedges = correction_lookup_lint["xedges"]
+        yedges = correction_lookup_lint["yedges"]
+        pe_mean_lint = correction_lookup_lint["pe_mean"]
+        pe_mean_naive = correction_lookup_naive["pe_mean"]
+
+        fig, ax = plt.subplots(figsize=(8, 3), ncols=2, sharey=True)
+        plt.grid(False)
+
+        # Plot the heatmap for the first column
+        sc = ax[0].pcolormesh(
+            xedges,
+            yedges,
+            pe_mean_naive.T,
+            cmap="bwr",
+        )
+        ax[0].grid(False)
+        ax[0].set_xlabel("Lag ($\\tau$)")
+        ax[0].set_ylabel("\% missing")
+        ax[0].set_title("Naive")
+        ax[0].set_facecolor("black")
+        ax[0].set_xscale("log")
+
+        # Plot the heatmap for the second column
+        sc2 = ax[1].pcolormesh(
+            xedges,
+            yedges,
+            pe_mean_lint.T,
+            cmap="bwr",
+        )
+        ax[1].grid(False)
+        ax[1].set_xlabel("Lag ($\\tau$)")
+        ax[1].set_title("LINT")
+        ax[1].set_facecolor("black")
+        ax[1].set_xscale("log")
+
+        cb = plt.colorbar(sc, cax=ax[1].inset_axes([1.05, 0, 0.03, 1]))
+        sc.set_clim(-100, 100)
+        sc2.set_clim(-100, 100)
+        cb.set_label("\% error")
+        plt.subplots_adjust(wspace=0.108)
+
+        plt.savefig(
+            f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d.png",
+            bbox_inches="tight",
+        )
+        plt.close()
+
+    elif dim == 3:  # read only LINT versions
+        with open(
+            f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_lint.pkl",
             "rb",
         ) as f:
             correction_lookup = pickle.load(f)
-            gap_handling = "lint"
 
-            if dim == 2:
-                xedges = correction_lookup["xedges"]
-                yedges = correction_lookup["yedges"]
-                pe_mean = correction_lookup["pe_mean"]
+        xedges = correction_lookup["xedges"]
+        yedges = correction_lookup["yedges"]
+        zedges = correction_lookup["zedges"]
+        pe_mean = correction_lookup["pe_mean"]
 
-                fig, ax = plt.subplots(figsize=(10, 4), ncols=2, sharey=True)
-                plt.grid(False)
+        fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
+        # Remove spacing between subplots
+        plt.subplots_adjust(wspace=0.2)
+        plt.grid(False)
+        for i in range(n_bins):
+            ax[i].grid(False)
+            c = ax[i].pcolormesh(
+                xedges,
+                yedges,
+                pe_mean[:, :, i],
+                cmap="bwr",
+            )
+            # plt.colorbar(label="MPE")
+            c.set_clim(-100, 100)
+            plt.xlabel("Lag ($\\tau$)")
+            plt.ylabel("Missing proportion")
+            plt.title("Distribution of missing proportion and lag")
+            ax[i].set_facecolor("black")
+            ax[i].semilogx()
+            ax[i].set_title(f"Power bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)))
+            ax[i].set_xlabel("Lag ($\\tau$)")
+            # Remove y-axis labels for all but the first plot
+            if i > 0:
+                ax[i].set_yticklabels([])
+                ax[i].set_ylabel("")
 
-                # Plot the heatmap for the first column
-                sc = ax[0].pcolormesh(
-                    xedges,
-                    yedges,
-                    pe_mean.T,
-                    cmap="bwr",
-                )
-                ax[0].grid(False)
-                ax[0].set_xlabel("Lag ($\\tau$)")
-                ax[0].set_ylabel("\% missing")
-                ax[0].set_title("Naive")
-                ax[0].set_facecolor("black")
-                ax[0].set_xscale("log")
+        plt.savefig(
+            f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling}_power.png",
+            bbox_inches="tight",
+        )
+        plt.close()
 
-                # Plot the heatmap for the second column
-                sc2 = ax[1].pcolormesh(
-                    xedges,
-                    yedges,
-                    pe_mean.T,
-                    cmap="bwr",
-                )
-                ax[1].grid(False)
-                ax[1].set_xlabel("Lag ($\\tau$)")
-                ax[1].set_title("LINT")
-                ax[1].set_facecolor("black")
-                ax[1].set_xscale("log")
+        fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
+        # Remove spacing between subplots
+        plt.grid(False)
+        plt.subplots_adjust(wspace=0.2)
+        for i in range(n_bins):
+            ax[i].grid(False)
+            c = ax[i].pcolormesh(
+                yedges,
+                zedges,
+                pe_mean[i, :, :],
+                cmap="bwr",
+            )
+            # plt.colorbar(label="MPE")
+            c.set_clim(-100, 100)
+            ax[i].set_xlabel("Missing prop")
+            ax[i].set_ylabel("Power")
+            plt.title("Distribution of missing proportion and lag")
+            ax[i].set_facecolor("black")
+            ax[i].semilogy()
+            ax[i].set_title(f"Lag bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)))
+            ax[i].set_xlabel("Missing prop")
+            # Remove y-axis labels for all but the first plot
+            if i > 0:
+                ax[i].set_yticklabels([])
+                ax[i].set_ylabel("")
 
-                cb = plt.colorbar(sc, cax=ax[1].inset_axes([1.05, 0, 0.03, 1]))
-                sc.set_clim(-100, 100)
-                sc2.set_clim(-100, 100)
-                cb.set_label("\% error")
-                plt.subplots_adjust(wspace=0.108)
+        plt.savefig(
+            f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling}_lag.png",
+            bbox_inches="tight",
+        )
+        plt.close()
 
-                plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d.png",
-                    bbox_inches="tight",
-                )
-                plt.close()
+        fig, ax = plt.subplots(1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True)
+        # Remove spacing between subplots
+        plt.grid(False)
+        plt.subplots_adjust(wspace=0.2)
+        for i in range(n_bins):
+            ax[i].grid(False)
+            c = ax[i].pcolormesh(
+                xedges,
+                zedges,
+                pe_mean[:, i, :],
+                cmap="bwr",
+            )
+            # plt.colorbar(label="MPE")
+            c.set_clim(-100, 100)
+            plt.title("Distribution of missing proportion and lag")
+            ax[i].set_facecolor("black")
+            ax[i].semilogx()
+            ax[i].semilogy()
+            ax[i].set_title(
+                f"Missing prop bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
+            )
+            ax[i].set_xlabel("Lag ($\\tau$)")
+            ax[i].set_ylabel("Power")
+            # Remove y-axis labels for all but the first plot
+            if i > 0:
+                ax[i].set_yticklabels([])
+                ax[i].set_ylabel("")
 
-            elif dim == 3 and gap_handling == "lint":
-                xedges = correction_lookup["xedges"]
-                yedges = correction_lookup["yedges"]
-                zedges = correction_lookup["zedges"]
-                pe_mean = correction_lookup["pe_mean"]
-
-                fig, ax = plt.subplots(
-                    1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True
-                )
-                # Remove spacing between subplots
-                plt.subplots_adjust(wspace=0.2)
-                plt.grid(False)
-                for i in range(n_bins):
-                    ax[i].grid(False)
-                    c = ax[i].pcolormesh(
-                        xedges,
-                        yedges,
-                        pe_mean[:, :, i],
-                        cmap="bwr",
-                    )
-                    # plt.colorbar(label="MPE")
-                    c.set_clim(-100, 100)
-                    plt.xlabel("Lag ($\\tau$)")
-                    plt.ylabel("Missing proportion")
-                    plt.title("Distribution of missing proportion and lag")
-                    ax[i].set_facecolor("black")
-                    ax[i].semilogx()
-                    ax[i].set_title(
-                        f"Power bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
-                    )
-                    ax[i].set_xlabel("Lag ($\\tau$)")
-                    # Remove y-axis labels for all but the first plot
-                    if i > 0:
-                        ax[i].set_yticklabels([])
-                        ax[i].set_ylabel("")
-
-                plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.png",
-                    bbox_inches="tight",
-                )
-                plt.close()
-
-                fig, ax = plt.subplots(
-                    1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True
-                )
-                # Remove spacing between subplots
-                plt.grid(False)
-                plt.subplots_adjust(wspace=0.2)
-                for i in range(n_bins):
-                    ax[i].grid(False)
-                    c = ax[i].pcolormesh(
-                        yedges,
-                        zedges,
-                        pe_mean[i, :, :],
-                        cmap="bwr",
-                    )
-                    # plt.colorbar(label="MPE")
-                    c.set_clim(-100, 100)
-                    ax[i].set_xlabel("Missing prop")
-                    ax[i].set_ylabel("Power")
-                    plt.title("Distribution of missing proportion and lag")
-                    ax[i].set_facecolor("black")
-                    ax[i].semilogy()
-                    ax[i].set_title(
-                        f"Lag bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
-                    )
-                    ax[i].set_xlabel("Missing prop")
-                    # Remove y-axis labels for all but the first plot
-                    if i > 0:
-                        ax[i].set_yticklabels([])
-                        ax[i].set_ylabel("")
-
-                plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.png",
-                    bbox_inches="tight",
-                )
-                plt.close()
-
-                fig, ax = plt.subplots(
-                    1, n_bins, figsize=(n_bins * 3, 3.5), tight_layout=True
-                )
-                # Remove spacing between subplots
-                plt.grid(False)
-                plt.subplots_adjust(wspace=0.2)
-                for i in range(n_bins):
-                    ax[i].grid(False)
-                    c = ax[i].pcolormesh(
-                        xedges,
-                        zedges,
-                        pe_mean[:, i, :],
-                        cmap="bwr",
-                    )
-                    # plt.colorbar(label="MPE")
-                    c.set_clim(-100, 100)
-                    plt.title("Distribution of missing proportion and lag")
-                    ax[i].set_facecolor("black")
-                    ax[i].semilogx()
-                    ax[i].semilogy()
-                    ax[i].set_title(
-                        f"Missing prop bin {i+1}/{n_bins}".format(
-                            np.round(zedges[i], 2)
-                        )
-                    )
-                    ax[i].set_xlabel("Lag ($\\tau$)")
-                    ax[i].set_ylabel("Power")
-                    # Remove y-axis labels for all but the first plot
-                    if i > 0:
-                        ax[i].set_yticklabels([])
-                        ax[i].set_ylabel("")
-
-                plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.png",
-                    bbox_inches="tight",
-                )
-                plt.close()
+        plt.savefig(
+            f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling}_missing.png",
+            bbox_inches="tight",
+        )
+        plt.close()
 
 
 # Also plot error trendlines for subset of training results
-sfs_gapped = pd.read_pickle(f"data/processed/{spacecraft}_train_sfs_gapped.pkl")
+sfs_gapped = pd.read_pickle("data/processed/psp_train_sfs_gapped.pkl")
 
 sf.plot_error_trend_line(
     sfs_gapped,
     estimator="sf_2",
 )
 plt.savefig(
-    f"plots/results/{output_path}/train_{spacecraft}_error_trend.png",
+    f"plots/results/{output_path}/train_psp_error_trend.png",
     bbox_inches="tight",
 )
 plt.close()

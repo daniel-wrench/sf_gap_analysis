@@ -9,11 +9,11 @@
 
 times_to_gap = 25
 data_path_prefix = ""
-output_path = "final"  # "final/" or "testing/"
+output_path = "final"  # "final" or "testing"
 pwrl_range = [50, 500]
 minimum_missing_chunks = 0.7
-n_bins_list = [10]
-int_length = 2000
+n_bins_list = [15, 20, 25]
+int_length = 10000
 max_lag_prop = 0.2
 
 timestamp = "Epoch"

@@ -5,6 +5,9 @@ import seaborn as sns
 import sys
 import src.params as params
 import warnings
+import pandas as pd
+import src.sf_funcs as sf
+
 
 # Suppress the specific RankWarning from numpy - occurs with fitting slope sometimes
 warnings.filterwarnings("ignore", category=np.RankWarning)
@@ -421,3 +424,17 @@ for dim in [2, 3]:
                 bbox_inches="tight",
             )
             plt.close()
+
+
+# Also plot error trendlines for subset of training results
+sfs_gapped = pd.read_pickle(f"data/processed/{spacecraft}_train_sfs_gapped.pkl")
+
+sf.plot_error_trend_line(
+    sfs_gapped,
+    estimator="sf_2",
+)
+plt.savefig(
+    f"plots/results/{output_path}/train_{spacecraft}_error_trend.png",
+    bbox_inches="tight",
+)
+plt.close()

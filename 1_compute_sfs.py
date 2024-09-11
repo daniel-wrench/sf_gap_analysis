@@ -312,7 +312,7 @@ else:
     ax1.set_ylabel("$B_R$")
     ax1.set_xlim(ints[0].index[0], ints[0].index[-1])
     ax2 = ax1.twiny()
-    ax2.set_xlabel("Time ($\lambda_C$)")
+    ax2.set_xlabel("Duration ($\lambda_C$)")
 
     # Set the secondary x-axis limits to cover the same range as the primary x-axis
     # ax2.set_xlim(ax1.get_xlim())

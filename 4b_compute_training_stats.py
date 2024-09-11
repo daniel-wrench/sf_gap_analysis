@@ -32,7 +32,7 @@ input_file_list = [
     sfs,
     sfs_gapped,
 ) = sf.get_all_metadata(
-    input_file_list,
+    input_file_list[:50],
     include_sfs=True,
 )  ######## LIMIT N FILES HERE ! ! ! #########
 
@@ -65,21 +65,8 @@ sfs_gapped["sf_2_pe"] = (
 
 # Print the memory usage of the dataframe in MB
 print(
-    f"\nMemory usage of sfs_gapped (for plotting trendline graphs): {sfs_gapped.memory_usage(deep=True).sum() / 1024 ** 2:.2f} MB\n"
+    f"\nMemory usage of sfs_gapped subset (for plotting trendline graphs locally): {sfs_gapped.memory_usage(deep=True).sum() / 1024 ** 2:.2f} MB\n"
 )
-
 # Export the sfs_gapped dataframe to a pickle file
-sfs_gapped.to_pickle(f"data/processed/{spacecraft}/train/{spacecraft}_sfs_gapped.pkl")
-
-for gap_handling in sfs_gapped.gap_handling.unique():
-    sf.plot_error_trend_line(
-        sfs_gapped[sfs_gapped["gap_handling"] == gap_handling],
-        estimator="sf_2",
-        title=f"SF estimation error ({gap_handling.upper()}) vs. lag and global sparsity",
-        y_axis_log=True,
-    )
-    plt.savefig(
-        f"plots/results/{output_path}/train_{spacecraft}_error_trend_{gap_handling.upper()}.png",
-        bbox_inches="tight",
-    )
-    plt.close()
+sfs_gapped.to_pickle(f"data/processed/{spacecraft}_train_sfs_gapped.pkl")
+print(f"Exported this subset to data/processed/{spacecraft}_train_sfs_gapped.pkl")

@@ -478,10 +478,6 @@ def get_all_metadata(pickle_files, include_sfs=False):
 def plot_error_trend_line(
     df,
     estimator="sf_2",
-    title="SF estimation error vs. lag and global sparsity",
-    y_axis_log=False,
-    output_path="testing",
-    spacecraft="psp",
 ):
     fig, ax = plt.subplots(figsize=(8, 3), ncols=2, sharey=True)
     # plt.title(title)
@@ -509,7 +505,7 @@ def plot_error_trend_line(
         "MAPE = {0:.2f}".format(other_outputs_df[estimator + "_pe"].abs().mean()),
         xy=(1, 1),
         xycoords="axes fraction",
-        xytext=(0.1, 0.1),
+        xytext=(0.1, 0.9),
         textcoords="axes fraction",
         c="black",
         size=12,
@@ -518,7 +514,7 @@ def plot_error_trend_line(
     # ax[0].set_ylim(-2e2, 6e2)
     ax[0].semilogx()
     # Plot legend
-    ax[0].legend(fontsize=12)
+    ax[0].legend(loc="lower left", fontsize=12)
     # if y_axis_log is True:
     #     ax[0].set_yscale("symlog", linthresh=1e2)
 
@@ -540,7 +536,7 @@ def plot_error_trend_line(
         "MAPE = {0:.2f}".format(other_outputs_df[estimator + "_pe"].abs().mean()),
         xy=(1, 1),
         xycoords="axes fraction",
-        xytext=(0.1, 0.1),
+        xytext=(0.1, 0.9),
         textcoords="axes fraction",
         c="black",
         size=12,
@@ -562,10 +558,6 @@ def plot_error_trend_line(
 
     ax[0].set_ylim(-100, 100)
     plt.subplots_adjust(wspace=0.108)
-    plt.savefig(
-        f"plots/results/{output_path}/train_{spacecraft}_error_trend.png",
-        bbox_inches="tight",
-    )
 
 
 def plot_error_trend_scatter(
@@ -606,7 +598,7 @@ def plot_error_trend_scatter(
     plt.ylabel("MAPE")
     plt.ylim(0, 120)
     plt.title(title)
-    plt.legend()
+    plt.legend(loc="upper left")
     # plt.show()
 
 

@@ -479,7 +479,7 @@ def plot_error_trend_line(
     df,
     estimator="sf_2",
 ):
-    fig, ax = plt.subplots(figsize=(8, 3), ncols=2, sharey=True)
+    fig, ax = plt.subplots(figsize=(5, 2), ncols=2, sharey=True)
     # plt.title(title)
     # plt.plot(lag_error_mean_i, color="black", lw=3)
 

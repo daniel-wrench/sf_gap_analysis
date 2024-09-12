@@ -20,7 +20,7 @@ times_to_gap = params.times_to_gap
 spacecraft = "psp"
 
 plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=16)
+plt.rc("font", family="serif", serif="Computer Modern", size=13)
 
 # Import all corrected (test) files
 n_bins = int(sys.argv[1])
@@ -49,7 +49,7 @@ for dim in [2, 3]:
         pe_mean_lint = correction_lookup_lint["pe_mean"]
         pe_mean_naive = correction_lookup_naive["pe_mean"]
 
-        fig, ax = plt.subplots(figsize=(8, 3), ncols=2, sharey=True)
+        fig, ax = plt.subplots(figsize=(5, 2), ncols=2, sharey=True)
         plt.grid(False)
 
         # Plot the heatmap for the first column
@@ -107,7 +107,7 @@ for dim in [2, 3]:
         n_cols = 5  # Number of columns per row
         n_rows = (n_bins + n_cols - 1) // n_cols  # Calculate number of rows needed
 
-        # Create subplots with multiple rows and columns
+        # MISSING VS LAG, BY POWER BIN
         fig, ax = plt.subplots(
             n_rows,
             n_cols,
@@ -115,8 +115,13 @@ for dim in [2, 3]:
             sharex=True,
             sharey=True,
         )
-        plt.subplots_adjust(wspace=0.1, hspace=0.3)
+        plt.subplots_adjust(wspace=0.15, hspace=0.3)
         plt.grid(False)
+        plt.suptitle(
+            r"3D error heatmap: trend with increasing $\mathbf{power}$",
+            fontsize=17,
+            y=0.98,
+        )
 
         # Flatten the axis array to simplify indexing
         ax = ax.flatten()
@@ -131,23 +136,25 @@ for dim in [2, 3]:
             )
             c.set_clim(-100, 100)
             ax[i].set_title(
-                f"Power bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)), fontsize=13
+                f"({np.round(zedges[i], 2)},{np.round(zedges[i+1], 2)})",
+                fontsize=13,
             )
             ax[i].set_facecolor("black")
             ax[i].semilogx()
 
-            # Remove y-axis labels for all but the first column plots
-            if i % n_cols == 0:
-                ax[i].set_ylabel("\% missing")
         fig.text(
-            0.5, 0.00, "Lag ($\\tau$)", ha="center", va="center", fontsize=17
+            0.5, 0.05, "Lag ($\\tau$)", ha="center", va="center", fontsize=17
         )  # Shared x-axis label
-        # Now do the same but for an overall plot title
-        plt.suptitle(
-            f"Error vs. \% missing data and lag for the {spacecraft.upper()} training set ({n_bins} bins)",
+        fig.text(
+            0.07,
+            0.5,
+            "\% missing",
+            ha="center",
+            va="center",
+            rotation="vertical",
             fontsize=17,
-            y=1.02,
-        )
+        )  # Shared y-axis label
+
         # Hide any extra subplots if n_bins is not a multiple of n_cols
         for j in range(n_bins, len(ax)):
             fig.delaxes(ax[j])
@@ -165,15 +172,27 @@ for dim in [2, 3]:
         )
         plt.close()
 
-        # Create subplots with multiple rows and columns
+        # POWER VS % MISSING, BY LAG BIN
         fig, ax = plt.subplots(
-            n_rows, n_cols, figsize=(n_cols * 2, n_rows * 2), sharex=True, sharey=True
+            n_rows,
+            n_cols,
+            figsize=(n_cols * 2, n_rows * 2),
+            sharex=True,
+            sharey=True,
         )
-        plt.subplots_adjust(wspace=0.1, hspace=0.1)
+        plt.subplots_adjust(wspace=0.15, hspace=0.3)
         plt.grid(False)
+        plt.suptitle(
+            r"3D error heatmap: trend with increasing $\mathbf{lag}$",
+            fontsize=17,
+            y=0.98,  # Was 1.02 for 2 rows
+        )
 
         # Flatten the axis array to simplify indexing
         ax = ax.flatten()
+
+        # Format lag bin edges to integers
+        formatted_xedges = [f"{x:.0f}".rstrip("0").rstrip(".") for x in xedges]
 
         for i in range(n_bins):
             ax[i].grid(False)
@@ -184,24 +203,33 @@ for dim in [2, 3]:
                 cmap="bwr",
             )
             c.set_clim(-100, 100)
-            plt.title("Distribution of missing proportion and lag")
-            ax[i].set_title(f"Lag bin {i+1}/{n_bins}".format(np.round(zedges[i], 2)))
+            ax[i].set_title(
+                f"({formatted_xedges[i]},{formatted_xedges[i+1]})",
+                fontsize=13,
+            )
             ax[i].set_facecolor("black")
             ax[i].semilogy()
 
-            # Remove y-axis labels for all but the first column plots
-            if i % n_cols == 0:
-                ax[i].set_ylabel("Power")
         fig.text(
-            0.5, 0.00, "\% missing", ha="center", va="center", fontsize=17
-        )  # Shared x-axis label
+            0.5, 0.05, "\% missing", ha="center", va="center", fontsize=17
+        )  # Shared x-axis label, was 0.00 y-val for 2 rows
+        fig.text(
+            0.07,
+            0.5,
+            "Power",
+            ha="center",
+            va="center",
+            rotation="vertical",
+            fontsize=17,
+        )  # Shared y-axis label
+
         # Hide any extra subplots if n_bins is not a multiple of n_cols
         for j in range(n_bins, len(ax)):
             fig.delaxes(ax[j])
 
         # Add a color bar on the right-hand side of the figure, stretching down the entire height
         cbar_ax = fig.add_axes(
-            [0.92, 0.1, 0.02, 0.8]
+            [0.92, 0.105, 0.02, 0.78]
         )  # [left, bottom, width, height] to cover full height
         cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
         cb.set_label("MPE")  # Optional: Label the color bar
@@ -212,13 +240,21 @@ for dim in [2, 3]:
         )
         plt.close()
 
-        # Create subplots with multiple rows and columns
+        # POWER VS LAG, BIN % MISSING BIN
         fig, ax = plt.subplots(
-            n_rows, n_cols, figsize=(n_cols * 2, n_rows * 2), sharex=True, sharey=True
+            n_rows,
+            n_cols,
+            figsize=(n_cols * 2, n_rows * 2),
+            sharex=True,
+            sharey=True,
         )
-        plt.subplots_adjust(wspace=0.1, hspace=0.1)
+        plt.subplots_adjust(wspace=0.15, hspace=0.3)
         plt.grid(False)
-
+        plt.suptitle(
+            r"3D error heatmap: trend with increasing \% $\mathbf{missing}$",
+            fontsize=17,
+            y=0.98,
+        )
         # Flatten the axis array to simplify indexing
         ax = ax.flatten()
 
@@ -231,27 +267,34 @@ for dim in [2, 3]:
                 cmap="bwr",
             )
             c.set_clim(-100, 100)
+            ax[i].set_title(
+                f"({np.round(yedges[i], 2)},{np.round(yedges[i+1], 2)})",
+                fontsize=13,
+            )
             ax[i].set_facecolor("black")
             ax[i].semilogx()
             ax[i].semilogy()
-            plt.title("Distribution of missing proportion and lag")
-            ax[i].set_title(
-                f"Missing prop bin {i+1}/{n_bins}".format(np.round(zedges[i], 2))
-            )
 
-            # Remove y-axis labels for all but the first column plots
-            if i % n_cols == 0:
-                ax[i].set_ylabel("Power")
         fig.text(
-            0.5, 0.00, "Lag", ha="center", va="center", fontsize=17
+            0.5, 0.05, "Lag ($\\tau$)", ha="center", va="center", fontsize=17
         )  # Shared x-axis label
+        fig.text(
+            0.07,
+            0.5,
+            "Power",
+            ha="center",
+            va="center",
+            rotation="vertical",
+            fontsize=17,
+        )  # Shared y-axis label
+
         # Hide any extra subplots if n_bins is not a multiple of n_cols
         for j in range(n_bins, len(ax)):
             fig.delaxes(ax[j])
 
         # Add a color bar on the right-hand side of the figure, stretching down the entire height
         cbar_ax = fig.add_axes(
-            [0.92, 0.1, 0.02, 0.8]
+            [0.92, 0.105, 0.02, 0.78]
         )  # [left, bottom, width, height] to cover full height
         cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
         cb.set_label("MPE")  # Optional: Label the color bar

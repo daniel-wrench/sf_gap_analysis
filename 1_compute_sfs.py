@@ -23,7 +23,7 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 # DELETE FOLLOWING ON HPC
 plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=16)
+plt.rc("font", family="serif", serif="Computer Modern", size=13)
 
 # For current Wind importing
 sys_arg_dict = {
@@ -63,6 +63,8 @@ data_path_prefix = params.data_path_prefix
 spacecraft = sys.argv[1]
 # Ensure necessary directories exist
 os.makedirs(f"{data_path_prefix}data/processed/{spacecraft}", exist_ok=True)
+os.makedirs("data/corrections/final", exist_ok=True)
+os.makedirs("data/corrections/testing", exist_ok=True)
 os.makedirs(f"{data_path_prefix}plots/preprocessing/{spacecraft}", exist_ok=True)
 os.makedirs("plots/results/final", exist_ok=True)
 os.makedirs("plots/results/testing", exist_ok=True)
@@ -78,7 +80,7 @@ if len(raw_file_list) == 0:
     )
 
 # Selecting one file to read in
-file_index = int(sys.argv[2])
+file_index = 2
 
 if spacecraft == "psp":
     # takes < 1s/file, ~50 MB mem usage, 2-3 million rows
@@ -293,7 +295,7 @@ else:
         "different ways",
     )
 
-    fig, ax1 = plt.subplots(figsize=(5, 3))
+    fig, ax1 = plt.subplots(figsize=(3.5, 2))
     # ax2 = ax1.twinx()
 
     ax1.plot(df["Bx"][: ints[0].index[-1]], color="grey", label="Original")
@@ -305,7 +307,7 @@ else:
     ax1.plot(ints[0]["Bx"], color="black", label="Standardised")
     # ax2.axhline(0, c="black", linewidth=0.5, linestyle="--")
     ax1.set_xlabel("Time")
-    ax1.xaxis.set_major_locator(mdates.HourLocator(interval=2))
+    ax1.xaxis.set_major_locator(mdates.HourLocator(interval=1))
     ax1.xaxis.set_major_formatter(
         mdates.ConciseDateFormatter(ax1.xaxis.get_major_locator())
     )
@@ -336,7 +338,7 @@ else:
     x1 = ints[0].index[0] + pd.Timedelta(tc * 2, "s")
     ax1.annotate(
         r"$\lambda_C$",
-        xy=(x0 + (x1 - x0) / 2, 5),  # Midpoint and a little above the plot
+        xy=(x0 + (x1 - x0) / 2, 7.5),  # Midpoint and a little above the plot
         # xytext=(0, 20),
         # textcoords='offset points',
         ha="center",
@@ -344,13 +346,13 @@ else:
     )
     ax1.annotate(
         r"$	\longleftrightarrow$",
-        xy=(x0 + (x1 - x0) / 2, 4),  # Midpoint and a little above the plot
+        xy=(x0 + (x1 - x0) / 2, 6),  # Midpoint and a little above the plot
         # xytext=(0, 20),
         # textcoords='offset points',
         ha="center",
         va="center",
     )
-    # # Make the y-axis label, ticks and tick labels match the line color.
+    # Make the y-axis label, ticks and tick labels match the line color.
     # plt.suptitle(
     #     f"Standardised solar wind interval/s from {spacecraft.upper()}, given local conditions",
     #     y=1.1,
@@ -359,12 +361,12 @@ else:
     # plt.title(
     #     f"{tc_n}$\lambda_C$ ($\lambda_C=${int(tc)}s) across {interval_length} points, $\langle x \\rangle=0$, $\sigma=1$"
     # )
-    # plt.show()
-    ax1.legend(loc="upper right", fontsize=14)
+    plt.show()
+    ax1.legend(loc="lower left", fontsize=14)
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/preprocessing")
-        .replace(".cdf", "_ints_std_arrows.png")
+        .replace(".cdf", "_ints_std.png")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()

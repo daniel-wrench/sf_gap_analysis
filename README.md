@@ -1,77 +1,71 @@
 # Gaps on structure functions
 *Furthering numerically improving our estimates of solar wind statistics (Re was implementing on large dataset, this is actually developing a new way)*
 
-## Latest results
-
-- Processed 3.5 years worth of PSP data (5000 6-hour files) = amount of clean data available from existing 5 and bit years of data, given current conditions; and 5 months of Wind data (same for all of 2016)
-- Computed heatmap for 50 days worth of PSP data (200 files)
-    - Average slope of 0.55, average tc of 1100s = 3km
-    - Average intervals/file = 3.5
-- Trained on 20,000 intervals, 25x785 PSP intervals (=2.5 months, coming from first 300 processed files), 15,20,25 bins, outdated slope range *takes about 3.5 hours*
-
-![alt text](plots/temp/raapoi_test/test_wind_scatterplots_25_bins.png)
-
-- Draft manuscript completed with these results; likely to be only minor updates with latest numbers and figs. Important to scale up analysis to populate heatmaps better, as well as using vector stats and better range (50-500 lags = 5-50% of $\lambda_C$)
-- *NB: Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints*
-
+PAPERS:
+1. (Master's): Simple ANNs have some limited ability to predict structure functions of solar wind time series with gaps: it poses a difficult optimisation problem and does not behave intuitively
+2. Different estimators of the Reynolds number of the solar wind are not consistent, even when using a numerical correction to the Taylor scale
+3. Structure functions of gappy solar wind time series are improved by using a numerical correction derived from data from a different spacecraft. When applied to the sparse time series from Voyager, **it affects the results in this way**. 
+    -  Gaps occur for these reasons, have been studied thus
+    - Diving deeper, gaps have a deleterious effect on SFs, an important stat, in this way, which relates to the literature thusly
+    - ANNs shown to be pretty limited. As we can see, LINT is a limited remedy, and is biased to underestimate. By using this bias, and considering the typical bias for each combination of lag, missing %, and power, we show better estimation than naive or LINT methods. 
+    - Noting the intrinsic issues with estimating uncertainty for correlated samples, we provide error bars around these corrected values based on the variability in error for each bin. *We calculate the distribution covered by this number of standard deviations. 
+4. *Next work*
+5. Quote Arevalo in paper
 
 ## To-do
+
 ### Analysis
 
-1. **~~Parallelise heatmap calculation.~~** 
-    - **NEW APPROACH: Do by file instead, each core reads a number of files: saves the errors in a 20x20x20 array.**
-    - Then when they're all merged in a serial job, we can calculate the mean, std, median, whatever we want, and get the correction intervals.
-    - ~~Simplify heatmap part~~
-    - ~~Simplify correction part~~
-    - ~~Move existing plots~~
-    - ~~Test new pipeline~~
-    - ~~Run old pipeline on NESI subset on tiny subset~~
-    - ~~Do all plots locally with proper Latex~~
-    - ~~Note time and download stats, pull~~
-    - ~~Run again, compare time and stats~~
-    - ~~Make parallel, using gpt help: test locally, running for different ranges of lags then outputting these subranges, then merging them together again~~
-    - ~~Test locally~~
-    - ~~Push~~
-    - ~~Run again, compare time and stats~~
-4. **Choose #bins based on PSP data, report final results on Wind data**
-4. Work on streamling 4b.py so we can manage the memory as best as possible (keeping in mind we kinda want to do it locally for latex anyway)
-3. Potentially investigate smoothing and error bars - do they look OK as is?
-11. Send completed draft manuscript to Tulasi. Print out, talk through with Marcus. Don't worry about Voyager just yet.3. Plot lag x-axes in units of $\lambda_C$?
+1. ~~Run correction on Voyager LISM data using notebook in other repo~~
+2. ~~Implement smoothing~~ **Talk to Tulasi about it. Investigate why no correction at low lag for 3D case study.**
+11. Send completed draft manuscript to Tulasi. Print out, talk through with Marcus.
+
+### Manuscript
+- **Flesh out commentary on effect of gaps as follows:**
+- Have solid paragraph on exactly how and why gaps affect shape/power of SF. Answering question: how to gaps affect variance of lag distributions? Does the sample size curve oscillate, and is this reflected in the SF? (Certainly seems to be in ACF for Voyager). Refer to both case studies and trendlines, and add comments I've annotated on that figure.
+- Add reference to gap distribution plots in other works, dominant freqs
+- Use these words somewhere: 
+    - distortion
+    - artificial scaling laws
+    - reliable results
+- Add energy distribution interpretation of SF (should be in one of open tabs)
+- Describe data product (make later)
+- Read up on Chen's 2012 NSF, possibly how to convert from normed vector back to original?
+- Refer back to annotated print-out to make sure everything covered.
+- Refer back to Chat's tips
+
+### Plots
+
+Make consistent (Latex) font (EITHER changing seaborn scatterplots to matplotlib, or making all in Seaborn font), and specify sizes to match specifications in Overleaf (7in for full page, 3.5 for half), PDF files?
+
+1. **STANDARDISATION** (step 1)
+2. **GAPPING CASE STUDY** (7b)
+3. **TRAINING RESULTS** (4c)
+3. **CORRECTION STATISTICAL ANALYSIS** (7a)
+3. **CORRECTION CASE STUDIES**  (7b): 
+    - Show SMALL/LARGE MISSING, GOOD/BAD PERFORMANCE; possibly take place of earlier bg plot (put stationarity/Fbm stuff in appendix)
+    - Add nice little box for slope errors with annotations
+
+### Nice-to-have
+1. Work out how much of the test set truth values are covered by x number of SDs either side of the corrected versions, compared to min and max errors at each lag. Could add both as different line styles to case studies. Even show each version of one original interval, overlain, to show the variation around the true SF! OOh, I like it!
+1. Once we have a way of smoothing, choose #bins based on PSP data numbers a la validation set, report final results on Wind data
+1. Supplementary investigation to gapping case study of artefacts, stationarity, gap location (stored in separate overleaf project). Check Google Doc, Notion for notes, comments
+2. Uncertainty: NB: due to autocorrelation, "there is no simple way of determining confidence limits analytically for a semivariogram." (*Robert, André, and Keith S. Richards. "On the modelling of sand bedforms using the semivariogram." Earth Surface Processes and Landforms 13.5 (1988): 459-473.*) Perhaps best we can do is simulate or use standard error.
 3. Think about how to study Frat's method, and verify Burger's results
 4. **Kurtosis** analysis
 12. Implement Fraternale's sample size threshold for fitting slopes, and send to him
 13. Read Ruzmaikin
 
-### Manuscript and plots
-
-*Chat with Tulasi when have final figures*
-
-1. ~~Finish first draft of paper~~
-2. Change colours of standardisation plot, make more obvious
-3. Add in Wind interval #13 for case study, delete heatmap from corrected figure 
-2. Depending on final results, prob remove slope APE from scatterplots, just have boxplots separately. Potentially make corrected taylor scale style plot
-3. Get Latex error trend lines for subset of full results, still shows same pattern
-2. Check Google Doc, Notion for notes, comments
-3. Improve variogram clouds plot: what are we saying that isn't already covered by case study plots. And whatever that is, make it clear with good examples (probably same length as analysis intervals) and make the style consistent 
-2. Make consistent (Latex) font, and specify sizes to match specifications in Overleaf
-
 ### Notes
+- Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints
 - Calculate sf_2_pe in 1_compute_sfs? Currently not to have somewhat simpler calculation once corrected, but also leading to some duplication of code, especially if we want the error trend line plots.
-- Look at nn_seff files in more depth: likely want to run multiple files/core on step 3 due to low mem usage
-- Processed PSP and Wind files are between 32 (~400MB used in step 1) and 156MB (~300MB) each
-- ~~Add true SFs to case study plots. Will require re-jig of `ints` df~~
-- ~~Get mean slopes from true SFs. Maybe move "inertial range" if consistent bias wrt 2/3~~
-- Problem with first step is uneven times due to some files having no intervals, some having up to 4. Might be better to run on 3-5 files, spaced out (i.e. every 3rd file) in order to get more even times across jobs.
 - Add handling, e.g. in sf func, for extreme cases where SF will be missing values for certain lags due to high % missing (not a high priority for now because only going up to lag 2000, e.g. still 30 dx values for 99.6% missing)
 - Would be nice to get total # intervals for each set returned by step 1
-- investigating bad ints and possible automatic removal during download or initial reading
-- ~~consistency between times_to_gap across files~~
 - Wind data reads very slowly, compared with PSP. It is using a pipeline function that I think Kevin made, made up of many smaller functions.
 The bottleneck is the "format epochs" function. I've starting trying to do this in the same was as PSP, but it was struggling to do the timedelta addition
 - Can add smoothing to correction step alter, **not on critical path for getting most of the scripts on NESI**
 - Having logarithmically spaced lag bins would make the correction factor much cleaner to work with: one-to-one bins
 - For now likely to do stick with simple job arrays and single jobs on HPC, with importing and exporting of intermediate steps, but perhaps better to do single MPI script with broadcasting and reducing.
-- Might using actual pandas indexes be easier/more efficient?
 - Add sf slope to Wind dataset
 
 ## How to run this code
@@ -112,14 +106,14 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     (Run on tmux on terminal to do other stuff while it downloads)
 
-    HPC: 
-         About 6000 files for the full 5 and a bit years of 6-hourly data from PSP = 130GB of disk space
+    About 6000 files for the full 5 and a bit years of 6-hourly data from PSP = 130GB of disk space. After filtering done in the next two steps, we end up with 4380 files (3.5 years worth) = amount of clean data available from existing 5 and bit years of data, given current conditions. Performing the same filtering on all the Wind data from 2016, we 5 months of data
+
 
 4. **Delete files that are too small**
 
     `bash delete_small_files.sh`
 
-    - A common error is that the file is unexpectedly small: i.e., it is not the full 6 hours, or at least does not contain 10,000 points at the initial resampled cadence. **We should run a simple check for this prior, deleting any files smaller than 1MB (and then seeing whether too many/not enough are caught by this, depending on any remaining error messages)**.
+    A common error is that the file is unexpectedly small: i.e., it is not the full 6 hours, or at least does not contain 10,000 points at the initial resampled cadence. **We should run a simple check for this prior, deleting any files smaller than 1MB (and then seeing whether too many/not enough are caught by this, depending on any remaining error messages)**.
 
 4. **Process the data, file by file**
 
@@ -142,9 +136,9 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     - Only ever need 2GB per core
     - If some jobs do time out, meaning some files remain unprocessed, we can limit the `data/raw` directiory to those unprocessed files by moving them with `python move_matching_files.py`. *Maybe in future make this part of the slurm/python job*
 
-    This script... **For PSP, there are an average of 4 files/file**
+    - Processed PSP and Wind files are between 32 (~400MB used in step 1) and 156MB (~300MB) each. For PSP, there are an average of 4 files/file
 
-    See the notebook...
+    *Might have demo in the old time series repo*
 
 3. Perform train-test split for PSP data. **Be very careful about whether you want to delete existing files from the train-test folders. Currently these lines are commented out.**
 
@@ -171,21 +165,6 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     - 5o files/core "" = CONSTANT 500MB, no matter how many files, 15s/file
     - Basically 15min to do the whole lot across 60 cores (73 files/core)
 
----
-
-    
-    - 10 files, 15,20,25 bins **=1350 gapped ints = 7min 3GB**
-    - 20 files '': 15min, 5GB **=2300 gapped ints = 9min 4GB**
-    - **AVERAGE OF 5 INTERVALS PER FILE**
-
-    - ***10min, 3GB per 10 files (1750 gapped ints).***
-    - ***PARALLEL: 5min, 3GB/core for 10 files, 5 cores***\
-    - ***PARALLEL: 3min, 4GB/core for 15 files, 15 cores***
-
-
-    - For 200 files, = **=17,700 gapped ints = 135min, 32GB**
-    - For 1000 files **latest results here**
-
 4. **Merge the binned errors and calculate the correction factor**
 
     Local: `bash 4a_finalise_correction.sh`
@@ -202,9 +181,11 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     - **4200 (all) files "" = 7G, 32min**
 
-5. **Calculate the stats (average slope and corr time, error trend lines) for the training set** (not necessary for correction factor)
+5. **Calculate the stats (average slope and corr time, error trend lines) for the training set**
 
     `bash 4b_compute_training_stats.sh`
+
+    **NB**: Limit the number of files, as we will not be able to plot the error trendlines locally in step 7b on the full dataset. We can do *at least* 20 files.
 
 5. **Perform the correction on the test set, file by file**
 
@@ -216,11 +197,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     HPC: `sbatch 5_correct_test_sfs.sh`
 
-    **LATEST: 1GB AND 3MIN/FILE**
-    ---
-
-    - 20min and 1GB/file (15,20,25 bins)
-    - **0-3min (prev 4-11) and 200-600MB/file (15,20)**
+    1GB AND 3MIN/FILE
 
 6. **Compute the statistical results for all (corrected) test set files**
 
@@ -231,15 +208,15 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     (Now using simplified outputs)
     - 30s and 100MB for the full 111 Wind files, containing 125 intervals
 
-
-    43 files (PSP) = 12GB, 12min
-
     **Output: test_corrected_{spacecraft}_{bins}_bins.pkl** *not including ints, ints_gapped, sfs, or sfs_gapped_corrected*
+
+7. IF ON HPC, DOWNLOAD THE FOLLOWING FILES:
+
+    - all outputs in `sf_gap_analysis/data/processed`
+    - first few corrected files in `/nesi/nobackup/vuw04187/data/processed/wind`
 
 7.  **Plot the test set results**
      (If on an HPC, download the above output at this step, as well as the heatmaps  and the **FIRST**  2-3 individual corrected pickle files for plotting case studies from) 
     `python 7a_plot_test_overall.py {spacecraft} {n_bins}`
 
     `python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`
-
-    *For some reason this last one throws an error if running from the terminal, but is fine if running interactively*

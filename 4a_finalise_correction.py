@@ -99,7 +99,7 @@ for gap_handling in ["lint", "naive"]:
                 ax.set_facecolor("black")
                 ax.set_xscale("log")
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d.png",
+                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()
@@ -121,7 +121,7 @@ for gap_handling in ["lint", "naive"]:
                 ax.set_facecolor("black")
                 ax.set_xscale("log")
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d_counts.png",
+                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d_counts.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()
@@ -203,7 +203,7 @@ for gap_handling in ["lint", "naive"]:
                         ax[i].set_ylabel("")
 
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.png",
+                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()
@@ -239,7 +239,7 @@ for gap_handling in ["lint", "naive"]:
                         ax[i].set_ylabel("")
 
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.png",
+                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()
@@ -277,7 +277,7 @@ for gap_handling in ["lint", "naive"]:
                         ax[i].set_ylabel("")
 
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.png",
+                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()

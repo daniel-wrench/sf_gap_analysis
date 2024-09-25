@@ -16,8 +16,8 @@ times_to_gap = params.times_to_gap
 
 spacecraft = "psp"
 
+plt.rc("font", family="serif", serif=["Computer Modern Roman"], size=10)
 plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=12)
 
 # Import all corrected (test) files
 n_bins = int(sys.argv[1])
@@ -96,7 +96,6 @@ ax[0, 0].annotate(
     xytext=(0.1, 0.8),
     textcoords="axes fraction",
     c="black",
-    size=12,
 )
 
 # Annotate the MAPE for LINT
@@ -107,10 +106,9 @@ ax[0, 0].annotate(
     xytext=(0.1, 0.9),
     textcoords="axes fraction",
     c="black",
-    size=12,
 )
 
-legend = ax[0, 0].legend(loc="lower left", fontsize=12)
+legend = ax[0, 0].legend(loc="lower left")
 legend.get_frame().set_alpha(0.5)  # Set the box to be semi-transparent
 ax[0, 0].set_ylim(-100, 100)
 
@@ -160,7 +158,7 @@ ax[0, 1].hlines(
 )
 ax[0, 1].set_ylim(-100, 100)
 ax[0, 1].semilogx()
-ax[0, 0].legend(loc="lower left", fontsize=12)
+ax[0, 0].legend(loc="lower left")
 ax[0, 1].set_xlabel("Lag ($\\tau$)")
 ax[0, 1].set_title("Estimation errors (LINT)")
 ax[0, 1].set_xlim(1, params.max_lag_prop * params.int_length)
@@ -211,7 +209,7 @@ cb1.set_label("\% error")
 
 plt.subplots_adjust(wspace=0.05, hspace=0.5)
 plt.savefig(
-    f"plots/results/{output_path}/train_psp_error.png",
+    f"plots/results/{output_path}/train_psp_error.pdf",
     bbox_inches="tight",
 )
 
@@ -247,7 +245,6 @@ plt.subplots_adjust(wspace=0.18, hspace=0.5)
 plt.grid(False)
 plt.suptitle(
     r"3D error heatmap: trend with increasing $\mathbf{power}$",
-    fontsize=17,
     y=0.98,
 )
 
@@ -265,13 +262,16 @@ for i in range(n_bins):
     c.set_clim(-100, 100)
     ax[i].set_title(
         f"({np.round(zedges[i], 2)},{np.round(zedges[i+1], 2)})",
-        fontsize=13,
     )
     ax[i].set_facecolor("black")
     ax[i].semilogx()
 
 fig.text(
-    0.5, 0.03, "Lag ($\\tau$)", ha="center", va="center", fontsize=17
+    0.5,
+    0.03,
+    "Lag ($\\tau$)",
+    ha="center",
+    va="center",
 )  # Shared x-axis label
 fig.text(
     0.05,
@@ -280,7 +280,6 @@ fig.text(
     ha="center",
     va="center",
     rotation="vertical",
-    fontsize=17,
 )  # Shared y-axis label
 
 # Hide any extra subplots if n_bins is not a multiple of n_cols
@@ -295,7 +294,7 @@ cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
 
 plt.savefig(
-    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_power.png",
+    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_power.pdf",
     bbox_inches="tight",
 )
 plt.close()
@@ -312,7 +311,6 @@ plt.subplots_adjust(wspace=0.18, hspace=0.5)
 plt.grid(False)
 plt.suptitle(
     r"3D error heatmap: trend with increasing $\mathbf{lag}$",
-    fontsize=17,
     y=0.98,  # Was 1.02 for 2 rows
 )
 
@@ -333,13 +331,12 @@ for i in range(n_bins):
     c.set_clim(-100, 100)
     ax[i].set_title(
         f"({formatted_xedges[i]},{formatted_xedges[i+1]})",
-        fontsize=13,
     )
     ax[i].set_facecolor("black")
     ax[i].semilogy()
 
 fig.text(
-    0.5, 0.03, "\% missing", ha="center", va="center", fontsize=17
+    0.5, 0.03, "\% missing", ha="center", va="center"
 )  # Shared x-axis label, was 0.00 y-val for 2 rows
 fig.text(
     0.05,
@@ -348,7 +345,6 @@ fig.text(
     ha="center",
     va="center",
     rotation="vertical",
-    fontsize=17,
 )  # Shared y-axis label
 
 # Hide any extra subplots if n_bins is not a multiple of n_cols
@@ -363,7 +359,7 @@ cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
 
 plt.savefig(
-    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_lag.png",
+    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_lag.pdf",
     bbox_inches="tight",
 )
 plt.close()
@@ -380,7 +376,6 @@ plt.subplots_adjust(wspace=0.18, hspace=0.5)
 plt.grid(False)
 plt.suptitle(
     r"3D error heatmap: trend with increasing \% $\mathbf{missing}$",
-    fontsize=17,
     y=0.98,
 )
 # Flatten the axis array to simplify indexing
@@ -397,15 +392,12 @@ for i in range(n_bins):
     c.set_clim(-100, 100)
     ax[i].set_title(
         f"({np.round(yedges[i], 2)},{np.round(yedges[i+1], 2)})",
-        fontsize=13,
     )
     ax[i].set_facecolor("black")
     ax[i].semilogx()
     ax[i].semilogy()
 
-fig.text(
-    0.5, 0.03, "Lag ($\\tau$)", ha="center", va="center", fontsize=17
-)  # Shared x-axis label
+fig.text(0.5, 0.03, "Lag ($\\tau$)", ha="center", va="center")  # Shared x-axis label
 fig.text(
     0.05,
     0.5,
@@ -413,7 +405,6 @@ fig.text(
     ha="center",
     va="center",
     rotation="vertical",
-    fontsize=17,
 )  # Shared y-axis label
 
 # Hide any extra subplots if n_bins is not a multiple of n_cols
@@ -428,7 +419,7 @@ cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
 
 plt.savefig(
-    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_missing.png",
+    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_missing.pdf",
     bbox_inches="tight",
 )
 plt.close()

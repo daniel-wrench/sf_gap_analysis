@@ -15,8 +15,8 @@ np.random.seed(123)  # For reproducibility
 output_path = params.output_path
 times_to_gap = params.times_to_gap
 
+plt.rc("font", family="serif", serif=["Computer Modern Roman"], size=10)
 plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=15)
 
 # Import all corrected (test) files
 spacecraft = sys.argv[1]
@@ -99,7 +99,7 @@ plt.tight_layout()
 
 plt.suptitle("")  # Remove the default title to avoid overlap
 plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_boxplots_{n_bins}_bins.png",
+    f"plots/results/{output_path}/test_{spacecraft}_boxplots_{n_bins}_bins.pdf",
     bbox_inches="tight",
 )
 
@@ -114,19 +114,19 @@ palette = dict(zip(custom_order, colors))
 
 # unique_gap_handling = ints_gapped_metadata["gap_handling"].unique()
 # unique_gap_handling = ["naive", "lint", "corrected_3d"]
-sns.set_style("ticks")
+
 # Plotting the MAPE vs. missing percentage
 fig, ax = plt.subplots(
     1,
     len(custom_order) + 1,
-    figsize=(10, 3),
+    figsize=(7, 2),
     sharex="col",
     sharey="row",
     tight_layout=True,
 )
 plt.subplots_adjust(wspace=0)
-# Add regression lines for each group
 
+# Add regression lines for each group
 
 for i, gap_handling_method in enumerate(custom_order):
     subset = ints_gapped_metadata[
@@ -242,13 +242,10 @@ ax[0].spines["left"].set_visible(True)
 # ax[1, 0].spines["left"].set_visible(True)
 
 # Add title
-plt.suptitle(
-    f"Error vs. \% missing data for the {spacecraft.upper()} test set ({n_bins} bins)"
-)
-
+# plt.suptitle(f"Error vs. \% missing data for the Wind test set ({n_bins} bins)")
 
 plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_scatterplots_{n_bins}_bins.png",
+    f"plots/results/{output_path}/test_{spacecraft}_scatterplots_{n_bins}_bins.pdf",
     bbox_inches="tight",
 )
 

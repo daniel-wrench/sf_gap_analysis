@@ -23,7 +23,7 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 # DELETE FOLLOWING ON HPC
 plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=13)
+plt.rc("font", family="serif", serif="Computer Modern", size=10)
 
 # For current Wind importing
 sys_arg_dict = {
@@ -234,7 +234,7 @@ tc, fig, ax = utils.compute_outer_scale_integral(time_lags_lr, r_vec_lr, plot=Tr
 output_file_path = (
     raw_file_list[file_index]
     .replace("data/raw", "plots/preprocessing")
-    .replace(".cdf", "_acf.png")
+    .replace(".cdf", "_acf.pdf")
 )
 plt.savefig(output_file_path, bbox_inches="tight")
 plt.close()
@@ -361,12 +361,11 @@ else:
     # plt.title(
     #     f"{tc_n}$\lambda_C$ ($\lambda_C=${int(tc)}s) across {interval_length} points, $\langle x \\rangle=0$, $\sigma=1$"
     # )
-    plt.show()
-    ax1.legend(loc="lower left", fontsize=14)
+    ax1.legend(loc="lower left")
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/preprocessing")
-        .replace(".cdf", "_ints_std.png")
+        .replace(".cdf", "_ints_std.pdf")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
@@ -454,7 +453,7 @@ else:
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/preprocessing")
-        .replace(".cdf", "_sf_example.png")
+        .replace(".cdf", "_sf_example.pdf")
     )
 
     plt.savefig(output_file_path, bbox_inches="tight")

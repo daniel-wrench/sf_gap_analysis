@@ -4,26 +4,27 @@
 import pickle
 import glob
 import numpy as np
-import src.sf_funcs as sf
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
 import sys
 import src.params as params
+import src.data_import_funcs as dif
+
 
 np.random.seed(123)  # For reproducibility
 
 times_to_gap = params.times_to_gap
 
+plt.rc("font", family="serif", serif=["Computer Modern Roman"], size=10)
 plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=16)
 
 # Import all corrected (test) files
 spacecraft = "wind"
-n_bins = 25
+n_bins = int(sys.argv[1])
 # times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
 output_path = params.output_path
+pwrl_range = params.pwrl_range
 
 index = 1  # For now, just getting first corrected file
 # NOTE: THIS IS NOT THE SAME AS FILE INDEX!
@@ -74,41 +75,6 @@ print(
     f"Successfully read in {input_file_list[index]}. This contains {len(ints_metadata)}x{times_to_gap} intervals"
 )
 
-
-# Load just the 2D Lint version for use in later case study plots
-# USING 15 BINS SO AS TO HIDE EMPTY BINS FROM PLOT
-with open(
-    f"data/corrections/{output_path}/correction_lookup_2d_15_bins.pkl", "rb"
-) as f:
-    correction_lookup = pickle.load(f)
-    xedges = correction_lookup["xedges"]
-    yedges = correction_lookup["yedges"]
-    pe_mean = correction_lookup["pe_mean"]
-
-
-# Count of pairs per bin (same for both)
-# fig, ax = plt.subplots(figsize=(7, 5))
-# plt.grid(False)
-# plt.pcolormesh(
-#     heatmap_bin_edges_2d[0],
-#     heatmap_bin_edges_2d[1],
-#     heatmap_bin_counts_2d.T,
-#     cmap="Greens",
-# )
-# # Remove gridlines
-# plt.grid(False)
-# plt.colorbar(label="Count of intervals")
-# plt.xlabel("Lag ($\\tau$)")
-# plt.ylabel("Missing percentage")
-# plt.title("Distribution of missing proportion and lag", y=1.1)
-# ax.set_facecolor("black")
-# ax.set_xscale("log")
-# plt.savefig(
-#     f"plots/final/train_{spacecraft}_heatmap_{n_bins}bins_2d_counts.png",
-#     bbox_inches="tight",
-# )
-
-
 # Parameters for the case study plots
 
 file_index = files_metadata["file_index"].values[0]
@@ -127,7 +93,8 @@ print(
 fig, ax = plt.subplots(2, 3, figsize=(15, 2 * 3), sharey="col")
 # will use consistent interval index, but choose random versions of it to plot
 versions_to_plot = [
-    23,
+    16,
+    21,
     8,
     # 23,  # 13 = 9% missing, 23 = 50% missing
     # 8,
@@ -303,7 +270,7 @@ for ax_index, version in enumerate(versions_to_plot):
     ax[ax_index, 1].set_xscale("log")
     ax[ax_index, 1].set_yscale("log")
     ax[ax_index, 2].set_xscale("log")
-    ax[ax_index, 1].legend(fontsize=12)
+    ax[ax_index, 1].legend()
     [ax[0, i].set_xticklabels([]) for i in range(3)]
 
 # Add titles
@@ -312,56 +279,18 @@ ax[0, 2].set_title("SF \% error and \% pairs missing")
 plt.subplots_adjust(wspace=0.4)
 
 plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_case_study_gapping_{file_index}_{int_index}.png",
+    f"plots/results/{output_path}/test_{spacecraft}_case_study_gapping_{file_index}_{int_index}.pdf",
     bbox_inches="tight",
 )
 
 # 5e. Corrected case studies
 
+fig, axs = plt.subplots(figsize=(12, 4), ncols=3, sharey=True, sharex=True)
+plt.subplots_adjust(wspace=0.1)
 
-# Annotate each heatmap trace with info
-def annotate_curve(ax, x, y, text, offset_scaling=(0.3, 0.1)):
-    # Find the index of y value closest to the median value
-    idx = np.argmin(np.abs(y - np.percentile(y, 20)))
-
-    # Coordinates of the point of maximum y value
-    x_max = x.iloc[idx]
-    y_max = y.iloc[idx]
-
-    # Convert offset from axes fraction to data coordinates
-    x_text = 10 ** (offset_scaling[0] * np.log10(x_max))  # Log-axis
-    y_text = y_max + offset_scaling[1] * (ax.get_ylim()[1] - ax.get_ylim()[0])
-
-    # Annotate with the text, adjusting the position with xytext_offset
-    ax.annotate(
-        text,
-        xy=(x_max, y_max - 1),
-        xytext=(x_text, y_text),
-        # xycoords="axes fraction",
-        # textcoords="axes fraction",
-        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2", color="gray"),
-        bbox=dict(facecolor="gray", edgecolor="gray", boxstyle="round", alpha=0.7),
-        fontsize=20,
-    )
-
-
-fig = plt.figure(figsize=(13, 4))
-
-# Create a GridSpec layout with specified width ratios and horizontal space
-gs1 = GridSpec(1, 1, left=0.06, right=0.35)
-gs2 = GridSpec(1, 2, left=0.43, right=0.99, wspace=0)
-
-# Create subplots
-ax0 = fig.add_subplot(gs1[0, 0])
-ax1 = fig.add_subplot(gs2[0, 0])
 
 for ax_index, version in enumerate(versions_to_plot):
-    if ax_index == 0:
-        ax = ax1
-        ax.set_ylabel("SF")
-    else:
-        ax = fig.add_subplot(gs2[0, ax_index], sharey=ax1)
-        plt.setp(ax.get_yticklabels(), visible=False)
+    ax = axs[ax_index]
 
     ax.plot(
         sfs[(sfs["file_index"] == file_index) & (sfs["int_index"] == int_index)]["lag"],
@@ -514,63 +443,14 @@ for ax_index, version in enumerate(versions_to_plot):
         "missing_percent_overall",
     ].values
 
-    ax.legend(loc="lower right", fontsize=16)
+    ax.legend(loc="lower right")
     ax.semilogx()
     ax.semilogy()
 
     # PLOTTING HEATMAP IN FIRST PANEL
 
-    c = ax0.pcolormesh(
-        xedges,
-        yedges,  # convert to \% Missing
-        pe_mean.T,
-        cmap="bwr",
-    )
-    # fig.colorbar(c, ax=ax0, label="MPE")
-    c.set_clim(-100, 100)
-    c.set_facecolor("black")
-    ax0.set_xlabel("Lag ($\\tau$)")
-    ax0.plot(
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
-            "lag",
-        ],
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
-            "missing_percent",
-        ],
-        c="grey",
-        # linestyle="--",
-        lw=1,
-    )
-
     # Label test intervals with letters
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    annotate_curve(
-        ax0,
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "lint"),
-            "lag",
-        ],
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "lint"),
-            "missing_percent",
-        ],
-        f"{alphabet[ax_index]}",
-        offset_scaling=(0.8, -0.2),
-    )
 
     ax.annotate(
         f"{alphabet[ax_index]}: {float(missing[0]):.1f}\% missing",
@@ -580,7 +460,6 @@ for ax_index, version in enumerate(versions_to_plot):
         textcoords="axes fraction",
         transform=ax.transAxes,
         c="black",
-        fontsize=18,
         bbox=dict(
             facecolor="lightgrey", edgecolor="white", boxstyle="round", alpha=0.7
         ),
@@ -607,13 +486,69 @@ for ax_index, version in enumerate(versions_to_plot):
         ]
     )
 
-ax0.set_xscale("log")
-ax0.set_xlabel("Lag ($\\tau$)")
-ax0.set_ylabel("\% pairs missing", color="grey")
-ax0.tick_params(axis="y", colors="grey")
-ax0.set_ylim(0, 100)
+    # Plot the slope of the SF
+    slope_corrected = ints_gapped_metadata.loc[
+        (ints_gapped_metadata["file_index"] == file_index)
+        & (ints_gapped_metadata["int_index"] == int_index)
+        & (ints_gapped_metadata["version"] == version)
+        & (ints_gapped_metadata["gap_handling"] == "corrected_3d"),
+        "slope",
+    ].values[0]
+
+    dif.pltpwrl(
+        pwrl_range[0],
+        0.1,
+        pwrl_range[0],
+        pwrl_range[1],
+        slope_corrected,
+        lw=1,
+        ls="--",
+        color="#1b9e77",
+        label=f"Log-log slope: {slope_corrected:.3f}",
+        ax=ax,
+    )
+    # Plot the slope of the SF
+    slope_naive = ints_gapped_metadata.loc[
+        (ints_gapped_metadata["file_index"] == file_index)
+        & (ints_gapped_metadata["int_index"] == int_index)
+        & (ints_gapped_metadata["version"] == version)
+        & (ints_gapped_metadata["gap_handling"] == "naive"),
+        "slope",
+    ].values[0]
+
+    dif.pltpwrl(
+        pwrl_range[0],
+        0.1,
+        pwrl_range[0],
+        pwrl_range[1],
+        slope_naive,
+        lw=1,
+        ls="--",
+        color="red",
+        label=f"Log-log slope: {slope_corrected:.3f}",
+        ax=ax,
+    )
+    # Plot the slope of the SF
+    slope = ints_metadata.loc[
+        (ints_metadata["file_index"] == file_index)
+        & (ints_metadata["int_index"] == int_index),
+        "slope",
+    ].values[0]
+
+    dif.pltpwrl(
+        pwrl_range[0],
+        0.1,
+        pwrl_range[0],
+        pwrl_range[1],
+        slope,
+        lw=2,
+        ls="--",
+        color="grey",
+        label=f"Log-log slope: {slope_corrected:.3f}",
+        ax=ax,
+    )
 
 plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_case_study_correcting_{file_index}_{int_index}_{n_bins}_bins.png",
+    f"plots/results/{output_path}/test_{spacecraft}_case_study_correcting_{file_index}_{int_index}_{n_bins}_bins.pdf",
     bbox_inches="tight",
 )

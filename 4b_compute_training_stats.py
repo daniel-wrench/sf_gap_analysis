@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 
 data_path_prefix = params.data_path_prefix
 output_path = params.output_path
-
+include_sfs = False
+n_files = 2000
 spacecraft = "psp"
 input_file_list = [
     sorted(
@@ -25,16 +26,28 @@ input_file_list = [
 ][0]
 
 
-(
-    files_metadata,
-    ints_metadata,
-    ints_gapped_metadata,
-    sfs,
-    sfs_gapped,
-) = sf.get_all_metadata(
-    input_file_list[:50],
-    include_sfs=True,
-)  ######## LIMIT N FILES HERE ! ! ! #########
+if include_sfs is True:
+    (
+        files_metadata,
+        ints_metadata,
+        ints_gapped_metadata,
+        sfs,
+        sfs_gapped,
+    ) = sf.get_all_metadata(
+        input_file_list[:n_files],
+        include_sfs=True,
+    )  ######## LIMIT N FILES HERE ! ! ! #########
+
+else:
+    (
+        files_metadata,
+        ints_metadata,
+        ints_gapped_metadata,
+    ) = sf.get_all_metadata(
+        input_file_list,
+        include_sfs=False,
+    )  ######## LIMIT N FILES HERE ! ! ! #########
+
 
 print(
     "Successfully read in and concatenated {} files, starting with {}\nThese comprise a total of {} clean intervals".format(
@@ -50,23 +63,24 @@ print(files_metadata["tc"].describe())
 print("\nSummary stats of slope, across original (sub-)intervals:")
 print(ints_metadata["slope"].describe())
 
-# Calculate lag-scale errors (sf_2_pe)
-# Join original and copies dataframes and do column operation
-sfs_gapped = pd.merge(
-    sfs,
-    sfs_gapped,
-    how="inner",
-    on=["file_index", "int_index", "lag"],
-    suffixes=("_orig", ""),
-)
-sfs_gapped["sf_2_pe"] = (
-    (sfs_gapped["sf_2"] - sfs_gapped["sf_2_orig"]) / sfs_gapped["sf_2_orig"] * 100
-)
+if include_sfs is True:
+    # Calculate lag-scale errors (sf_2_pe)
+    # Join original and copies dataframes and do column operation
+    sfs_gapped = pd.merge(
+        sfs,
+        sfs_gapped,
+        how="inner",
+        on=["file_index", "int_index", "lag"],
+        suffixes=("_orig", ""),
+    )
+    sfs_gapped["sf_2_pe"] = (
+        (sfs_gapped["sf_2"] - sfs_gapped["sf_2_orig"]) / sfs_gapped["sf_2_orig"] * 100
+    )
 
-# Print the memory usage of the dataframe in MB
-print(
-    f"\nMemory usage of sfs_gapped subset (for plotting trendline graphs locally): {sfs_gapped.memory_usage(deep=True).sum() / 1024 ** 2:.2f} MB\n"
-)
-# Export the sfs_gapped dataframe to a pickle file
-sfs_gapped.to_pickle(f"data/processed/{spacecraft}_train_sfs_gapped.pkl")
-print(f"Exported this subset to data/processed/{spacecraft}_train_sfs_gapped.pkl")
+    # Print the memory usage of the dataframe in MB
+    print(
+        f"\nMemory usage of sfs_gapped subset (for plotting trendline graphs locally): {sfs_gapped.memory_usage(deep=True).sum() / 1024 ** 2:.2f} MB\n"
+    )
+    # Export the sfs_gapped dataframe to a pickle file
+    #sfs_gapped.to_pickle(f"data/processed/{spacecraft}_train_sfs_gapped.pkl")
+    #print(f"Exported this subset to data/processed/{spacecraft}_train_sfs_gapped.pkl")

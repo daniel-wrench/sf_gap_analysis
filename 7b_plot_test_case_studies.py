@@ -165,7 +165,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
 
     # Put missing_percent_overall in an annotation
     ax[ax_index, 0].annotate(
-        f"({ax_index+1}) {ints_gapped_metadata.loc[(ints_gapped_metadata['file_index']==file_index) & (ints_gapped_metadata['int_index']==int_index) & (ints_gapped_metadata['version']==version) & (ints_gapped_metadata['gap_handling']=='lint'), 'missing_percent_overall'].values[0]:.1f}\% missing",
+        f"({ax_index+1}) TGP = {ints_gapped_metadata.loc[(ints_gapped_metadata['file_index']==file_index) & (ints_gapped_metadata['int_index']==int_index) & (ints_gapped_metadata['version']==version) & (ints_gapped_metadata['gap_handling']=='lint'), 'missing_percent_overall'].values[0]:.1f}\%",
         xy=annotate_location[ax_index],
         xycoords="axes fraction",
         fontsize=8,
@@ -303,13 +303,13 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     #     lw=1,
     # )
 
-    # Label the axes
+    # Label the % missing
     ax[2, 0].set_xlabel("Time")
     ax[ax_index, 0].set_ylabel("$B_X$ (normalised)")
     ax[2, 1].set_xlabel("Lag ($\\tau$)")
     ax[ax_index, 1].set_ylabel("SF")
     ax[2, 2].set_xlabel("Lag ($\\tau$)")
-    ax[ax_index, 2].set_ylabel("\% error")
+    ax[ax_index, 2].set_ylabel("PE (\%)")
     # ax2.set_ylabel("\% pairs missing", color="grey")
     # ax2.tick_params(axis="y", colors="grey")
     # ax2.set_ylim(0, 100)
@@ -350,13 +350,15 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
 
 # Add titles
 
-plt.subplots_adjust(wspace=0.5, hspace=0.15)
-plt.show()
+fig.align_ylabels(ax[:, 0])
 
-# plt.savefig(
-#     f"plots/results/{output_path}/test_{spacecraft}_case_study_gapping.pdf",
-#     bbox_inches="tight",
-# )
+plt.subplots_adjust(wspace=0.5, hspace=0.15)
+# plt.show()
+
+plt.savefig(
+    f"plots/results/{output_path}/test_{spacecraft}_case_study_gapping.pdf",
+    bbox_inches="tight",
+)
 
 # 5e. Corrected case studies
 
@@ -530,7 +532,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     # alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     ax.annotate(
-        f"({ax_index+1}) {float(missing[0]):.1f}\% missing",
+        f"({ax_index+1}) TGP = {float(missing[0]):.1f}\%",
         xy=(1, 1),
         xycoords="axes fraction",
         xytext=(0.05, 0.9),
@@ -625,8 +627,8 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     #     label=f"Log-log slope: {slope_corrected:.3f}",
     #     ax=ax,
     # )
-plt.show()
-# plt.savefig(
-#     f"plots/results/{output_path}/test_{spacecraft}_case_study_correcting_{n_bins}_bins.pdf",
-#     bbox_inches="tight",
-# )
+# plt.show()
+plt.savefig(
+    f"plots/results/{output_path}/test_{spacecraft}_case_study_correcting_{n_bins}_bins.pdf",
+    bbox_inches="tight",
+)

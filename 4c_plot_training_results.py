@@ -5,6 +5,11 @@ import sys
 import src.params as params
 import warnings
 import pandas as pd
+from matplotlib import text  # Import the text module
+
+
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["ytick.direction"] = "in"
 
 # Suppress the specific RankWarning from numpy - occurs with fitting slope sometimes
 warnings.filterwarnings("ignore", category=np.RankWarning)
@@ -20,7 +25,7 @@ plt.rc("font", family="serif", serif=["Computer Modern Roman"], size=10)
 plt.rc("text", usetex=True)
 
 # Import all corrected (test) files
-n_bins = int(sys.argv[1])
+n_bins = 15
 # times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
@@ -43,6 +48,15 @@ with open(
 
 sfs_gapped = pd.read_pickle("data/processed/psp_train_sfs_gapped.pkl")
 
+# Print the number of unique int_index-file_index combinations
+print(
+    f"Number of unique int_index-file_index combinations (raw intervals): {sfs_gapped[['int_index', 'file_index']].drop_duplicates().shape[0]}"
+)
+print(
+    f"Total number of intervals: {sfs_gapped[['int_index', 'file_index', 'version']].drop_duplicates().shape[0]}"
+)
+
+
 df = sfs_gapped
 estimator = "sf_2"
 
@@ -51,13 +65,12 @@ yedges = correction_lookup_lint["yedges"]
 pe_mean_lint = correction_lookup_lint["pe_mean"]
 pe_mean_naive = correction_lookup_naive["pe_mean"]
 
-
 ###################################
 
 
 # Create a 2x2 figure layout
-fig, ax = plt.subplots(figsize=(7, 7), nrows=2, ncols=2, sharey="row")
-plt.grid(False)
+fig, ax = plt.subplots(figsize=(5, 5), nrows=2, ncols=2, sharey="row", sharex="col")
+plt.grid(True)
 
 # --- First Row (Scatter plots) ---
 
@@ -73,18 +86,20 @@ ax[0, 0].scatter(
 )
 
 mean_error_naive = other_outputs_df_naive.groupby("lag")[estimator + "_pe"].mean()
-ax[0, 0].plot(mean_error_naive, color="black", lw=3, label="MPE($\\tau$)")
-ax[0, 0].set_title("Estimation errors (naive)")
+ax[0, 0].plot(mean_error_naive, color="black", lw=3, label="Running mean")
+ax[0, 0].set_title("Naive")
+ax[0, 1].set_title("LINT")
+
 ax[0, 0].hlines(
     0,
     1,
     other_outputs_df_naive.lag.max(),
     color="grey",
     linestyle="--",
+    lw=1.5,
     label="0\% error",
 )
-ax[0, 0].set_ylabel("\% error")
-ax[0, 0].set_xlabel("Lag ($\\tau$)")
+ax[0, 0].set_ylabel("PE (\%)")
 ax[0, 0].semilogx()
 ax[0, 0].set_xlim(1, params.max_lag_prop * params.int_length)
 
@@ -93,22 +108,22 @@ ax[0, 0].annotate(
     "MAPE = {0:.2f}".format(other_outputs_df_naive[estimator + "_pe"].abs().mean()),
     xy=(1, 1),
     xycoords="axes fraction",
-    xytext=(0.1, 0.8),
+    xytext=(0.1, 0.85),
     textcoords="axes fraction",
-    c="black",
+    bbox=dict(boxstyle="round,pad=0.3", edgecolor="grey", facecolor="white", alpha=0.5),
 )
 
 # Annotate the MAPE for LINT
-ax[0, 0].annotate(
-    "MPE = {0:.2f}".format(other_outputs_df_naive[estimator + "_pe"].mean()),
-    xy=(1, 1),
-    xycoords="axes fraction",
-    xytext=(0.1, 0.9),
-    textcoords="axes fraction",
-    c="black",
-)
+# ax[0, 0].annotate(
+#     "MPE = {0:.2f}".format(other_outputs_df_naive[estimator + "_pe"].mean()),
+#     xy=(1, 1),
+#     xycoords="axes fraction",
+#     xytext=(0.1, 0.9),
+#     textcoords="axes fraction",
+#     c="black",
+# )
 
-legend = ax[0, 0].legend(loc="lower left")
+legend = ax[0, 0].legend(loc="upper left")
 legend.get_frame().set_alpha(0.5)  # Set the box to be semi-transparent
 ax[0, 0].set_ylim(-100, 100)
 
@@ -131,21 +146,10 @@ ax[0, 1].annotate(
     "MAPE = {0:.2f}".format(other_outputs_df_lint[estimator + "_pe"].abs().mean()),
     xy=(1, 1),
     xycoords="axes fraction",
-    xytext=(0.1, 0.8),
+    xytext=(0.1, 0.85),
     textcoords="axes fraction",
     c="black",
-    size=12,
-)
-
-# Annotate the MAPE for LINT
-ax[0, 1].annotate(
-    "MPE = {0:.2f}".format(other_outputs_df_lint[estimator + "_pe"].mean()),
-    xy=(1, 1),
-    xycoords="axes fraction",
-    xytext=(0.1, 0.9),
-    textcoords="axes fraction",
-    c="black",
-    size=12,
+    bbox=dict(boxstyle="round,pad=0.3", edgecolor="grey", facecolor="white", alpha=0.5),
 )
 
 ax[0, 1].hlines(
@@ -159,15 +163,12 @@ ax[0, 1].hlines(
 ax[0, 1].set_ylim(-100, 100)
 ax[0, 1].semilogx()
 ax[0, 0].legend(loc="lower left")
-ax[0, 1].set_xlabel("Lag ($\\tau$)")
-ax[0, 1].set_title("Estimation errors (LINT)")
 ax[0, 1].set_xlim(1, params.max_lag_prop * params.int_length)
-
 
 # Colorbar for the second row
 cb2 = plt.colorbar(sc3, cax=ax[0, 1].inset_axes([1.05, 0, 0.03, 1]))
 sc3.set_clim(0, 100)
-cb2.set_label("\% missing")
+cb2.set_label("TGP \%")
 
 # --- Second Row (Heatmaps) ---
 
@@ -180,10 +181,9 @@ sc = ax[1, 0].pcolormesh(
 )
 ax[1, 0].grid(False)
 ax[1, 0].set_xlabel("Lag ($\\tau$)")
-ax[1, 0].set_ylabel("\% missing")
+ax[1, 0].set_ylabel("GP (\%)")
 ax[1, 0].set_facecolor("black")
 ax[1, 0].set_xscale("log")
-ax[1, 0].set_title("Mean error (naive)")
 ax[1, 0].set_xlim(1, params.max_lag_prop * params.int_length)
 
 
@@ -198,21 +198,26 @@ ax[1, 1].grid(False)
 ax[1, 1].set_xlabel("Lag ($\\tau$)")
 ax[1, 1].set_facecolor("black")
 ax[1, 1].set_xscale("log")
-ax[1, 1].set_title("Mean error (LINT)")
 ax[1, 1].set_xlim(1, params.max_lag_prop * params.int_length)
 
 # Colorbar for the first row
 cb1 = plt.colorbar(sc, cax=ax[1, 1].inset_axes([1.05, 0, 0.03, 1]))
 sc.set_clim(-100, 100)
 sc2.set_clim(-100, 100)
-cb1.set_label("\% error")
+cb1.set_label("MPE \%")
 
-plt.subplots_adjust(wspace=0.05, hspace=0.5)
+fig.align_ylabels(ax[:, 0])
+
+plt.subplots_adjust(wspace=0.05, hspace=0.1)
+# plt.show()
+# GIANT - DO NOT SAVE AS PDF
 plt.savefig(
-    f"plots/results/{output_path}/train_psp_error.pdf",
+    f"plots/results/{output_path}/train_psp_error.png",
     bbox_inches="tight",
+    dpi=300,
 )
 
+sys.exit()
 
 # NOW PLOT 3D HEATMAPS
 
@@ -291,12 +296,12 @@ cbar_ax = fig.add_axes(
     [0.92, 0.105, 0.02, 0.78]
 )  # [left, bottom, width, height] to cover full height
 cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
-cb.set_label("MPE")  # Optional: Label the color bar
-
-plt.savefig(
-    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_power.pdf",
-    bbox_inches="tight",
-)
+cb.set_label("MPE (\%)")  # Optional: Label the color bar
+plt.show()
+# plt.savefig(
+#     f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_power.pdf",
+#     bbox_inches="tight",
+# )
 plt.close()
 
 # POWER VS % MISSING, BY LAG BIN
@@ -357,11 +362,11 @@ cbar_ax = fig.add_axes(
 )  # [left, bottom, width, height] to cover full height
 cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
-
-plt.savefig(
-    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_lag.pdf",
-    bbox_inches="tight",
-)
+plt.show()
+# plt.savefig(
+#     f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_lag.pdf",
+#     bbox_inches="tight",
+# )
 plt.close()
 
 # POWER VS LAG, BIN % MISSING BIN
@@ -417,9 +422,9 @@ cbar_ax = fig.add_axes(
 )  # [left, bottom, width, height] to cover full height
 cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
-
-plt.savefig(
-    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_missing.pdf",
-    bbox_inches="tight",
-)
+plt.show()
+# plt.savefig(
+#     f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_missing.pdf",
+#     bbox_inches="tight",
+# )
 plt.close()

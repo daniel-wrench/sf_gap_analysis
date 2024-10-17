@@ -6,6 +6,9 @@ import sys
 import src.params as params
 import warnings
 
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["ytick.direction"] = "in"
+
 
 # Suppress the specific RankWarning from numpy - occurs with fitting slope sometimes
 warnings.filterwarnings("ignore", category=np.RankWarning)
@@ -19,8 +22,8 @@ plt.rc("font", family="serif", serif=["Computer Modern Roman"], size=10)
 plt.rc("text", usetex=True)
 
 # Import all corrected (test) files
-spacecraft = sys.argv[1]
-n_bins = int(sys.argv[2])
+spacecraft = "wind"
+n_bins = 25
 # times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
@@ -37,6 +40,11 @@ files_metadata = data["files_metadata"]
 ints_metadata = data["ints_metadata"]
 # ints = data["ints"]
 ints_gapped_metadata = data["ints_gapped_metadata"]
+# Export as csv
+ints_gapped_metadata.to_csv("gapped_ints_metadata.csv")
+files_metadata.to_csv("files_metadata.csv")
+
+
 # ints_gapped = data["ints_gapped"]
 # fs = data["sfs"]
 # sfs_gapped_corrected = data["sfs_gapped_corrected"]
@@ -208,7 +216,7 @@ for i, gap_handling_method in enumerate(custom_order):
 ax[0].set(xlabel="", ylabel="MAPE (\%)", title="Naive")
 ax[1].set(xlabel="", ylabel="", title="LINT")
 ax[2].set(xlabel="", ylabel="", title="Corrected")
-ax[3].set(xlabel="", ylabel="", title="All")
+ax[3].set(xlabel="", ylabel="", title="Regression lines")
 
 # ax[1, 0].set(xlabel="", ylabel="Slope APE (\%)", title="")
 # ax[1, 1].set(xlabel="", ylabel="", title="")
@@ -217,7 +225,7 @@ ax[3].set(xlabel="", ylabel="", title="All")
 # Remove gridlines and plot outlines
 
 # Make one x-axis label for all plots
-fig.text(0.5, 0.00, "\% missing", ha="center", va="center")
+fig.text(0.5, 0.00, "TGP (\%)", ha="center", va="center")
 
 # for i in range(2):
 for j in range(4):
@@ -243,10 +251,11 @@ ax[0].spines["left"].set_visible(True)
 
 # Add title
 # plt.suptitle(f"Error vs. \% missing data for the Wind test set ({n_bins} bins)")
-
+# plt.show()
 plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_scatterplots_{n_bins}_bins.pdf",
+    f"plots/results/{output_path}/test_{spacecraft}_scatterplots_{n_bins}_bins.png",
     bbox_inches="tight",
+    dpi=300,
 )
 
 # Error trendlines (REQUIRE FULL CORRECTED SFS, NOT CURRENTLY OUTPUT FROM HPC)

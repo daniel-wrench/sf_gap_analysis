@@ -9,7 +9,10 @@ import sys
 import src.params as params
 import src.data_import_funcs as dif
 import pandas as pd
+from matplotlib.ticker import MaxNLocator, LogLocator
 
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["ytick.direction"] = "in"
 
 np.random.seed(123)  # For reproducibility
 
@@ -105,31 +108,46 @@ file_index = files_metadata["file_index"].values[0]
 # THERE IS NOW JUST ONE FILE INDEX TO WORRY ABOUT
 # (so could really remove this indexing from code below)
 
-int_index = 0  # Selecting first (possibly only) interval from this file
+int_index = 1  # Selecting first (possibly only) interval from this file
 
 print(
-    "Currenting making plots for file index",
+    "Currently making plots for file index",
     file_index,
     "and interval",
     int_index,
 )
 
-fig, ax = plt.subplots(3, 3, figsize=(7, 7))
+fig, ax = plt.subplots(3, 3, figsize=(7, 5), sharex="col")
 
 file_version_pairs = [
-    (5, 16, 1),  # (file_index, version, local_int_index)
-    (0, 0, 0),
-    (54, 10, 2),  # previously 0, 6, 0
+    (5, 16, 0, 0),  # (file_index, version, local_int_index, int_index)
+    (80, 13, 3, 1),
+    (54, 10, 1, 0),  # previously 0, 6, 0
 ]
 
-for ax_index, (file_index, version, local_int_index) in enumerate(file_version_pairs):
+annotate_location = [(0.1, 0.1), (0.1, 0.85), (0.1, 0.1)]
+mape_location = [
+    [(0.05, 0.9), (0.05, 0.8)],
+    [(0.3, 0.2), (0.3, 0.1)],
+    [(0.05, 0.9), (0.05, 0.8)],
+]
+
+# file_version_pairs = [
+#     (5, 16, 1),  # (file_index, version, local_int_index)
+#     (0, 0, 0),
+#     (54, 10, 2),  # previously 0, 6, 0
+# ]
+
+for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
+    file_version_pairs
+):
     # if len(ints) == 1:
     #     ax[ax_index, 0].plot(
     #         ints[0]["Bx"].values, c="grey"
     #     )  # Just plotting one component for simplicity
     # else:
     ax[ax_index, 0].plot(
-        ints[local_int_index]["Bx"].values, c="grey"
+        ints[local_int_index]["Bx"].values, c="grey", lw=0.8
     )  # Just plotting one component for simplicity
     # Not currently plotting due to indexing issue: need to be able to index
     # on both file_index and int_index
@@ -142,24 +160,18 @@ for ax_index, (file_index, version, local_int_index) in enumerate(file_version_p
             "Bx",  # Just plotting one component for simplicity
         ].values,
         c="black",
+        lw=0.8,
     )
 
-    # Put missing_percent_overall in the title
-    ax[ax_index, 0].set_title("Gapped interval")
+    # Put missing_percent_overall in an annotation
     ax[ax_index, 0].annotate(
-        f"{ints_gapped_metadata.loc[(ints_gapped_metadata['file_index']==file_index) & (ints_gapped_metadata['int_index']==int_index) & (ints_gapped_metadata['version']==version) & (ints_gapped_metadata['gap_handling']=='lint'), 'missing_percent_overall'].values[0]:.1f}\% missing",
-        xy=(1, 1),
+        f"({ax_index+1}) {ints_gapped_metadata.loc[(ints_gapped_metadata['file_index']==file_index) & (ints_gapped_metadata['int_index']==int_index) & (ints_gapped_metadata['version']==version) & (ints_gapped_metadata['gap_handling']=='lint'), 'missing_percent_overall'].values[0]:.1f}\% missing",
+        xy=annotate_location[ax_index],
         xycoords="axes fraction",
-        xytext=(0.1, 0.1),
-        textcoords="axes fraction",
-        transform=ax.transAxes,
-        c="black",
-        bbox=dict(
-            facecolor="lightgrey", edgecolor="white", boxstyle="round", alpha=0.7
-        ),
+        fontsize=8,
+        bbox=dict(facecolor="white", alpha=0.8),
     )
-    ax[ax_index, 1].set_title("SF estimates")
-    ax[ax_index, 2].set_title("SF \% error")
+
     # Plot the SF
     ax[ax_index, 1].plot(
         sfs.loc[
@@ -292,11 +304,11 @@ for ax_index, (file_index, version, local_int_index) in enumerate(file_version_p
     # )
 
     # Label the axes
-    ax[1, 0].set_xlabel("Time")
+    ax[2, 0].set_xlabel("Time")
     ax[ax_index, 0].set_ylabel("$B_X$ (normalised)")
-    ax[1, 1].set_xlabel("Lag ($\\tau$)")
+    ax[2, 1].set_xlabel("Lag ($\\tau$)")
     ax[ax_index, 1].set_ylabel("SF")
-    ax[1, 2].set_xlabel("Lag ($\\tau$)")
+    ax[2, 2].set_xlabel("Lag ($\\tau$)")
     ax[ax_index, 2].set_ylabel("\% error")
     # ax2.set_ylabel("\% pairs missing", color="grey")
     # ax2.tick_params(axis="y", colors="grey")
@@ -308,12 +320,37 @@ for ax_index, (file_index, version, local_int_index) in enumerate(file_version_p
     ax[ax_index, 1].set_xscale("log")
     ax[ax_index, 1].set_yscale("log")
     ax[ax_index, 2].set_xscale("log")
-    ax[ax_index, 1].legend(loc="lower right", fontsize=7)
+    ax[ax_index, 1].legend(loc="lower right", fontsize=6)
     # [ax[0, i].set_xticklabels([]) for i in range(3)]
+
+    ax[ax_index, 1].xaxis.set_major_locator(
+        LogLocator(base=10.0, numticks=10)
+    )  # For log scale
+    ax[ax_index, 2].xaxis.set_major_locator(LogLocator(base=10.0, numticks=10))
+
+    ax[ax_index, 1].grid(
+        True,
+        which="major",
+        axis="both",
+        color="gray",
+        linestyle="--",
+        linewidth=0.5,
+        alpha=0.5,
+    )
+    ax[ax_index, 2].grid(
+        True,
+        which="major",
+        axis="both",
+        color="gray",
+        linestyle="--",
+        linewidth=0.5,
+        alpha=0.5,
+    )
+
 
 # Add titles
 
-plt.subplots_adjust(wspace=0.5, hspace=0.5)
+plt.subplots_adjust(wspace=0.5, hspace=0.15)
 plt.show()
 
 # plt.savefig(
@@ -325,9 +362,12 @@ plt.show()
 
 fig, axs = plt.subplots(figsize=(7, 2.2), ncols=3, sharey=True, sharex=True)
 plt.subplots_adjust(wspace=0.1, hspace=0.2)
+axs[0].set_ylabel("SF")
 
 
-for ax_index, (file_index, version, local_int_index) in enumerate(file_version_pairs):
+for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
+    file_version_pairs
+):
     ax = axs[ax_index]
 
     ax.plot(
@@ -335,10 +375,9 @@ for ax_index, (file_index, version, local_int_index) in enumerate(file_version_p
         sfs[(sfs["file_index"] == file_index) & (sfs["int_index"] == int_index)][
             "sf_2"
         ],
-        color="black",
+        color="grey",
         label="True",
-        lw=4,
-        alpha=0.5,
+        lw=3,
     )
     ax.plot(
         sfs_gapped_corrected.loc[
@@ -355,7 +394,7 @@ for ax_index, (file_index, version, local_int_index) in enumerate(file_version_p
             & (sfs_gapped_corrected["gap_handling"] == "naive"),
             "sf_2",
         ],
-        color="red",
+        color="indianred",
         lw=1,
         label="Naive ({:.1f})".format(
             ints_gapped_metadata.loc[
@@ -481,31 +520,32 @@ for ax_index, (file_index, version, local_int_index) in enumerate(file_version_p
         "missing_percent_overall",
     ].values
 
-    ax.legend(loc="lower right", fontsize=7)
+    ax.legend(loc="lower right", fontsize=6)
     ax.semilogx()
     ax.semilogy()
 
     # PLOTTING HEATMAP IN FIRST PANEL
 
     # Label test intervals with letters
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    # alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     ax.annotate(
-        f"{alphabet[ax_index]}: {float(missing[0]):.1f}\% missing",
+        f"({ax_index+1}) {float(missing[0]):.1f}\% missing",
         xy=(1, 1),
         xycoords="axes fraction",
-        xytext=(0.1, 0.9),
+        xytext=(0.05, 0.9),
         textcoords="axes fraction",
         transform=ax.transAxes,
         c="black",
-        bbox=dict(
-            facecolor="lightgrey", edgecolor="white", boxstyle="round", alpha=0.7
-        ),
+        # bbox=dict(
+        #     facecolor="lightgrey", edgecolor="white", boxstyle="round", alpha=0.7
+        # ),
     )
 
     ax.set_xlabel("Lag ($\\tau$)")
 
-    print(f"\nStats for interval version {alphabet[ax_index]} as plotted:\n")
+    print(f"\nStats for interval version {ax_index+1} as plotted:\n")
+    print(files_metadata.loc[files_metadata["file_index"] == file_index])
     print(
         ints_gapped_metadata.loc[
             (ints_gapped_metadata["file_index"] == file_index)

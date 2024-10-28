@@ -51,7 +51,7 @@ def compute_sf(
             N_array = []
             for lag in lags:
                 lag = int(lag)
-                dax = np.abs(ax.shift(-lag) - ax)
+                dax = ax.shift(-lag) - ax
                 strct = dax.pow(i)
 
                 array += [strct.values]
@@ -514,7 +514,7 @@ def plot_error_trend_line(
     # ax[0].set_ylim(-2e2, 6e2)
     ax[0].semilogx()
     # Plot legend
-    ax[0].legend(loc="lower left", fontsize=12)
+    ax[0].legend(loc="lower left")
     # if y_axis_log is True:
     #     ax[0].set_yscale("symlog", linthresh=1e2)
 

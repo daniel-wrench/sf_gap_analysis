@@ -8,6 +8,19 @@ import pandas as pd
 from matplotlib import text  # Import the text module
 
 
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=10)
+plt.rcParams.update(
+    {
+        "font.size": 10,  # Set font size to match LaTeX (e.g., 10pt)
+        "axes.labelsize": 10,  # Label size
+        "xtick.labelsize": 10,  # X-axis tick size
+        "ytick.labelsize": 10,  # Y-axis tick size
+        "legend.fontsize": 10,  # Legend font size
+        "figure.titlesize": 10,  # Figure title size
+        "figure.dpi": 300,  # Higher resolution figure output
+    }
+)
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
@@ -20,9 +33,6 @@ output_path = params.output_path
 times_to_gap = params.times_to_gap
 
 spacecraft = "psp"
-
-plt.rc("font", family="serif", serif=["Computer Modern Roman"], size=10)
-plt.rc("text", usetex=True)
 
 # Import all corrected (test) files
 n_bins = 15
@@ -69,7 +79,9 @@ pe_mean_naive = correction_lookup_naive["pe_mean"]
 
 
 # Create a 2x2 figure layout
-fig, ax = plt.subplots(figsize=(5, 5), nrows=2, ncols=2, sharey="row", sharex="col")
+fig, ax = plt.subplots(
+    figsize=(5.5, 5), nrows=2, ncols=2, sharey="row", sharex="col", tight_layout=True
+)
 plt.grid(True)
 
 # --- First Row (Scatter plots) ---
@@ -87,8 +99,8 @@ ax[0, 0].scatter(
 
 mean_error_naive = other_outputs_df_naive.groupby("lag")[estimator + "_pe"].mean()
 ax[0, 0].plot(mean_error_naive, color="black", lw=3, label="Running mean")
-ax[0, 0].set_title("Naive")
-ax[0, 1].set_title("LINT")
+ax[0, 0].set_title("Naive", fontsize=10)
+ax[0, 1].set_title("LINT", fontsize=10)
 
 ax[0, 0].hlines(
     0,
@@ -207,14 +219,16 @@ sc2.set_clim(-100, 100)
 cb1.set_label("MPE \%")
 
 fig.align_ylabels(ax[:, 0])
+# Align the colorbar labels (currently slightly offset)
+cb1.ax.yaxis.set_label_coords(6, 0.5)
+cb2.ax.yaxis.set_label_coords(6, 0.5)
+
 
 plt.subplots_adjust(wspace=0.05, hspace=0.1)
 # plt.show()
 # GIANT - DO NOT SAVE AS PDF
 plt.savefig(
     f"plots/results/{output_path}/train_psp_error.png",
-    bbox_inches="tight",
-    dpi=300,
 )
 
 sys.exit()

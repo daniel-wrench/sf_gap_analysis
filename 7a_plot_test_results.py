@@ -6,6 +6,8 @@ import sys
 import src.params as params
 import warnings
 
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=10)
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
@@ -17,9 +19,6 @@ np.random.seed(123)  # For reproducibility
 
 output_path = params.output_path
 times_to_gap = params.times_to_gap
-
-plt.rc("font", family="serif", serif=["Computer Modern Roman"], size=10)
-plt.rc("text", usetex=True)
 
 # Import all corrected (test) files
 spacecraft = "wind"
@@ -65,7 +64,7 @@ fig, axes = plt.subplots(2, 2, figsize=(14, 8))
 axes = axes.flatten()
 
 custom_order = ["naive", "lint", "corrected_2d", "corrected_3d"]
-colors = ["indianred", "grey", "C0", "#1b9e77"]
+colors = ["indianred", "dimgrey", "C0", "#1b9e77"]
 
 # Create boxplots for each column
 for col, ax in zip(columns, axes):
@@ -115,7 +114,7 @@ plt.savefig(
 # Paper figures, so removing sub-par 2D correction
 
 custom_order = ["naive", "lint", "corrected_3d"]
-colors = ["indianred", "grey", "#1b9e77"]
+colors = ["indianred", "dimgrey", "#1b9e77"]
 
 # Make scatterplot of mape vs. missing_percent, coloured by gap handling
 palette = dict(zip(custom_order, colors))
@@ -144,7 +143,7 @@ for i, gap_handling_method in enumerate(custom_order):
         data=subset,
         x="missing_percent_overall",
         y="mape",
-        alpha=0.3,
+        alpha=0.1,
         s=10,
         color=palette[gap_handling_method],
         label=gap_handling_method,
@@ -162,7 +161,7 @@ for i, gap_handling_method in enumerate(custom_order):
         whis=(0, 100),
         color=palette[gap_handling_method],
         linecolor="black",
-        linewidth=1.5,
+        linewidth=1.2,
     )
 
     # Hide the y-axis labels of the boxplot to avoid duplication
@@ -186,6 +185,7 @@ for i, gap_handling_method in enumerate(custom_order):
         order=2,
         ax=ax[-1],
         ci=99,
+        line_kws={"linewidth": 0.8},  # Set the line width to be thinner
     )
 
     # sns.scatterplot(
@@ -213,10 +213,21 @@ for i, gap_handling_method in enumerate(custom_order):
     # )
 
 
-ax[0].set(xlabel="", ylabel="MAPE (\%)", title="Naive")
-ax[1].set(xlabel="", ylabel="", title="LINT")
-ax[2].set(xlabel="", ylabel="", title="Corrected")
-ax[3].set(xlabel="", ylabel="", title="Regression lines")
+# Move titles to inside top each plot
+for i, title in enumerate(["Naive", "LINT", "Corrected", "Regression lines"]):
+    ax[i].text(
+        0.5,
+        0.98,
+        title,
+        transform=ax[i].transAxes,
+        verticalalignment="top",
+        horizontalalignment="center",
+    )
+
+ax[0].set(xlabel="", ylabel="MAPE (\%)")
+ax[1].set(xlabel="", ylabel="")
+ax[2].set(xlabel="", ylabel="")
+ax[3].set(xlabel="", ylabel="")
 
 # ax[1, 0].set(xlabel="", ylabel="Slope APE (\%)", title="")
 # ax[1, 1].set(xlabel="", ylabel="", title="")

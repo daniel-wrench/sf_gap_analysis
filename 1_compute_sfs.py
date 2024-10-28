@@ -24,6 +24,8 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 # DELETE FOLLOWING ON HPC
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=10)
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["ytick.direction"] = "in"
 
 # For current Wind importing
 sys_arg_dict = {
@@ -455,7 +457,6 @@ else:
         .replace("data/raw", "plots/preprocessing")
         .replace(".cdf", "_sf_example.pdf")
     )
-
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
 

@@ -11,25 +11,15 @@ import src.data_import_funcs as dif
 import pandas as pd
 from matplotlib.ticker import MaxNLocator, LogLocator
 
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=10)
-plt.rcParams.update(
-    {
-        "font.size": 10,  # Set font size to match LaTeX (e.g., 10pt)
-        "axes.labelsize": 10,  # Label size
-        "xtick.labelsize": 10,  # X-axis tick size
-        "ytick.labelsize": 10,  # Y-axis tick size
-        "legend.fontsize": 10,  # Legend font size
-        "figure.titlesize": 10,  # Figure title size
-        "figure.dpi": 300,  # Higher resolution figure output
-    }
-)
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
 np.random.seed(123)  # For reproducibility
 
 times_to_gap = params.times_to_gap
+
+plt.rc("font", family="serif", serif=["Computer Modern Roman"], size=10)
+plt.rc("text", usetex=True)
 
 # Import all corrected (test) files
 spacecraft = "wind"
@@ -135,7 +125,7 @@ file_version_pairs = [
     (54, 10, 1, 0),  # previously 0, 6, 0
 ]
 
-annotate_location = [(0.1, 0.1), (0.1, 0.85), (0.1, 0.1)]
+annotate_location = [(0.1, 0.1), (0.1, 0.8), (0.1, 0.1)]
 mape_location = [
     [(0.05, 0.9), (0.05, 0.8)],
     [(0.3, 0.2), (0.3, 0.1)],
@@ -175,7 +165,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
 
     # Put missing_percent_overall in an annotation
     ax[ax_index, 0].annotate(
-        f"({ax_index+1}) TGP = {ints_gapped_metadata.loc[(ints_gapped_metadata['file_index']==file_index) & (ints_gapped_metadata['int_index']==int_index) & (ints_gapped_metadata['version']==version) & (ints_gapped_metadata['gap_handling']=='lint'), 'missing_percent_overall'].values[0]:.1f}\%",
+        f"({ax_index+1}) {ints_gapped_metadata.loc[(ints_gapped_metadata['file_index']==file_index) & (ints_gapped_metadata['int_index']==int_index) & (ints_gapped_metadata['version']==version) & (ints_gapped_metadata['gap_handling']=='lint'), 'missing_percent_overall'].values[0]:.1f}\% missing",
         xy=annotate_location[ax_index],
         xycoords="axes fraction",
         fontsize=8,
@@ -213,15 +203,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             "sf_2",
         ],
         c="indianred",
-        label="Naive ({:.1f})".format(
-            ints_gapped_metadata.loc[
-                (ints_gapped_metadata["file_index"] == file_index)
-                & (ints_gapped_metadata["int_index"] == int_index)
-                & (ints_gapped_metadata["version"] == version)
-                & (ints_gapped_metadata["gap_handling"] == "naive"),
-                "mape",
-            ].values[0]
-        ),
+        label="Naive",
         lw=1,
     )
 
@@ -241,16 +223,39 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             "sf_2",
         ],
         c="black",
-        label="LINT ({:.1f})".format(
-            ints_gapped_metadata.loc[
-                (ints_gapped_metadata["file_index"] == file_index)
-                & (ints_gapped_metadata["int_index"] == int_index)
-                & (ints_gapped_metadata["version"] == version)
-                & (ints_gapped_metadata["gap_handling"] == "lint"),
-                "mape",
-            ].values[0]
-        ),
+        label="LINT",
         lw=1,
+    )
+
+    # Add annotation for the MAPE value
+    mape_lint = ints_gapped_metadata.loc[
+        (ints_gapped_metadata["file_index"] == file_index)
+        & (ints_gapped_metadata["int_index"] == int_index)
+        & (ints_gapped_metadata["version"] == version)
+        & (ints_gapped_metadata["gap_handling"] == "lint"),
+        "mape",
+    ].values[0]
+    ax[ax_index, 2].annotate(
+        f"MAPE: {mape_lint:.1f}",
+        xy=mape_location[ax_index][1],
+        xycoords="axes fraction",
+        fontsize=8,
+        c="black",
+    )
+    # Add annotation for the MAPE value
+    mape_naive = ints_gapped_metadata.loc[
+        (ints_gapped_metadata["file_index"] == file_index)
+        & (ints_gapped_metadata["int_index"] == int_index)
+        & (ints_gapped_metadata["version"] == version)
+        & (ints_gapped_metadata["gap_handling"] == "naive"),
+        "mape",
+    ].values[0]
+    ax[ax_index, 2].annotate(
+        f"MAPE: {mape_naive:.1f}",
+        xy=mape_location[ax_index][0],
+        xycoords="axes fraction",
+        fontsize=8,
+        c="indianred",
     )
 
     # Plot the sf_2_pe
@@ -313,13 +318,13 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     #     lw=1,
     # )
 
-    # Label the % missing
-    ax[2, 0].set_xlabel("Time", size=10)
-    ax[ax_index, 0].set_ylabel("$B_X$ (normalised)", size=10)
-    ax[2, 1].set_xlabel("Lag ($\\tau$)", size=10)
-    ax[ax_index, 1].set_ylabel("SF", size=10)
-    ax[2, 2].set_xlabel("Lag ($\\tau$)", size=10)
-    ax[ax_index, 2].set_ylabel("PE (\%)", size=10)
+    # Label the axes
+    ax[2, 0].set_xlabel("Time")
+    ax[ax_index, 0].set_ylabel("$B_X$ (normalised)")
+    ax[2, 1].set_xlabel("Lag ($\\tau$)")
+    ax[ax_index, 1].set_ylabel("SF")
+    ax[2, 2].set_xlabel("Lag ($\\tau$)")
+    ax[ax_index, 2].set_ylabel("\% error")
     # ax2.set_ylabel("\% pairs missing", color="grey")
     # ax2.tick_params(axis="y", colors="grey")
     # ax2.set_ylim(0, 100)
@@ -330,7 +335,8 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     ax[ax_index, 1].set_xscale("log")
     ax[ax_index, 1].set_yscale("log")
     ax[ax_index, 2].set_xscale("log")
-    ax[ax_index, 1].legend(loc="lower right", fontsize=6)
+    ax[0, 1].legend(loc="lower right", fontsize=8)
+    # [ax[0, i].set_xticklabels([]) for i in range(3)]
 
     ax[ax_index, 1].xaxis.set_major_locator(
         LogLocator(base=10.0, numticks=10)
@@ -359,21 +365,18 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
 
 # Add titles
 
-fig.align_ylabels(ax[:, 0])
-
-plt.subplots_adjust(wspace=0.5, hspace=0.15)
-# plt.show()
+plt.subplots_adjust(wspace=0.5, hspace=0.1)
 
 plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_case_study_gapping.pdf",
-    # bbox_inches="tight",
+    f"plots/results/{output_path}/test_{spacecraft}_case_study_gapping_NEW_LEGEND.pdf",
+    bbox_inches="tight",
 )
+
+sys.exit()
 
 # 5e. Corrected case studies
 
-fig, axs = plt.subplots(
-    figsize=(7, 2.2), ncols=3, sharey=True, sharex=True, tight_layout=True
-)
+fig, axs = plt.subplots(figsize=(7, 2.2), ncols=3, sharey=True, sharex=True)
 plt.subplots_adjust(wspace=0.1, hspace=0.2)
 axs[0].set_ylabel("SF")
 
@@ -543,7 +546,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     # alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     ax.annotate(
-        f"({ax_index+1}) TGP = {float(missing[0]):.1f}\%",
+        f"({ax_index+1}) {float(missing[0]):.1f}\% missing",
         xy=(1, 1),
         xycoords="axes fraction",
         xytext=(0.05, 0.9),
@@ -638,8 +641,8 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     #     label=f"Log-log slope: {slope_corrected:.3f}",
     #     ax=ax,
     # )
-# plt.show()
-plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_case_study_correcting_{n_bins}_bins.pdf",
-    # bbox_inches="tight",
-)
+plt.show()
+# plt.savefig(
+#     f"plots/results/{output_path}/test_{spacecraft}_case_study_correcting_{n_bins}_bins.pdf",
+#     bbox_inches="tight",
+# )

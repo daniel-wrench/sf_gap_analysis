@@ -52,6 +52,15 @@ The bottleneck is the "format epochs" function. I've starting trying to do this 
 - For now likely to do stick with simple job arrays and single jobs on HPC, with importing and exporting of intermediate steps, but perhaps better to do single MPI script with broadcasting and reducing.
 - Add sf slope to Wind dataset
 
+## Data
+
+TRAINING: PSP
+
+TESTING: Wind
+- 111 raw files (1 day each) = 3.5 months obtained from 2016-03-01 to 2016-12-17
+- Returns 660 standardised intervals (some days have more than one), gapped 25 times each to give **16,500** testing intervals.
+
+
 ## How to run this code
 
 (It should be relatively easy to adjust to use CDF files from other spacecraft as well, mainly via editing the `src/params.py` parameter file.)

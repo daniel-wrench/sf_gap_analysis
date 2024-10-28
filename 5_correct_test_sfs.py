@@ -14,7 +14,7 @@ times_to_gap = params.times_to_gap
 pwrl_range = params.pwrl_range
 data_path_prefix = params.data_path_prefix
 output_path = params.output_path
-n_bins_list = params.n_bins_list
+n_bins_list = [25]
 
 spacecraft = sys.argv[1]
 file_index_test = int(sys.argv[2])
@@ -285,7 +285,7 @@ for n_bins in n_bins_list:
             input_file_list[file_index_test]
             .replace(
                 f"processed/{spacecraft}",
-                "corrections/testing",
+                f"corrections/{output_path}",
             )
             .replace(
                 ".pkl",

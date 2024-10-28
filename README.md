@@ -1,62 +1,46 @@
 # Gaps on structure functions
 *Furthering numerically improving our estimates of solar wind statistics (Re was implementing on large dataset, this is actually developing a new way)*
 
+GAPS ARE RANDOM BUT NOT RANDOM: not dependent on solar wind conditions, but contiguous gaps, not just random points. Therefore, systematic error when linearly interpolating.
+
 PAPERS:
 1. (Master's): Simple ANNs have some limited ability to predict structure functions of solar wind time series with gaps: it poses a difficult optimisation problem and does not behave intuitively
 2. Different estimators of the Reynolds number of the solar wind are not consistent, even when using a numerical correction to the Taylor scale
 3. Structure functions of gappy solar wind time series are improved by using a numerical correction derived from data from a different spacecraft. When applied to the sparse time series from Voyager, **it affects the results in this way**. 
-    -  Gaps occur for these reasons, have been studied thus
+    - Gaps occur for these reasons, have been studied thus
     - Diving deeper, gaps have a deleterious effect on SFs, an important stat, in this way, which relates to the literature thusly
     - ANNs shown to be pretty limited. As we can see, LINT is a limited remedy, and is biased to underestimate. By using this bias, and considering the typical bias for each combination of lag, missing %, and power, we show better estimation than naive or LINT methods. 
     - Noting the intrinsic issues with estimating uncertainty for correlated samples, we provide error bars around these corrected values based on the variability in error for each bin. *We calculate the distribution covered by this number of standard deviations. 
-4. *Next work*
-5. Quote Arevalo in paper
 
-## To-do
-
-### Analysis
-
-1. ~~Run correction on Voyager LISM data using notebook in other repo~~
-2. ~~Implement smoothing~~ **Talk to Tulasi about it. Investigate why no correction at low lag for 3D case study.**
-11. Send completed draft manuscript to Tulasi. Print out, talk through with Marcus.
 
 ### Manuscript
-- **Flesh out commentary on effect of gaps as follows:**
-- Have solid paragraph on exactly how and why gaps affect shape/power of SF. Answering question: how to gaps affect variance of lag distributions? Does the sample size curve oscillate, and is this reflected in the SF? (Certainly seems to be in ACF for Voyager). Refer to both case studies and trendlines, and add comments I've annotated on that figure.
-- Add reference to gap distribution plots in other works, dominant freqs
-- Use these words somewhere: 
-    - distortion
-    - artificial scaling laws
-    - reliable results
-- Add energy distribution interpretation of SF (should be in one of open tabs)
-- Describe data product (make later)
-- Read up on Chen's 2012 NSF, possibly how to convert from normed vector back to original?
-- Refer back to annotated print-out to make sure everything covered.
-- Refer back to Chat's tips
+- Filtering vs. conditioning in line 4 of intro?
 
 ### Plots
+1. **GAPPING CASE STUDY** (code script 7b)
+    - ~~Make all lines thinner~~
+    - ~~Make dashed horizontal line grey~~
+    - ~~Add titles, x-axis labels to all rows~~
+    - ~~Make legend font size smaller~~
+        - NICE EXAMPLES (REFERRING TO EXCEL METADATA)
+            - 95 file index/80 local index, version 24, int 0 (BUT ONLY WHEN SMOOTHED)
+            - **80 file index, version 13, int 1 (77% missing)** 
+            - **113 file index, version 13, int 1 (77% missing)**
+2. **TRAINING RESULTS** (4c)
+    - Make the parallel between the trendlines and RH panels in previous figure more consistent. Make clear MAPE/APE/mean MAPE etc (see caption of Table 2)
+3. **CORRECTION STATISTICAL ANALYSIS** (7a): confirm confidence intervals
+4. **CORRECTION CASE STUDIES**  (7b):
+    - ~~Make red the same as other red~~
+    - Confirm conf intervals
+    - Add nice little box for slope errors with annotations, or else some way to comment on slopes
+    - Smooth the results, check it works with these two corrections. Update error accordingly
+5. **VOYAGER APPLICATION 1** (Voyager notebook)
+6. **VOYAGER APPLICATION 2** (Voyager notebook)
+7. **STANDARDISATION** (1)
 
-Make consistent (Latex) font (EITHER changing seaborn scatterplots to matplotlib, or making all in Seaborn font), and specify sizes to match specifications in Overleaf (7in for full page, 3.5 for half), PDF files?
-
-1. **STANDARDISATION** (step 1)
-2. **GAPPING CASE STUDY** (7b)
-3. **TRAINING RESULTS** (4c)
-3. **CORRECTION STATISTICAL ANALYSIS** (7a)
-3. **CORRECTION CASE STUDIES**  (7b): 
-    - Show SMALL/LARGE MISSING, GOOD/BAD PERFORMANCE; possibly take place of earlier bg plot (put stationarity/Fbm stuff in appendix)
-    - Add nice little box for slope errors with annotations
-
-### Nice-to-have
-1. Work out how much of the test set truth values are covered by x number of SDs either side of the corrected versions, compared to min and max errors at each lag. Could add both as different line styles to case studies. Even show each version of one original interval, overlain, to show the variation around the true SF! OOh, I like it!
-1. Once we have a way of smoothing, choose #bins based on PSP data numbers a la validation set, report final results on Wind data
-1. Supplementary investigation to gapping case study of artefacts, stationarity, gap location (stored in separate overleaf project). Check Google Doc, Notion for notes, comments
-2. Uncertainty: NB: due to autocorrelation, "there is no simple way of determining confidence limits analytically for a semivariogram." (*Robert, André, and Keith S. Richards. "On the modelling of sand bedforms using the semivariogram." Earth Surface Processes and Landforms 13.5 (1988): 459-473.*) Perhaps best we can do is simulate or use standard error.
-3. Think about how to study Frat's method, and verify Burger's results
-4. **Kurtosis** analysis
-12. Implement Fraternale's sample size threshold for fitting slopes, and send to him
-13. Read Ruzmaikin
 
 ### Notes
+- Lockwood (2019) work is useful complement, showing that gaps cannot simply be ignored for our other time-domain stat, the ACF
 - Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints
 - Calculate sf_2_pe in 1_compute_sfs? Currently not to have somewhat simpler calculation once corrected, but also leading to some duplication of code, especially if we want the error trend line plots.
 - Add handling, e.g. in sf func, for extreme cases where SF will be missing values for certain lags due to high % missing (not a high priority for now because only going up to lag 2000, e.g. still 30 dx values for 99.6% missing)
@@ -106,7 +90,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     (Run on tmux on terminal to do other stuff while it downloads)
 
-    About 6000 files for the full 5 and a bit years of 6-hourly data from PSP = 130GB of disk space. After filtering done in the next two steps, we end up with 4380 files (3.5 years worth) = amount of clean data available from existing 5 and bit years of data, given current conditions. Performing the same filtering on all the Wind data from 2016, we 5 months of data
+    About 6000 files for the full 5 and a bit years of 6-hourly data from PSP = 130GB of disk space. After filtering done in the next two steps, **we end up with 4380 files (3.5 years worth)** = amount of clean data available from existing 5 and bit years of data, given current conditions. Performing the same filtering on all the Wind data from 2016, we 5 months of data
 
 
 4. **Delete files that are too small**
@@ -134,7 +118,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     HPC requirements:
     - Average of 20-40min/file: e.g. put on for 6 hours if running on 10 files/core
     - Only ever need 2GB per core
-    - If some jobs do time out, meaning some files remain unprocessed, we can limit the `data/raw` directiory to those unprocessed files by moving them with `python move_matching_files.py`. *Maybe in future make this part of the slurm/python job*
+    - If some jobs do time out, meaning some files remain unprocessed, we can limit the `data/raw` directory to those unprocessed files by moving them with `python move_matching_files.py`. *Maybe in future make this part of the slurm/python job*
 
     - Processed PSP and Wind files are between 32 (~400MB used in step 1) and 156MB (~300MB) each. For PSP, there are an average of 4 files/file
 
@@ -147,7 +131,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     `python 2_train_test_split.py`
 
 
-4. **Compute the correction factor from all training set files**
+4. **Assign the errors to each bin for each file**
 
     Local:
 

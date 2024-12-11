@@ -1,12 +1,12 @@
 import pickle
-import numpy as np
-import matplotlib.pyplot as plt
 import sys
-import src.params as params
 import warnings
-import pandas as pd
-from matplotlib import text  # Import the text module
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+import src.params as params
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=10)
@@ -43,6 +43,7 @@ data_path_prefix = params.data_path_prefix
 # Also do publication-ready plots for heatmaps
 dim = 2
 
+# Read in binned errors for full set of training intervals
 with open(
     f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_naive.pkl",
     "rb",
@@ -55,7 +56,7 @@ with open(
 ) as f:
     correction_lookup_lint = pickle.load(f)
 
-
+# Read in lag-specific errors for subset of training intervals
 sfs_gapped = pd.read_pickle("data/processed/psp_train_sfs_gapped.pkl")
 
 # Print the number of unique int_index-file_index combinations
@@ -98,7 +99,7 @@ ax[0, 0].scatter(
 )
 
 mean_error_naive = other_outputs_df_naive.groupby("lag")[estimator + "_pe"].mean()
-ax[0, 0].plot(mean_error_naive, color="black", lw=3, label="Running mean")
+ax[0, 0].plot(mean_error_naive, color="black", lw=3, label="Ensemble average")
 ax[0, 0].set_title("Naive", fontsize=10)
 ax[0, 1].set_title("LINT", fontsize=10)
 

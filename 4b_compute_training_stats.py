@@ -1,11 +1,13 @@
 # COMPUTE SOME STATS FOR TRAINING DATA
 # Likely can only run this on a subset of the data, due to memory constraints
 
-import src.sf_funcs as sf
 import glob
+
 import pandas as pd
+
 import src.params as params
-import matplotlib.pyplot as plt
+import src.sf_funcs as sf
+
 # import matplotlib.cbook
 
 # warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
@@ -15,7 +17,7 @@ import matplotlib.pyplot as plt
 data_path_prefix = params.data_path_prefix
 output_path = params.output_path
 include_sfs = False
-n_files = 2000
+n_files = 2000  # If above is True, limit the number of files to read in
 spacecraft = "psp"
 input_file_list = [
     sorted(
@@ -34,9 +36,9 @@ if include_sfs is True:
         sfs,
         sfs_gapped,
     ) = sf.get_all_metadata(
-        input_file_list[:n_files],
+        input_file_list[:n_files],  # Limit the number of files read in
         include_sfs=True,
-    )  ######## LIMIT N FILES HERE ! ! ! #########
+    )
 
 else:
     (
@@ -46,7 +48,7 @@ else:
     ) = sf.get_all_metadata(
         input_file_list,
         include_sfs=False,
-    )  ######## LIMIT N FILES HERE ! ! ! #########
+    )
 
 
 print(
@@ -82,5 +84,5 @@ if include_sfs is True:
         f"\nMemory usage of sfs_gapped subset (for plotting trendline graphs locally): {sfs_gapped.memory_usage(deep=True).sum() / 1024 ** 2:.2f} MB\n"
     )
     # Export the sfs_gapped dataframe to a pickle file
-    #sfs_gapped.to_pickle(f"data/processed/{spacecraft}_train_sfs_gapped.pkl")
-    #print(f"Exported this subset to data/processed/{spacecraft}_train_sfs_gapped.pkl")
+    # sfs_gapped.to_pickle(f"data/processed/{spacecraft}_train_sfs_gapped.pkl")
+    # print(f"Exported this subset to data/processed/{spacecraft}_train_sfs_gapped.pkl")

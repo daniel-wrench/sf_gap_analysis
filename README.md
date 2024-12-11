@@ -1,56 +1,4 @@
 # Gaps on structure functions
-*Furthering numerically improving our estimates of solar wind statistics (Re was implementing on large dataset, this is actually developing a new way)*
-
-GAPS ARE RANDOM BUT NOT RANDOM: not dependent on solar wind conditions, but contiguous gaps, not just random points. Therefore, systematic error when linearly interpolating.
-
-PAPERS:
-1. (Master's): Simple ANNs have some limited ability to predict structure functions of solar wind time series with gaps: it poses a difficult optimisation problem and does not behave intuitively
-2. Different estimators of the Reynolds number of the solar wind are not consistent, even when using a numerical correction to the Taylor scale
-3. Structure functions of gappy solar wind time series are improved by using a numerical correction derived from data from a different spacecraft. When applied to the sparse time series from Voyager, **it affects the results in this way**. 
-    - Gaps occur for these reasons, have been studied thus
-    - Diving deeper, gaps have a deleterious effect on SFs, an important stat, in this way, which relates to the literature thusly
-    - ANNs shown to be pretty limited. As we can see, LINT is a limited remedy, and is biased to underestimate. By using this bias, and considering the typical bias for each combination of lag, missing %, and power, we show better estimation than naive or LINT methods. 
-    - Noting the intrinsic issues with estimating uncertainty for correlated samples, we provide error bars around these corrected values based on the variability in error for each bin. *We calculate the distribution covered by this number of standard deviations. 
-
-
-### Manuscript
-- Filtering vs. conditioning in line 4 of intro?
-
-### Plots
-1. **GAPPING CASE STUDY** (code script 7b)
-    - ~~Make all lines thinner~~
-    - ~~Make dashed horizontal line grey~~
-    - ~~Add titles, x-axis labels to all rows~~
-    - ~~Make legend font size smaller~~
-        - NICE EXAMPLES (REFERRING TO EXCEL METADATA)
-            - 95 file index/80 local index, version 24, int 0 (BUT ONLY WHEN SMOOTHED)
-            - **80 file index, version 13, int 1 (77% missing)** 
-            - **113 file index, version 13, int 1 (77% missing)**
-2. **TRAINING RESULTS** (4c)
-    - Make the parallel between the trendlines and RH panels in previous figure more consistent. Make clear MAPE/APE/mean MAPE etc (see caption of Table 2)
-3. **CORRECTION STATISTICAL ANALYSIS** (7a): confirm confidence intervals
-4. **CORRECTION CASE STUDIES**  (7b):
-    - ~~Make red the same as other red~~
-    - Confirm conf intervals
-    - Add nice little box for slope errors with annotations, or else some way to comment on slopes
-    - Smooth the results, check it works with these two corrections. Update error accordingly
-5. **VOYAGER APPLICATION 1** (Voyager notebook)
-6. **VOYAGER APPLICATION 2** (Voyager notebook)
-7. **STANDARDISATION** (1)
-
-
-### Notes
-- Lockwood (2019) work is useful complement, showing that gaps cannot simply be ignored for our other time-domain stat, the ACF
-- Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints
-- Calculate sf_2_pe in 1_compute_sfs? Currently not to have somewhat simpler calculation once corrected, but also leading to some duplication of code, especially if we want the error trend line plots.
-- Add handling, e.g. in sf func, for extreme cases where SF will be missing values for certain lags due to high % missing (not a high priority for now because only going up to lag 2000, e.g. still 30 dx values for 99.6% missing)
-- Would be nice to get total # intervals for each set returned by step 1
-- Wind data reads very slowly, compared with PSP. It is using a pipeline function that I think Kevin made, made up of many smaller functions.
-The bottleneck is the "format epochs" function. I've starting trying to do this in the same was as PSP, but it was struggling to do the timedelta addition
-- Can add smoothing to correction step alter, **not on critical path for getting most of the scripts on NESI**
-- Having logarithmically spaced lag bins would make the correction factor much cleaner to work with: one-to-one bins
-- For now likely to do stick with simple job arrays and single jobs on HPC, with importing and exporting of intermediate steps, but perhaps better to do single MPI script with broadcasting and reducing.
-- Add sf slope to Wind dataset
 
 ## Data
 
@@ -64,8 +12,6 @@ TESTING: Wind
 ## How to run this code
 
 (It should be relatively easy to adjust to use CDF files from other spacecraft as well, mainly via editing the `src/params.py` parameter file.)
-
-~~The HPC version of the code currently ingests 300GB across 10,000 CDF files (data from 1995-2022) and produces an 18MB CSV file.~~
 
 In order to create the full, multi-year dataset, an HPC cluster is required. However, for the purposes of testing, minor adjustments can be made to the pipeline so that it can be run locally on your machine with a small subset of the data: note some local/HPC differences in the instructions below. This local version has been run on a **Windows OS**. Both the HPC and local versions use **Python 3.10.4**.
 
@@ -213,3 +159,22 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     `python 7a_plot_test_overall.py {spacecraft} {n_bins}`
 
     `python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`
+
+
+### Notes/next steps
+- Better case-study examples.
+- Lockwood (2019) work is useful complement, showing that gaps cannot simply be ignored for our other time-domain stat, the ACF
+- Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints
+- Calculate sf_2_pe in 1_compute_sfs? Currently not to have somewhat simpler calculation once corrected, but also leading to some duplication of code, especially if we want the error trend line plots.
+- Add handling, e.g. in sf func, for extreme cases where SF will be missing values for certain lags due to high % missing (not a high priority for now because only going up to lag 2000, e.g. still 30 dx values for 99.6% missing)
+- Would be nice to get total # intervals for each set returned by step 1
+- Wind data reads very slowly, compared with PSP. It is using a pipeline function that I think Kevin made, made up of many smaller functions.
+The bottleneck is the "format epochs" function. I've starting trying to do this in the same was as PSP, but it was struggling to do the timedelta addition
+- Can add smoothing to correction step alter, **not on critical path for getting most of the scripts on NESI**
+- Having logarithmically spaced lag bins would make the correction factor much cleaner to work with: one-to-one bins
+- For now likely to do stick with simple job arrays and single jobs on HPC, with importing and exporting of intermediate steps, but perhaps better to do single MPI script with broadcasting and reducing.
+- *CORRECTION CASE STUDIES plot*:
+    - Confirm conf intervals
+    - Add nice little box for slope errors with annotations, or else some way to comment on slopes
+    - Smooth the results, check it works with these two corrections. Update error accordingly
+- Add line about data size, e.g. *The HPC version of the code currently ingests 300GB across 10,000 CDF files (data from 1995-2022) and produces an 18MB CSV file.*

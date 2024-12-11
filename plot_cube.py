@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=10)
@@ -29,21 +28,25 @@ num_vectors = 100
 x_vals = np.random.uniform(x_min, x_max, num_vectors)
 y_vals = np.random.uniform(y_min, y_max, num_vectors)
 z_vals = np.random.uniform(z_min, z_max, num_vectors) / 100
+err_vals = np.random.uniform(
+    -100, 40, num_vectors
+)  # Somewhat mimics the actual range of PE values
 
 # Stack into a single array of shape (50, 3)
-vectors_3d = np.column_stack((x_vals, y_vals, z_vals))
+vectors_3d = np.column_stack((x_vals, y_vals, z_vals, err_vals))
 vectors_3d
 
 # Plotting
-fig = plt.figure(figsize=(3.5, 3.5))
+fig = plt.figure(figsize=(3.5, 3.5), tight_layout=True)
 ax = fig.add_subplot(111, projection="3d")
 
 # Plotting the scattered points
-ax.scatter(
+points = ax.scatter(
     vectors_3d[:, 0],
     vectors_3d[:, 1],
     vectors_3d[:, 2],
-    color="blue",
+    c=vectors_3d[:, 3],
+    cmap="bwr",
     s=10,
     label="Random Points",
 )
@@ -67,5 +70,11 @@ ax.zaxis.labelpad = -10
 ax.locator_params(axis="x", nbins=10)
 ax.locator_params(axis="y", nbins=10)
 ax.locator_params(axis="z", nbins=10)
-plt.savefig("3d_scatter.pdf")
-plt.show()
+
+# Colorbar for the first row
+cb1 = plt.colorbar(points, cax=ax.inset_axes([1.15, 0.1, 0.03, 0.7]))
+points.set_clim(-100, 100)
+cb1.set_label("PE (\%)")
+
+plt.savefig("plots/results/final/3d_scatter.pdf", bbox_inches="tight")
+# plt.show()

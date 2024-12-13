@@ -1,15 +1,15 @@
 # CASE STUDY PLOTS
 # Pre-correction case studies
 
-import pickle
 import glob
-import numpy as np
+import pickle
+
 import matplotlib.pyplot as plt
-import sys
-import src.params as params
-import src.data_import_funcs as dif
+import numpy as np
 import pandas as pd
-from matplotlib.ticker import MaxNLocator, LogLocator
+from matplotlib.ticker import LogLocator
+
+import src.params as params
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=10)
@@ -315,7 +315,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
 
     # Label the % missing
     ax[2, 0].set_xlabel("Time", size=10)
-    ax[ax_index, 0].set_ylabel("$B_X$ (normalised)", size=10)
+    ax[ax_index, 0].set_ylabel("$B_X$ (normalized)", size=10)
     ax[2, 1].set_xlabel("Lag ($\\tau$)", size=10)
     ax[ax_index, 1].set_ylabel("SF", size=10)
     ax[2, 2].set_xlabel("Lag ($\\tau$)", size=10)

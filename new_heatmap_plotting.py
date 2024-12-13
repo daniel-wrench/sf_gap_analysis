@@ -39,7 +39,7 @@ pe_mean = correction_lookup["pe_mean"]
 
 # Define positions and data for each overlapping panel
 panels = [
-    [0.4, 0.3, 0.3, 0.3, 21],  # [x, y, width, height, z-index]
+    [0.4, 0.3, 0.3, 0.3, 22],  # [x, y, width, height, z-index]
     [0.3, 0.2, 0.3, 0.3, 15],
     [0.2, 0.1, 0.3, 0.3, 5],
 ]
@@ -55,12 +55,12 @@ for x, y, w, h, i in panels:
     # Annotate the z-range
     ax.annotate(
         f"[{np.round(zedges[i], 2)}, {np.round(zedges[i+1], 2)}]",
-        xy=(0.5, 0.85),
+        xy=(0.5, 1.05),
         xycoords="axes fraction",
         color="black",
         ha="center",
         bbox=dict(
-            facecolor="white",
+            facecolor="lightgray",
             alpha=0.8,
             # reduce padding and remove border
             pad=0.5,
@@ -72,12 +72,13 @@ for x, y, w, h, i in panels:
     if i == 5:
         ax.set_ylabel("GP (\%)")
         ax.set_xlabel("Lag ($\\tau$)")
+    if i == 21:
         ax.annotate(
             r"$\hat{S}_2^{\mathrm{LINT}}$ bin range",
-            xy=(0.5, 0.7),
+            xy=(0.5, 1.2),
             xycoords="axes fraction",
-            color="white",
-            fontsize=6,
+            color="black",
+            fontsize=7,
             ha="center",
         )
 
@@ -108,10 +109,11 @@ for x, y, w, h, i in panels:
 # )
 
 cbar_ax = fig.add_axes(
-    [0.72, 0.08, 0.02, 0.52]
+    [0.72, 0.3, 0.02, 0.3]
 )  # [left, bottom, width, height] to cover full height
 cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
-cb.set_label("MPE (\%)")  # Optional: Label the color bar
+cb.set_label("MPE (\%)", labelpad=-10)  # Move the label closer to the colorbar
 
 # Save the plot
-plt.savefig(f"plots/results/{output_path}/3d_heatmap.png", bbox_inches="tight")
+plt.show()
+# plt.savefig(f"plots/results/{output_path}/3d_heatmap.pdf", bbox_inches="tight")

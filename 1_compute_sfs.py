@@ -4,20 +4,22 @@
 
 # Import dependencies
 
-import pickle
-import pandas as pd
-import numpy as np
-import src.ts_dashboard_utils as ts
-import src.utils as utils  # copied directly from Reynolds project, normalize() added
-import src.params as params
-import src.sf_funcs as sf
-import src.data_import_funcs as dif
 import glob
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import os
+import pickle
 import sys
 import warnings
+
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+import src.data_import_funcs as dif
+import src.params as params
+import src.sf_funcs as sf
+import src.ts_dashboard_utils as ts
+import src.utils as utils  # copied directly from Reynolds project, normalize() added
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -306,7 +308,7 @@ else:
     #     ax1.axvline(interval.index[-1], c="black", linestyle="dashed")
     #     for interval in ints
     # ]
-    ax1.plot(ints[0]["Bx"], color="black", label="Standardised")
+    ax1.plot(ints[0]["Bx"], color="black", label="Standardized")
     # ax2.axhline(0, c="black", linewidth=0.5, linestyle="--")
     ax1.set_xlabel("Time")
     ax1.xaxis.set_major_locator(mdates.HourLocator(interval=1))
@@ -425,7 +427,9 @@ else:
     ]
     timestamp = ints_metadata.loc[ints_metadata["int_index"] == check_int, "int_start"][
         0
-    ].strftime("%Y-%m-%d %H:%M:%S")  # doesn't need to be too precise
+    ].strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )  # doesn't need to be too precise
 
     plt.plot(
         sfs.loc[sfs["int_index"] == check_int, "lag"],

@@ -1,5 +1,4 @@
 import pickle
-import sys
 import warnings
 
 import matplotlib.pyplot as plt
@@ -232,14 +231,16 @@ plt.savefig(
     f"plots/results/{output_path}/train_psp_error.png",
 )
 
-sys.exit()
+# sys.exit()
+
 
 # NOW PLOT 3D HEATMAPS
 
 dim = 3
+n_bins = 25
 
 with open(
-    f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_lint.pkl",
+    f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins.pkl",
     "rb",
 ) as f:
     correction_lookup = pickle.load(f)
@@ -296,7 +297,7 @@ fig.text(
 fig.text(
     0.05,
     0.5,
-    "\% missing",
+    "GP (\%)",
     ha="center",
     va="center",
     rotation="vertical",
@@ -356,12 +357,12 @@ for i in range(n_bins):
     ax[i].semilogy()
 
 fig.text(
-    0.5, 0.03, "\% missing", ha="center", va="center"
+    0.5, 0.03, "GP (\%)", ha="center", va="center"
 )  # Shared x-axis label, was 0.00 y-val for 2 rows
 fig.text(
     0.05,
     0.5,
-    "Power",
+    r"\hat{S}_2^\text{LINT}(\tau)",
     ha="center",
     va="center",
     rotation="vertical",
@@ -421,7 +422,7 @@ fig.text(0.5, 0.03, "Lag ($\\tau$)", ha="center", va="center")  # Shared x-axis 
 fig.text(
     0.05,
     0.5,
-    "Power",
+    r"\hat{S}_2^\text{LINT}(\tau)",
     ha="center",
     va="center",
     rotation="vertical",

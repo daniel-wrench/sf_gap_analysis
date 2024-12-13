@@ -1,13 +1,16 @@
 # Gaps on structure functions
 
+This set of codes performs an analysis of the effect of data gaps on the structure function as calculated from time series of the solar wind. It uses an HPC for running the full analysis; however, instructions for running a smaller version locally are also provided below.
+
+Further information about the data and methods described below are given in the accompanying manuscript, which will be linked here upon publication.
+
 ## Data
 
-TRAINING: PSP
+TRAINING: PSP magnetic field data.
 
 TESTING: Wind
 - 111 raw files (1 day each) = 3.5 months obtained from 2016-03-01 to 2016-12-17
 - Returns 660 standardised intervals (some days have more than one), gapped 25 times each to give **16,500** testing intervals.
-
 
 ## How to run this code
 
@@ -163,6 +166,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 ### Notes/next steps
 - Better case-study examples.
+- Normal**iz**ation for Voyager plots (better pipeline in that script)
+- Clarify effect of standardisation in limitations section, as Mark mentioned
 - Lockwood (2019) work is useful complement, showing that gaps cannot simply be ignored for our other time-domain stat, the ACF
 - Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints
 - Calculate sf_2_pe in 1_compute_sfs? Currently not to have somewhat simpler calculation once corrected, but also leading to some duplication of code, especially if we want the error trend line plots.
@@ -170,7 +175,6 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 - Would be nice to get total # intervals for each set returned by step 1
 - Wind data reads very slowly, compared with PSP. It is using a pipeline function that I think Kevin made, made up of many smaller functions.
 The bottleneck is the "format epochs" function. I've starting trying to do this in the same was as PSP, but it was struggling to do the timedelta addition
-- Can add smoothing to correction step alter, **not on critical path for getting most of the scripts on NESI**
 - Having logarithmically spaced lag bins would make the correction factor much cleaner to work with: one-to-one bins
 - For now likely to do stick with simple job arrays and single jobs on HPC, with importing and exporting of intermediate steps, but perhaps better to do single MPI script with broadcasting and reducing.
 - *CORRECTION CASE STUDIES plot*:

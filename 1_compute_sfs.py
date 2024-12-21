@@ -14,6 +14,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sunpy.timeseries import TimeSeries
 
 import src.data_import_funcs as dif
 import src.params as params
@@ -28,6 +29,12 @@ plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=10)
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
+
+# Rename and keep only the first three columns
+mag_vars_dict = {
+    "psp": ["psp_fld_l2_mag_RTN_0", "psp_fld_l2_mag_RTN_1", "psp_fld_l2_mag_RTN_2"],
+    "wind": ["BGSE_0", "BGSE_1", "BGSE_2"],
+}
 
 # For current Wind importing
 sys_arg_dict = {
@@ -86,67 +93,28 @@ if len(raw_file_list) == 0:
 # Selecting one file to read in
 file_index = 2
 
-if spacecraft == "psp":
-    # takes < 1s/file, ~50 MB mem usage, 2-3 million rows
+data = TimeSeries(
+    raw_file_list[file_index],
+    concatenate=True,
+)
+# data.columns
+# data.units
+# data.time_range
 
-    psp_raw_cdf = dif.read_cdfs(
-        [raw_file_list[file_index]],  # LIMIT HERE!
-        {"epoch_mag_RTN": (0), "psp_fld_l2_mag_RTN": (0, 3), "label_RTN": (0, 3)},
-    )
-    psp_raw = dif.extract_components(
-        psp_raw_cdf,
-        var_name="psp_fld_l2_mag_RTN",
-        label_name="label_RTN",
-        time_var="epoch_mag_RTN",
-        dim=3,
-    )
-    df_raw = pd.DataFrame(psp_raw)
-    df_raw["Time"] = pd.to_datetime("2000-01-01 12:00") + pd.to_timedelta(
-        df_raw["epoch_mag_RTN"], unit="ns"
-    )
-    df_raw = df_raw.drop(columns="epoch_mag_RTN").set_index("Time")
+df_raw = data.to_dataframe()
 
-    # Ensuring observations are in chronological order
-    df_raw = df_raw.sort_index()
+df_raw = df_raw.loc[:, mag_vars_dict[spacecraft]]
 
-    # df_wind_hr = pd.read_pickle("data/processed/" + params.mag_path + params.dt_hr + ".pkl")
-    df_raw = df_raw.rename(
-        columns={
-            "B_R": "Bx",
-            "B_T": "By",
-            "B_N": "Bz",
-        }
-    )
+# Rename the first three columns to Bx, By, Bz
+df_raw = df_raw.rename(
+    columns={
+        mag_vars_dict[spacecraft][0]: "Bx",
+        mag_vars_dict[spacecraft][1]: "By",
+        mag_vars_dict[spacecraft][2]: "Bz",
+    }
+)
 
-    # print(df_raw.info())
-
-elif spacecraft == "wind":
-    # Takes ~90s/file, 11 MB mem usage, 1 million rows
-    print("reading file", raw_file_list[file_index])
-    df_raw = utils.pipeline(
-        raw_file_list[file_index],
-        varlist=sys_arg_dict["mag_vars"],
-        thresholds=sys_arg_dict["mag_thresh"],
-        cadence=sys_arg_dict["dt_hr"],
-    )
-
-    # Ensuring observations are in chronological order
-    df_raw = df_raw.sort_index()
-
-    # df_wind_hr = pd.read_pickle("data/processed/" + params.mag_path + params.dt_hr + ".pkl")
-    df_raw = df_raw.rename(
-        columns={
-            # params.Bwind: "Bwind",
-            params.Bx: "Bx",
-            params.By: "By",
-            params.Bz: "Bz",
-        }
-    )
-
-    # print(df_raw.info())
-
-else:
-    raise ValueError("Spacecraft not recognized")
+# df_wind_hr = pd.read_pickle("data/processed/" + params.mag_path + params.dt_hr + ".pkl")
 
 
 missing = df_raw.iloc[:, 0].isna().sum() / len(df_raw)
@@ -162,34 +130,6 @@ if missing > 0.2:
     sys.exit()
 
 
-# The following chunk gives some metadata - not necessary for the pipeline
-
-### 0PTIONAL CODE ###
-
-# if df_raw.isnull().sum() == 0:
-#     print("No missing data")
-# else:
-#     print(f"{df_raw.isnull().sum()} missing points")
-# print("Length of interval: " + str(df_raw.notnull().sum()))
-# print("Duration of interval: " + str(df_raw.index[-1] - df_raw.index[0]))
-# x = df_raw.values
-
-# # Frequency of measurements
-# print("Duration between some adjacent data points:")
-# print(df_raw.index[2] - df_raw.index[1])
-# print(df_raw.index[3] - df_raw.index[2])
-# print(df_raw.index[4] - df_raw.index[3])
-
-# a = df_raw.index[2] - df_raw.index[1]
-# x_freq = 1 / (a.microseconds / 1e6)
-# print("\nFrequency is {0:.1f} Hz (2dp)".format(x_freq))
-
-# print("Mean = {}".format(np.mean(x)))
-# print("Standard deviation = {}\n".format(np.std(x)))
-
-### 0PTIONAL CODE END ###
-
-
 if spacecraft == "psp":
     tc_approx = 500  # starting-point correlation time, in seconds
     cadence_approx = 0.1  # time resolution (dt) of the data, in seconds
@@ -202,6 +142,11 @@ elif spacecraft == "wind":
 
 tc_n = 10  # Number of actual (computed) correlation times we want in our standardised interval...
 interval_length = params.int_length  # ...across this many points
+
+# Calculate the cadence of the time series
+# (See also official metadata; note that it can change)
+# cadence = df.index.to_series().diff().mode()[0]
+# cadence
 
 df = df_raw.resample(str(cadence_approx) + "S").mean()
 

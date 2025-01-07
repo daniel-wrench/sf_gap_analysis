@@ -131,6 +131,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 5. **Perform the correction on the test set, file by file**
 
+    And also calculates the slopes for all the SF estimates. Before this, it had only been calculated for the true SF.
+
     *111 Wind files to correct: outputs are 12-22KB each = 3MB files**
 
     THERE IS A VERSION FOR SAVING THE CORRECTED SFS, FOR COMPUTING OVERALL TEST RESULTS, AND A VERSION WITHOUT, FOR THE CASE STUDY PLOTS, TO BE RUN LOCALLY. NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE
@@ -165,9 +167,14 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 
 ### Notes/next steps
-- Better case-study examples.
+
+- Create correction factor file
 - Normal**iz**ation for Voyager plots (better pipeline in that script)
 - Clarify effect of standardisation in limitations section, as Mark mentioned
+- Include typical duration (range) of standardised intervals for each spacecraft 
+- Highlight emphasise on good overall shape, rather than inertial range slope, based on results?
+
+- Better case-study examples.
 - Lockwood (2019) work is useful complement, showing that gaps cannot simply be ignored for our other time-domain stat, the ACF
 - Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints
 - Calculate sf_2_pe in 1_compute_sfs? Currently not to have somewhat simpler calculation once corrected, but also leading to some duplication of code, especially if we want the error trend line plots.

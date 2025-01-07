@@ -141,7 +141,7 @@ elif spacecraft == "wind":
     nlags = 20000
 
 tc_n = 10  # Number of actual (computed) correlation times we want in our standardised interval...
-interval_length = params.int_length  # ...across this many points
+# across params.int_length many points
 
 # Calculate the cadence of the time series
 # (See also official metadata; note that it can change)
@@ -190,15 +190,15 @@ plt.close()
 
 if tc < 0:
     tc = tc_approx
-    new_cadence = tc_n * tc / interval_length
+    new_cadence = tc_n * tc / params.int_length
     print(
         f"Correlation time (integral method) not found for this interval, setting to 500s (default) -> cadence = {new_cadence}s"
     )
 
 else:
-    new_cadence = tc_n * tc / interval_length
+    new_cadence = tc_n * tc / params.int_length
     print(
-        f"Correlation time (integral method) = {np.round(tc,2)}s -> data resampled to new cadence of {np.round(new_cadence,2)}s, for {tc_n}tc across {interval_length} points"
+        f"Correlation time (integral method) = {np.round(tc,2)}s -> data resampled to new cadence of {np.round(new_cadence,2)}s, for {tc_n}tc across {params.int_length} points"
     )
 
 tc_list.append(tc)
@@ -210,9 +210,9 @@ try:
     ).mean()  # Resample to higher frequency
 
     for i in range(
-        0, len(interval_approx_resampled) - interval_length + 1, interval_length
+        0, len(interval_approx_resampled) - params.int_length + 1, params.int_length
     ):
-        interval = interval_approx_resampled.iloc[i : i + interval_length]
+        interval = interval_approx_resampled.iloc[i : i + params.int_length]
         # Check if interval is complete (accept at most 1% missing after resampling)
         if interval.Bx.isnull().sum() / len(interval) < 0.01:
             # Linear interpolate (and, in case of missing values at edges, back and forward fill)
@@ -308,7 +308,7 @@ else:
     #     fontsize=18,
     # )
     # plt.title(
-    #     f"{tc_n}$\lambda_C$ ($\lambda_C=${int(tc)}s) across {interval_length} points, $\langle x \\rangle=0$, $\sigma=1$"
+    #     f"{tc_n}$\lambda_C$ ($\lambda_C=${int(tc)}s) across {params.int_length} points, $\langle x \\rangle=0$, $\sigma=1$"
     # )
     ax1.legend(loc="lower left")
     output_file_path = (
@@ -360,6 +360,9 @@ else:
         good_output, slope = sf.compute_sf(
             pd.DataFrame(input), lags, powers, False, False, pwrl_range
         )
+
+        # INSERT AUTOCORRELATION CONVERSION HERE
+
         good_output.insert(0, "int_index", i)
         good_output.insert(1, "file_index", file_index)
         sfs = pd.concat([sfs, good_output])
@@ -393,7 +396,7 @@ else:
         label=f"Log-log slope: {slope:.3f}",
     )
     # Add vertical line at tc
-    tc_lag = interval_length / tc_n
+    tc_lag = params.int_length / tc_n
     plt.axvline(
         tc_lag, color="black", linestyle="dotted", lw=1, label="Correlation length"
     )

@@ -29,11 +29,11 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 2. **Create a virtual environment** 
 
-    Local: 
+    *Local:* 
     - `python -m venv venv`
     - `venv/Scripts/activate`
 
-    HPC:
+    *HPC:*
     - `module load Python/3.10.4`
     - `python -m venv venv`
     - `source venv/bin/activate`
@@ -44,7 +44,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 3. **Download the raw CDF files using a set of recursive `wget` commands**
 
-    Local: `bash 0_download_files.sh`
+    *Local:* `bash 0_download_files.sh`
 
     (Run on tmux on terminal to do other stuff while it downloads)
 
@@ -61,13 +61,13 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and likely `times_to_gap` as well
 
-    Local:
+    *Local:*
 
     In `1_compute_sfs.sh`, change `start_index` to 0 
     
     `bash 1_compute_sfs.sh`
 
-    HPC: 
+    *HPC:* 
     
     Adjust `data_prefix_path`, depending on where you are storing the data
 
@@ -91,13 +91,13 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 4. **Assign the errors to each bin for each file**
 
-    Local:
+    *Local:*
 
     In `3_bin_errors.sh`, change `start_index` to 0 
     
     `bash 3_bin_errors.sh`
 
-    HPC: 
+    *HPC:* 
     
     In `3_bin_errors.py`, adjust `data_prefix_path`, depending on where you are storing the data
 
@@ -109,9 +109,9 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 4. **Merge the binned errors and calculate the correction factor**
 
-    Local: `bash 4a_finalise_correction.sh`
+    *Local:* `bash 4a_finalise_correction.sh`
 
-    HPC: `sbatch 4a_finalise_correction.sh`
+    *HPC:* `sbatch 4a_finalise_correction.sh`
 
     LATEST: 10 files (SERIAL JOB), {2d, 3d} {15,20,25 bins} = 200MB, 90s
 
@@ -133,13 +133,15 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     And also calculates the slopes for all the SF estimates. Before this, it had only been calculated for the true SF.
 
-    *111 Wind files to correct: outputs are 12-22KB each = 3MB files**
+    This script gives the option of saving the full corrected SFs (and their corresponding input intervals). This is designed for the purposes of plotting a selection of corrected intervals: but this output is very large, so should only be used for a view. This full output is given by setting  `full_output = True` in `5_correct_test_sfs.py`. These files go into `data/corrections`, whereas the slim outputs, which are then used by the next script, go into `data/processed`.
 
-    THERE IS A VERSION FOR SAVING THE CORRECTED SFS, FOR COMPUTING OVERALL TEST RESULTS, AND A VERSION WITHOUT, FOR THE CASE STUDY PLOTS, TO BE RUN LOCALLY. NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE
+    NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE?
 
-    Local: `for i in $(seq 0 1); do python 5_correct_test_sfs.py $spacecraft $i $n_bins; done`
+    Cannot correct PSP right now, only Wind. This is due to file output paths: PSP has `psp/train,test`, Wind does not.
 
-    HPC: `sbatch 5_correct_test_sfs.sh`
+    *Local:* `for i in $(seq 0 1); do python 5_correct_test_sfs.py $spacecraft $i $n_bins; done`
+
+    *HPC:* `sbatch 5_correct_test_sfs.sh`
 
     1GB AND 3MIN/FILE
 
@@ -161,7 +163,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 7.  **Plot the test set results**
      (If on an HPC, download the above output at this step, as well as the heatmaps  and the **FIRST**  2-3 individual corrected pickle files for plotting case studies from) 
-    `python 7a_plot_test_overall.py {spacecraft} {n_bins}`
+    `python 7a_plot_test_results.py {spacecraft} {n_bins}`
 
     `python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`
 

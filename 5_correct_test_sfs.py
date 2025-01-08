@@ -2,13 +2,15 @@
 # As with 1_compute_sfs, only working on one file at a time
 
 
-import pickle
-import pandas as pd
-import numpy as np
-import src.sf_funcs as sf
 import glob
+import pickle
 import sys
+
+import numpy as np
+import pandas as pd
+
 import src.params as params
+import src.sf_funcs as sf
 
 times_to_gap = params.times_to_gap
 pwrl_range = params.pwrl_range
@@ -21,7 +23,7 @@ file_index_test = int(sys.argv[2])
 # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
 
 
-full_output = True
+full_output = False
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
@@ -53,7 +55,7 @@ for n_bins in n_bins_list:
     ints_metadata = data["ints_metadata"]
     ints = data["ints"]
     ints_gapped_metadata = data["ints_gapped_metadata"]
-    ints_gapped = data["ints_gapped"]
+    ints_gapped = data["ints_gapped"]  # Not used here
     sfs = data["sfs"]
     sfs_gapped = data["sfs_gapped"]
 

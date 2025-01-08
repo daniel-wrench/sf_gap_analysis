@@ -23,6 +23,7 @@ import src.ts_dashboard_utils as ts
 import src.utils as utils  # copied directly from Reynolds project, normalize() added
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
+warnings.simplefilter(action="ignore", category=UserWarning)
 
 # DELETE FOLLOWING ON HPC
 plt.rc("text", usetex=True)
@@ -91,11 +92,11 @@ if len(raw_file_list) == 0:
     )
 
 # Selecting one file to read in
-file_index = 2
+file_index = int(sys.argv[2])
 
 data = TimeSeries(
     raw_file_list[file_index],
-    concatenate=True,
+    concatenate=True,  # Not strictly relevant here as only reading one file at a time
 )
 # data.columns
 # data.units
@@ -183,7 +184,7 @@ tc, fig, ax = utils.compute_outer_scale_integral(time_lags_lr, r_vec_lr, plot=Tr
 output_file_path = (
     raw_file_list[file_index]
     .replace("data/raw", "plots/preprocessing")
-    .replace(".cdf", "_acf.pdf")
+    .replace(".cdf", "_acf_NEW.pdf")
 )
 plt.savefig(output_file_path, bbox_inches="tight")
 plt.close()
@@ -220,7 +221,7 @@ try:
             int_norm = utils.normalize(interval)
             ints.append(int_norm)
         else:
-            print(">1% missing values in a re-sampled interval; skipping")
+            print(">1% missing values in re-sampled interval; skipping")
 
 except Exception as e:
     print(f"An error occurred: {e}")
@@ -314,7 +315,7 @@ else:
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/preprocessing")
-        .replace(".cdf", "_ints_std.pdf")
+        .replace(".cdf", "_ints_std_NEW.pdf")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
@@ -358,7 +359,7 @@ else:
     for i, input in enumerate(ints):
         # print(f"\nCore {core} processing standardised interval {i}")
         good_output, slope = sf.compute_sf(
-            pd.DataFrame(input), lags, powers, False, False, pwrl_range
+            input, lags, powers, False, False, pwrl_range
         )
 
         # INSERT AUTOCORRELATION CONVERSION HERE
@@ -407,7 +408,7 @@ else:
     output_file_path = (
         raw_file_list[file_index]
         .replace("data/raw", "plots/preprocessing")
-        .replace(".cdf", "_sf_example.pdf")
+        .replace(".cdf", "_sf_example_NEW.pdf")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
@@ -454,9 +455,9 @@ else:
             #     # print(">95% or 0% data removed, skipping")
             #     continue
 
-            bad_output = sf.compute_sf(
-                pd.DataFrame(bad_input), lags, powers, False, False
-            )
+            bad_output = sf.compute_sf(bad_input, lags, powers, False, False)
+            # Not yet computing slopes for gapped intervals - leaving this till
+            # after correction has been applied in later script, then all at once
             bad_output["file_index"] = file_index
             bad_output["int_index"] = index
             bad_output["version"] = j
@@ -474,9 +475,9 @@ else:
                 if handling == "naive":
                     slopes_list.append(slope)
                     # Once we are done with computing the SF, add some metadata to the interval
-                    bad_input_df = pd.DataFrame(bad_input).copy(deep=True)
+                    bad_input_df = bad_input.copy(deep=True)
                     # So that we don't overwrite the original, relevant when it comes to linear interpolation
-                    bad_input_df.reset_index(inplace=True)
+                    bad_input_df.reset_index(inplace=True, names="time")
                     bad_input_df["file_index"] = file_index
                     bad_input_df["int_index"] = index
                     bad_input_df["version"] = j
@@ -488,19 +489,18 @@ else:
                         bad_input.interpolate(method="linear").ffill().bfill()
                     )  # Linearly interpolate (and, in case of missing values at edges, back and forward fill)
                     interp_output = sf.compute_sf(
-                        pd.DataFrame(interp_input), lags, powers, False, False
+                        interp_input, lags, powers, False, False
                     )
 
                     # # Once we are done with computing the SF, add some metadata to the interval
-                    interp_input_df = pd.DataFrame(interp_input)
-                    interp_input_df.reset_index(
-                        inplace=True
+                    interp_input.reset_index(
+                        inplace=True, names="time"
                     )  # Make time a column, not an index
-                    interp_input_df["file_index"] = file_index
-                    interp_input_df["int_index"] = index
-                    interp_input_df["version"] = j
-                    interp_input_df["gap_handling"] = handling
-                    ints_gapped = pd.concat([ints_gapped, interp_input_df])
+                    interp_input["file_index"] = file_index
+                    interp_input["int_index"] = index
+                    interp_input["version"] = j
+                    interp_input["gap_handling"] = handling
+                    ints_gapped = pd.concat([ints_gapped, interp_input])
 
                     interp_output["file_index"] = file_index
                     interp_output["int_index"] = index

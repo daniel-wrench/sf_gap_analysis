@@ -1,8 +1,9 @@
 ##########################
 # SERIAL JOB TO COMBINE ALL RESULTS
 
-import pickle
 import glob
+import pickle
+
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -282,11 +283,9 @@ for gap_handling in ["lint", "naive"]:
                 )
                 plt.close()
 
-            if dim == 3 and gap_handling == "naive":
-                pass
-            else:
+            if gap_handling == "lint":
                 # Export the lookup tables as a pickle file
-                output_file_path = f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_{gap_handling}.pkl"
+                output_file_path = f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins.pkl"
                 with open(
                     output_file_path,
                     "wb",

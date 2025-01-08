@@ -7,12 +7,12 @@
 # See also accessing Wind data with HelioPy:
 # https://buildmedia.readthedocs.org/media/pdf/heliopy/0.6.0/heliopy.pdf
 
-times_to_gap = 25
+times_to_gap = 3
 data_path_prefix = ""  # /nesi/nobackup/vuw04187/
-output_path = "final"  # "final" or "testing"
+output_path = "testing"  # "final" or "testing"
 pwrl_range = [50, 500]
 minimum_missing_chunks = 0.7
-n_bins_list = [15, 20, 25]
+n_bins_list = [25]  # 15, 20,
 int_length = 10000
 max_lag_prop = 0.2
 

@@ -362,12 +362,22 @@ else:
             input, lags, powers, False, False, pwrl_range
         )
 
-        # INSERT AUTOCORRELATION CONVERSION HERE
+        # Get corr scale from SF
+        var_signal = np.sum(np.var(input, axis=0))
+        acf_from_sf = 1 - (good_output.sf_2 / (2 * var_signal))
+        good_output["acf_from_sf"] = acf_from_sf
+
+        tce = utils.compute_outer_scale_exp_trick(
+            good_output["lag"].values,
+            good_output["acf_from_sf"].values,
+            plot=False,
+        )
 
         good_output.insert(0, "int_index", i)
         good_output.insert(1, "file_index", file_index)
         sfs = pd.concat([sfs, good_output])
         ints_metadata.loc[ints_metadata["int_index"] == i, "slope"] = slope
+        ints_metadata.loc[ints_metadata["int_index"] == i, "tce"] = tce
 
     # NON-ESSENTIAL: plot example SF + slope
     check_int = 0
@@ -399,8 +409,20 @@ else:
     # Add vertical line at tc
     tc_lag = params.int_length / tc_n
     plt.axvline(
-        tc_lag, color="black", linestyle="dotted", lw=1, label="Correlation length"
+        tc_lag,
+        color="black",
+        linestyle="dotted",
+        lw=1,
+        label="Correlation length (original file, int method)",
     )
+    if tce > 0:
+        plt.axvline(
+            tce,
+            color="black",
+            linestyle="dashed",
+            lw=1,
+            label="Correlation length (this interval, 1/e method)",
+        )
     plt.semilogx()
     plt.semilogy()
     plt.title(f"$S_2(\\tau)$ for interval beginning {timestamp}")

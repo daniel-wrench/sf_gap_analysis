@@ -11,6 +11,7 @@ import pandas as pd
 
 import src.params as params
 import src.sf_funcs as sf
+import src.utils as utils  # copied directly from Reynolds project, normalize() added
 
 times_to_gap = params.times_to_gap
 pwrl_range = params.pwrl_range
@@ -255,6 +256,30 @@ for n_bins in n_bins_list:
                         "slope",
                     ] = slope
 
+                    # Get ACF from SF
+                    # var_signal = np.sum(np.var(input, axis=0))
+                    acf_from_sf = 1 - (
+                        current_int.sf_2 / (2 * 3)
+                    )  # var_signal = 3, as we are using the 3D SF
+                    current_int.loc[:, "acf_from_sf"] = acf_from_sf
+
+                    tce = utils.compute_outer_scale_exp_trick(
+                        current_int["lag"].values,
+                        current_int["acf_from_sf"].values,
+                        plot=False,
+                    )
+                    # plt.show()
+                    # NB: if plotting, will not work if tce is not found
+
+                    # Calculate correlation scale from acf_from_sf
+                    ints_gapped_metadata.loc[
+                        (ints_gapped_metadata["file_index"] == i)
+                        & (ints_gapped_metadata["int_index"] == j)
+                        & (ints_gapped_metadata["version"] == k)
+                        & (ints_gapped_metadata["gap_handling"] == gap_handling),
+                        "tce",
+                    ] = tce
+
     # Calculate slope errors
     ints_gapped_metadata = pd.merge(
         ints_gapped_metadata,
@@ -273,12 +298,21 @@ for n_bins in n_bins_list:
     # df1['composite_key'] = list(zip(df1['key1'], df1['key2']))
     # df1['value2'] = df1['composite_key'].map(value2_dict)
 
+    # Calculate errors for our two scalars of interest
+
     ints_gapped_metadata["slope_pe"] = (
         (ints_gapped_metadata["slope"] - ints_gapped_metadata["slope_orig"])
         / ints_gapped_metadata["slope_orig"]
         * 100
     )
     ints_gapped_metadata["slope_ape"] = np.abs(ints_gapped_metadata["slope_pe"])
+
+    ints_gapped_metadata["tce_pe"] = (
+        (ints_gapped_metadata["tce"] - ints_gapped_metadata["tce_orig"])
+        / ints_gapped_metadata["tce_orig"]
+        * 100
+    )
+    ints_gapped_metadata["tce_ape"] = np.abs(ints_gapped_metadata["tce_pe"])
 
     # Export the dataframes in one big pickle file
 

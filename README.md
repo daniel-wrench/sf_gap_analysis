@@ -24,6 +24,8 @@ Voyager 1 magnetic field data (magnetometer instrument). Two intervals:
 
 ## Setting up environment
 
+> **`bolded code`** indicates commands you should type directly into the terminal.
+
 (It should be relatively easy to adjust to use CDF files from other spacecraft as well, mainly via editing the `src/params.py` parameter file.)
 
 In order to create the full, multi-year dataset, an HPC cluster is required. However, for the purposes of testing, minor adjustments can be made to the pipeline so that it can be run locally on your machine with a small subset of the data: note some local/HPC differences in the instructions below. This local version has been run on a **Windows OS**. Both the HPC and local versions use **Python 3.10.4**.
@@ -71,13 +73,15 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 ## Processing data
 
+> **`bolded code`** indicates commands you should type directly into the terminal.
+
 1. **Process the data, file by file**
 
     *Might have demo in the old time series repo*
 
-    In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and likely `times_to_gap` as well
-
     *Local:*
+
+    1. In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and likely `times_to_gap` as well
 
     1. In `1_compute_sfs.sh`, change `start_index` to 0 
     
@@ -85,7 +89,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     *HPC:* 
     
-    1. Adjust `data_prefix_path`, depending on where you are storing the data
+    1. In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and likely `times_to_gap` as well
 
     2. Set job resource requests in `1_compute_sfs.sh`:
         - Average of 20-40min/file: e.g. put on for 6 hours if running on 10 files/core
@@ -114,103 +118,99 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     *HPC:* 
 
     1. Set job resource requests in `3_bin_errors.sh`:
-    
-    In `3_bin_errors.py`, adjust `data_prefix_path`, depending on where you are storing the data
+        - LATEST: 20 files/core, {2d, 3d} {15,20,25 bins} = 300MB, 3.5min
+        - 5o files/core "" = CONSTANT 500MB, no matter how many files, 15s/file
+        - Basically 15min to do the whole lot across 60 cores (73 files/core)
 
-    `sbatch 3_bin_errors.sh`
+    2. In `3_bin_errors.py`, adjust `data_prefix_path`, depending on where you are storing the data
 
-    - LATEST: 20 files/core, {2d, 3d} {15,20,25 bins} = 300MB, 3.5min
-    - 5o files/core "" = CONSTANT 500MB, no matter how many files, 15s/file
-    - Basically 15min to do the whole lot across 60 cores (73 files/core)
+    3. **`sbatch 3_bin_errors.sh`**
 
-4.
+4. 
 
-4a. **Merge the binned errors and calculate the correction factor**  
+- 4a. **Merge the binned errors and calculate the correction factor**  
 
-*Local:* **`bash 4a_finalise_correction.sh`**
+    *Local:* **`bash 4a_finalise_correction.sh`**
 
-*HPC:* 
+    *HPC:* 
 
-    1. `sbatch 4a_finalise_correction.sh`
+    1. Set job resource requests in `4a_finalise_correction.sh`
+        - LATEST: 10 files (SERIAL JOB), {2d, 3d} {15,20,25 bins} = 200MB, 90s
+        - 100 files "" = 350MB, 120s
+        - 200 files "" = 500MB, 150s
+        - 400 files "" = 820MB, 210s
+        - 1000 () files "" = 1.7G, 7min
+        - **4200 (all) files "" = 7G, 32min**
 
-LATEST: 10 files (SERIAL JOB), {2d, 3d} {15,20,25 bins} = 200MB, 90s
+    2. **`sbatch 4a_finalise_correction.sh`**
 
-100 files "" = 350MB, 120s
-200 files "" = 500MB, 150s
-400 files "" = 820MB, 210s
-1000 () files "" = 1.7G, 7min
+- 4b. **Calculate the stats (average slope and corr time, error trend lines) for the training set**
 
+    **`bash 4b_compute_training_stats.sh`**
 
-- **4200 (all) files "" = 7G, 32min**
-
-
-4b. **Calculate the stats (average slope and corr time, error trend lines) for the training set**
-
-`bash 4b_compute_training_stats.sh`
-
-**NB**: Limit the number of files, as we will not be able to plot the error trendlines locally in step 7b on the full dataset. We can do *at least* 20 files.
+    **NB**: Limit the number of files, as we will not be able to plot the error trendlines locally in step 7b on the full dataset. We can do *at least* 20 files.
 
 5. **Perform the correction on the test set, file by file**
 
-    And also calculates the slopes for all the SF estimates. Before this, it had only been calculated for the true SF.
+    And also calculates the slopes and correlation scales from all the SF estimates. Before this, they had only been calculated for the true SF back in `1_compute_sfs.py`.
 
-    This script gives the option of saving the full corrected SFs (and their corresponding input intervals). This is designed for the purposes of plotting a selection of corrected intervals: but this output is very large, so should only be used for a view. This full output is given by setting  `full_output = True` in `5_correct_test_sfs.py`. These files go into `data/corrections`, whereas the slim outputs, which are then used by the next script, go into `data/processed`.
+    - NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE?
+    - Cannot correct PSP right now, only Wind. This is due to file output paths: PSP has `psp/train,test`, Wind does not.
 
-    NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE?
+    *Local:* 
+    
+    1. If you are after minimal output from the full dataset, set `full_output = False`. (These files, used by the next script, go into `data/processed`.) If you are after full output (from just a few intervals) for later plotting in case studies, set `full_output = True`. (These files go into `data/corrections`.)
+    
+    **`for i in $(seq 0 1); do python 5_correct_test_sfs.py $spacecraft $i $n_bins; done`**
 
-    Cannot correct PSP right now, only Wind. This is due to file output paths: PSP has `psp/train,test`, Wind does not.
+    *HPC:* 
+    1. Set job resource requests:
+        - 1GB AND 3MIN/FILE
 
-    *Local:* `for i in $(seq 0 1); do python 5_correct_test_sfs.py $spacecraft $i $n_bins; done`
-
-    *HPC:* `sbatch 5_correct_test_sfs.sh`
-
-    1GB AND 3MIN/FILE
+    2. **`sbatch 5_correct_test_sfs.sh`**
 
 6. **Compute the statistical results for all (corrected) test set files**
 
-    `bash/sbatch 6_compute_test_stats.sh`
+    *Local*: **`bash 6_compute_test_stats.sh`**
 
-    Reqs: 
+    *HPC*:
 
-    (Now using simplified outputs)
-    - 30s and 100MB for the full 111 Wind files, containing 125 intervals
+    1. Set job resource requests:
+        - 30s and 100MB for the full 111 Wind files, containing 125 intervals
 
-    **Output: test_corrected_{spacecraft}_{bins}_bins.pkl** *not including ints, ints_gapped, sfs, or sfs_gapped_corrected*
+    2. **`sbatch 6_compute_test_stats.sh`**
 
-7. IF ON HPC, DOWNLOAD THE FOLLOWING FILES:
-
-    - all outputs in `sf_gap_analysis/data/processed`
-    - first few corrected files in `/nesi/nobackup/vuw04187/data/processed/wind`
+    *Output*: `test_corrected_{spacecraft}_{bins}_bins.pkl`, not including `ints`, `ints_gapped`, `sfs`, or `sfs_gapped_corrected`
 
 ## Plotting results
 
 7.  **Plot the test set results**
-     (If on an HPC, download the above output at this step, as well as the heatmaps  and the **FIRST**  2-3 individual corrected pickle files for plotting case studies from) 
-    `python 7a_plot_test_results.py {spacecraft} {n_bins}`
 
-    `python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`
+    1. If on an HPC, download the following files first:
+    - all outputs in `sf_gap_analysis/data/processed`, including heatmaps
+    - first few corrected files in `/nesi/nobackup/vuw04187/data/processed/wind` to plot as case studies
+         
+    2. **`python 7a_plot_test_results.py {spacecraft} {n_bins}`**
+
+    3. **`python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`**
 
 
-### Notes/next steps
+## Notes/next steps
 
 - Create correction factor file
-- Normal**iz**ation for Voyager plots (better pipeline in that script)
-- Clarify effect of standardisation in limitations section, as Mark mentioned
+- Add line about data size, e.g. *The HPC version of the code currently ingests 300GB across 10,000 CDF files (data from 1995-2022) and produces an 18MB CSV file.*
 - Include typical duration (range) of standardised intervals for each spacecraft 
+- Normal**iz**ation for Voyager plots (better pipeline in that script)
+- Better case-study examples - using quicker way to view many of them?
+- Clarify effect of standardisation in limitations section, as Mark mentioned
 - Highlight emphasise on good overall shape, rather than inertial range slope, based on results?
-
-- Better case-study examples.
-- Lockwood (2019) work is useful complement, showing that gaps cannot simply be ignored for our other time-domain stat, the ACF
 - Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints
 - Calculate sf_2_pe in 1_compute_sfs? Currently not to have somewhat simpler calculation once corrected, but also leading to some duplication of code, especially if we want the error trend line plots.
 - Add handling, e.g. in sf func, for extreme cases where SF will be missing values for certain lags due to high % missing (not a high priority for now because only going up to lag 2000, e.g. still 30 dx values for 99.6% missing)
-- Would be nice to get total # intervals for each set returned by step 1
-- Wind data reads very slowly, compared with PSP. It is using a pipeline function that I think Kevin made, made up of many smaller functions.
-The bottleneck is the "format epochs" function. I've starting trying to do this in the same was as PSP, but it was struggling to do the timedelta addition
 - Having logarithmically spaced lag bins would make the correction factor much cleaner to work with: one-to-one bins
 - For now likely to do stick with simple job arrays and single jobs on HPC, with importing and exporting of intermediate steps, but perhaps better to do single MPI script with broadcasting and reducing.
 - *CORRECTION CASE STUDIES plot*:
     - Confirm conf intervals
     - Add nice little box for slope errors with annotations, or else some way to comment on slopes
     - Smooth the results, check it works with these two corrections. Update error accordingly
-- Add line about data size, e.g. *The HPC version of the code currently ingests 300GB across 10,000 CDF files (data from 1995-2022) and produces an 18MB CSV file.*
+

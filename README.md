@@ -1,18 +1,28 @@
-# Gaps on structure functions
+# Analysing effect of gaps on structure functions
 
-This set of codes performs an analysis of the effect of data gaps on the structure function as calculated from time series of the solar wind. It uses an HPC for running the full analysis; however, instructions for running a smaller version locally are also provided below.
+This set of codes performs an analysis of the effect of data gaps on the structure function as calculated from time series of the solar wind. It uses an HPC for running the full analysis, however, instructions for running it locally on a subset of the data are also provided below.
 
-Further information about the data and methods described below are given in the accompanying manuscript, which will be linked here upon publication.
+Further information about the data and methods described below are given in the [accompanying manuscript](https://arxiv.org/abs/2412.10053).
 
-## Data
+Please feel free to download the dataset and perform your own analysis or adapt it for your needs. For any comments or questions, either use the GitHub functionality or email daniel.wrench@vuw.ac.nz
 
-TRAINING: PSP magnetic field data.
 
-TESTING: Wind
-- 111 raw files (1 day each) = 3.5 months obtained from 2016-03-01 to 2016-12-17
-- Returns 660 standardised intervals (some days have more than one), gapped 25 times each to give **16,500** testing intervals.
+## Data description
 
-## How to run this code
+Data is downloaded from NASA's Space Physics Data Facility, as described in the instructions below. The 3 datasets are as follows:
+
+### TRAINING
+PSP magnetic field data (magnetometer instrument), 2019-2023 (4 years) = 10,731 standardised intervals.
+
+### TESTING
+Wind magnetic field data (magnetometer instrument), 2016-03-01 to 2016-12-17 (3.5 months) = 165 standardised intervals.
+
+### APPLICATION
+Voyager 1 magnetic field data (magnetometer instrument). Two intervals:
+- 118au
+- 154au
+
+## Setting up environment
 
 (It should be relatively easy to adjust to use CDF files from other spacecraft as well, mainly via editing the `src/params.py` parameter file.)
 
@@ -23,81 +33,87 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 1. **Clone the repository to your local machine**
 
-    - Using a terminal: `git clone https://github.com/daniel-wrench/reynolds_scales_project`
+    - Using a terminal: `git clone https://github.com/daniel-wrench/sf_gap_analysis`
 
-    - Using VS Code: [see here for instructions](https://learn.microsoft.com/en-us/azure/developer/javascript/how-to/with-visual-studio-code/clone-github-repository?tabs=create-repo-command-palette%2Cinitialize-repo-activity-bar%2Ccreate-branch-command-palette%2Ccommit-changes-command-palette%2Cpush-command-palette#clone-repository)
+    - Using GUI in VS Code: [see here for instructions](https://learn.microsoft.com/en-us/azure/developer/javascript/how-to/with-visual-studio-code/clone-github-repository?tabs=create-repo-command-palette%2Cinitialize-repo-activity-bar%2Ccreate-branch-command-palette%2Ccommit-changes-command-palette%2Cpush-command-palette#clone-repository)
 
 2. **Create a virtual environment** 
 
     *Local:* 
-    - `python -m venv venv`
-    - `venv/Scripts/activate`
+    1. **`python -m venv venv`**
+    2. **`venv/Scripts/activate`**
 
     *HPC:*
-    - `module load Python/3.10.4`
-    - `python -m venv venv`
-    - `source venv/bin/activate`
+    1. **`module load Python/3.10.4`**
+    2. **`python -m venv venv`**
+    3. **`source venv/bin/activate`**
 
 2. **Install the required packages**
 
-    `pip install -r requirements.txt`
+    **`pip install -r requirements.txt`**
 
 3. **Download the raw CDF files using a set of recursive `wget` commands**
 
-    *Local:* `bash 0_download_files.sh`
+    *Local:* **`bash 0_download_files.sh`**
 
-    (Run on tmux on terminal to do other stuff while it downloads)
+    *Run on tmux on terminal to do other stuff while it downloads. Alternatively the `sunpy` package can be used for selecting specific time ranges more easily, but here we simply want to download all available data.*
 
-    About 6000 files for the full 5 and a bit years of 6-hourly data from PSP = 130GB of disk space. After filtering done in the next two steps, **we end up with 4380 files (3.5 years worth)** = amount of clean data available from existing 5 and bit years of data, given current conditions. Performing the same filtering on all the Wind data from 2016, we 5 months of data
+    **PSP:** Cleaning all the available data (5 and a bit years), we go from 6000 files (130GB) -> 4380 files (3.5 years)
+
+    **Wind:** Performing the same filtering on all the Wind data from 2016, we 5 months of data
 
 
 4. **Delete files that are too small**
 
-    `bash delete_small_files.sh`
+   **`bash delete_small_files.sh`**
 
-    A common error is that the file is unexpectedly small: i.e., it is not the full 6 hours, or at least does not contain 10,000 points at the initial resampled cadence. **We should run a simple check for this prior, deleting any files smaller than 1MB (and then seeing whether too many/not enough are caught by this, depending on any remaining error messages)**.
+    Not all files contain the full 6 hours expected: this script deletes any files smaller than 1MB.
 
-4. **Process the data, file by file**
+## Processing data
+
+1. **Process the data, file by file**
+
+    *Might have demo in the old time series repo*
 
     In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and likely `times_to_gap` as well
 
     *Local:*
 
-    In `1_compute_sfs.sh`, change `start_index` to 0 
+    1. In `1_compute_sfs.sh`, change `start_index` to 0 
     
-    `bash 1_compute_sfs.sh`
+    2. **`bash 1_compute_sfs.sh`**
 
     *HPC:* 
     
-    Adjust `data_prefix_path`, depending on where you are storing the data
+    1. Adjust `data_prefix_path`, depending on where you are storing the data
 
-    `sbatch 1_compute_sfs.sh`
+    2. Set job resource requests in `1_compute_sfs.sh`:
+        - Average of 20-40min/file: e.g. put on for 6 hours if running on 10 files/core
+        - Only ever need 2GB per core
+        - If some jobs do time out, meaning some files remain unprocessed, we can limit the `data/raw` directory to those unprocessed files by moving them with `python move_matching_files.py`. *Maybe in future make this part of the slurm/python job*
+        - Processed PSP and Wind files are between 32 (~400MB used in step 1) and 156MB (~300MB) each. For PSP, there are an average of 4 files/file
+
+    2. **`sbatch 1_compute_sfs.sh`**
     
-    HPC requirements:
-    - Average of 20-40min/file: e.g. put on for 6 hours if running on 10 files/core
-    - Only ever need 2GB per core
-    - If some jobs do time out, meaning some files remain unprocessed, we can limit the `data/raw` directory to those unprocessed files by moving them with `python move_matching_files.py`. *Maybe in future make this part of the slurm/python job*
 
-    - Processed PSP and Wind files are between 32 (~400MB used in step 1) and 156MB (~300MB) each. For PSP, there are an average of 4 files/file
+2. **Perform train-test split for PSP data.** *Be very careful about whether you want to delete existing files from the train-test folders. Currently these lines are commented out.*
 
-    *Might have demo in the old time series repo*
+    (If on HPC, make sure you have `module load`ed Python first)
 
-3. Perform train-test split for PSP data. **Be very careful about whether you want to delete existing files from the train-test folders. Currently these lines are commented out.**
-
-    (make sure you have `module load`ed Python if on an HPC first)
-
-    `python 2_train_test_split.py`
+    **`python 2_train_test_split.py`**
 
 
-4. **Assign the errors to each bin for each file**
+3. **Assign the errors to each bin for each file**
 
     *Local:*
 
-    In `3_bin_errors.sh`, change `start_index` to 0 
+    1. In `3_bin_errors.sh`, change `start_index` to 0 
     
-    `bash 3_bin_errors.sh`
+    2. **`bash 3_bin_errors.sh`**
 
     *HPC:* 
+
+    1. Set job resource requests in `3_bin_errors.sh`:
     
     In `3_bin_errors.py`, adjust `data_prefix_path`, depending on where you are storing the data
 
@@ -107,27 +123,32 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     - 5o files/core "" = CONSTANT 500MB, no matter how many files, 15s/file
     - Basically 15min to do the whole lot across 60 cores (73 files/core)
 
-4. **Merge the binned errors and calculate the correction factor**
+4.
 
-    *Local:* `bash 4a_finalise_correction.sh`
+4a. **Merge the binned errors and calculate the correction factor**  
 
-    *HPC:* `sbatch 4a_finalise_correction.sh`
+*Local:* **`bash 4a_finalise_correction.sh`**
 
-    LATEST: 10 files (SERIAL JOB), {2d, 3d} {15,20,25 bins} = 200MB, 90s
+*HPC:* 
 
-    100 files "" = 350MB, 120s
-    200 files "" = 500MB, 150s
-    400 files "" = 820MB, 210s
-    1000 () files "" = 1.7G, 7min
+    1. `sbatch 4a_finalise_correction.sh`
+
+LATEST: 10 files (SERIAL JOB), {2d, 3d} {15,20,25 bins} = 200MB, 90s
+
+100 files "" = 350MB, 120s
+200 files "" = 500MB, 150s
+400 files "" = 820MB, 210s
+1000 () files "" = 1.7G, 7min
 
 
-    - **4200 (all) files "" = 7G, 32min**
+- **4200 (all) files "" = 7G, 32min**
 
-5. **Calculate the stats (average slope and corr time, error trend lines) for the training set**
 
-    `bash 4b_compute_training_stats.sh`
+4b. **Calculate the stats (average slope and corr time, error trend lines) for the training set**
 
-    **NB**: Limit the number of files, as we will not be able to plot the error trendlines locally in step 7b on the full dataset. We can do *at least* 20 files.
+`bash 4b_compute_training_stats.sh`
+
+**NB**: Limit the number of files, as we will not be able to plot the error trendlines locally in step 7b on the full dataset. We can do *at least* 20 files.
 
 5. **Perform the correction on the test set, file by file**
 
@@ -160,6 +181,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     - all outputs in `sf_gap_analysis/data/processed`
     - first few corrected files in `/nesi/nobackup/vuw04187/data/processed/wind`
+
+## Plotting results
 
 7.  **Plot the test set results**
      (If on an HPC, download the above output at this step, as well as the heatmaps  and the **FIRST**  2-3 individual corrected pickle files for plotting case studies from) 

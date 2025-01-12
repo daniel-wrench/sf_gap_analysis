@@ -149,7 +149,10 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 - 4a. **Merge the binned errors and calculate the correction factor**  
 
-    *Output:* `data/corrections/[path]/correction_lookup_[dim]_[bins].pkl`
+    *Output:* 
+    - `data/corrections/[path]/correction_lookup_[dim]_[bins]_lint.pkl` (for correction and plotting)
+    - `data/corrections/[path]/correction_lookup_[dim]_[bins]_lint.pkl` (for plotting)
+    - Some interim plots for inspection
 
     *Local:* **`bash 4a_finalise_correction.sh`**
 
@@ -165,13 +168,31 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     2. **`sbatch 4a_finalise_correction.sh`**
 
-- 4b. **Calculate the stats (average slope and corr time, error trend lines) for the training set**
+- 4b. **Calculate stats of the training set**
 
-    *Output:* `training_stats.txt
+    *Output:* 
+    
+    - If `include_sfs=False`, for the whole set, get average slope and file corr time `training_stats.txt`
+    - If `include_sfs=True`, output lag-specific errors: `data/processed/psp_train_sfs_gapped.pkl`. These are later plotted in step 7b. **NB:** need to limit the number of files with `n_files` param in python script, beneath `include_sfs` param. We can do *at least* 20 files.
+
+    *Local:*
 
     **`bash 4b_compute_training_stats.sh`**
 
-    **NB**: Limit the number of files, as we will not be able to plot the error trendlines locally in step 7b on the full dataset. We can do *at least* 20 files.
+    *HPC:*
+
+    1. Set job resource requests in `4b_compute_training_stats.sh`
+
+    2. **`bash 4b_compute_training_stats.sh`**
+
+- 4c. **Plot the heatmaps and error trendlines for the training set** (full dataset and subset respectively)
+
+    *Output:* `plots/results/train_psp_error.png`
+
+    1. Download the outputs from previous step.
+
+    2. **`python 4c_plot_training_results.py`**
+
 
 5. **Perform the correction on the test set, file by file**
 

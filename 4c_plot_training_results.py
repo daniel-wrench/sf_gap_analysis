@@ -34,7 +34,7 @@ times_to_gap = params.times_to_gap
 spacecraft = "psp"
 
 # Import all corrected (test) files
-n_bins = 15
+n_bins = 25
 # times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
@@ -42,7 +42,7 @@ data_path_prefix = params.data_path_prefix
 # Also do publication-ready plots for heatmaps
 dim = 2
 
-# Read in binned errors for full set of training intervals
+# Read in binned errors for FULL SET of training intervals
 with open(
     f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_naive.pkl",
     "rb",
@@ -55,7 +55,7 @@ with open(
 ) as f:
     correction_lookup_lint = pickle.load(f)
 
-# Read in lag-specific errors for subset of training intervals
+# Read in lag-specific errors for SUBSET of training intervals
 sfs_gapped = pd.read_pickle("data/processed/psp_train_sfs_gapped.pkl")
 
 # Print the number of unique int_index-file_index combinations
@@ -234,7 +234,7 @@ plt.savefig(
 # sys.exit()
 
 
-# NOW PLOT 3D HEATMAPS
+# NOW PLOT 3D HEATMAPS - NOT CURRENTLY USED!
 
 dim = 3
 n_bins = 25
@@ -313,7 +313,6 @@ cbar_ax = fig.add_axes(
 )  # [left, bottom, width, height] to cover full height
 cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE (\%)")  # Optional: Label the color bar
-plt.show()
 # plt.savefig(
 #     f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_power.pdf",
 #     bbox_inches="tight",
@@ -378,7 +377,7 @@ cbar_ax = fig.add_axes(
 )  # [left, bottom, width, height] to cover full height
 cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
-plt.show()
+# plt.show()
 # plt.savefig(
 #     f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_lag.pdf",
 #     bbox_inches="tight",
@@ -438,7 +437,7 @@ cbar_ax = fig.add_axes(
 )  # [left, bottom, width, height] to cover full height
 cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
-plt.show()
+# plt.show()
 # plt.savefig(
 #     f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_missing.pdf",
 #     bbox_inches="tight",

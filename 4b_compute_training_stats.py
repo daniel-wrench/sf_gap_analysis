@@ -16,8 +16,8 @@ import src.sf_funcs as sf
 
 data_path_prefix = params.data_path_prefix
 output_path = params.output_path
-include_sfs = False
-n_files = 2000  # If above is True, limit the number of files to read in
+include_sfs = True
+n_files = 3  # If above is True, limit the number of files to read in
 spacecraft = "psp"
 input_file_list = [
     sorted(
@@ -27,7 +27,7 @@ input_file_list = [
     )
 ][0]
 
-
+# Following is for plotting error trendlines in next script.
 if include_sfs is True:
     (
         files_metadata,
@@ -84,5 +84,5 @@ if include_sfs is True:
         f"\nMemory usage of sfs_gapped subset (for plotting trendline graphs locally): {sfs_gapped.memory_usage(deep=True).sum() / 1024 ** 2:.2f} MB\n"
     )
     # Export the sfs_gapped dataframe to a pickle file
-    # sfs_gapped.to_pickle(f"data/processed/{spacecraft}_train_sfs_gapped.pkl")
-    # print(f"Exported this subset to data/processed/{spacecraft}_train_sfs_gapped.pkl")
+    sfs_gapped.to_pickle(f"data/processed/{spacecraft}_train_sfs_gapped.pkl")
+    print(f"Exported this subset to data/processed/{spacecraft}_train_sfs_gapped.pkl")

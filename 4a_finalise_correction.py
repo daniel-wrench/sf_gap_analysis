@@ -79,7 +79,8 @@ for gap_handling in ["lint", "naive"]:
                     "pe_max": pe_max,
                     "n": n,
                 }
-
+                # Make some interim plots for inspection (full publication versions are done
+                # in script 4c locally)
                 fig, ax = plt.subplots(figsize=(7, 5))
                 plt.grid(False)
                 plt.pcolormesh(

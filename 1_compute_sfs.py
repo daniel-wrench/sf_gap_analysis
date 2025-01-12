@@ -14,6 +14,13 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+import warnings
+from sunpy.util import SunpyUserWarning
+
+# Suppress the specific SunpyUserWarning
+warnings.filterwarnings("ignore", category=SunpyUserWarning)
+
 from sunpy.timeseries import TimeSeries
 
 import src.data_import_funcs as dif
@@ -26,10 +33,10 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 warnings.simplefilter(action="ignore", category=UserWarning)
 
 # DELETE FOLLOWING ON HPC
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=10)
-plt.rcParams["xtick.direction"] = "in"
-plt.rcParams["ytick.direction"] = "in"
+#plt.rc("text", usetex=True)
+#plt.rc("font", family="serif", serif="Computer Modern", size=10)
+#plt.rcParams["xtick.direction"] = "in"
+#plt.rcParams["ytick.direction"] = "in"
 
 # Rename and keep only the first three columns
 mag_vars_dict = {

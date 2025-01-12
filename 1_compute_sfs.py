@@ -351,7 +351,7 @@ else:
     # vals = np.logspace(0, 0.2 * len(ints[0]), 50)
     # lags = np.unique(vals.astype(int))
 
-    powers = [2, 4]
+    powers = [2]
     pwrl_range = params.pwrl_range
 
     sfs = pd.DataFrame()

@@ -77,9 +77,24 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 1. **Process the data, file by file**
 
-    *Might have demo in the old time series repo*
+    *Demo?*
 
-    *Local:*
+    *Description, including key decisions:*
+
+    1. Extract vector magnetic fields from CDF files
+    2. If more than 20% is missing from the file, skip, and add to a list of bad files `failed_files.txt` and remove it from the data directory. Later, we also add to this list and remove any files where the dataset time is less than the number of lags we want to compute up to, and any files where no complete standardised intervals can be extracted.
+    3. Set the parameters (approx corr time, cadence, and n_lags to compute up to) pertaining to that dataset (Wind or PSP)
+    4. Standardise # corr times (10) contained within each 10,000 pt. resampled interval based on (integral) corr time of the full dataset
+    5. For std ints with >1% missing, delete. Otherwise, linearly interpolate gaps.
+    6. Save some preprocessing plots showing the standardisation process for each file.
+    7. Calculate the 2nd order SF up to 20% of the interval length (2000 lags), as well as the slope over a given range (50-500 lags)
+    8. Calculate the corresponding ACF and corr scale (1/e)
+    9. Gap the input intervals both uniformly and in chunks multiple times. 
+    10. Calculate the SF and slope from the gapped interval
+    11. Linearly interpolate the gapped interval and calculate the SF and slope
+    12. Save outputs to a dictionary pickle file, with file name prefixed by the input file that the stats we calculated from.
+
+    *Running locally (with a subset of the data):*
 
     1. In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and likely `times_to_gap` as well
 
@@ -87,7 +102,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     
     2. **`bash 1_compute_sfs.sh`**
 
-    *HPC:* 
+    *Running on an HPC (required for full dataset):* 
     
     1. In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and likely `times_to_gap` as well
 
@@ -204,7 +219,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 - Better case-study examples - using quicker way to view many of them?
 - Clarify effect of standardisation in limitations section, as Mark mentioned
 - Highlight emphasise on good overall shape, rather than inertial range slope, based on results?
-- Previous slope range (1-10\% of corr length) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints
+- Previous slope range (1-10\% of corr time) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints
 - Calculate sf_2_pe in 1_compute_sfs? Currently not to have somewhat simpler calculation once corrected, but also leading to some duplication of code, especially if we want the error trend line plots.
 - Add handling, e.g. in sf func, for extreme cases where SF will be missing values for certain lags due to high % missing (not a high priority for now because only going up to lag 2000, e.g. still 30 dx values for 99.6% missing)
 - Having logarithmically spaced lag bins would make the correction factor much cleaner to work with: one-to-one bins

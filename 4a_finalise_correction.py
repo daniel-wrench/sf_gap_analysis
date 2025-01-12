@@ -101,7 +101,7 @@ for gap_handling in ["lint", "naive"]:
                 ax.set_facecolor("black")
                 ax.set_xscale("log")
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d.pdf",
+                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d_{gap_handling}.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()

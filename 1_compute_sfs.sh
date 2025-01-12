@@ -8,25 +8,25 @@
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
 
-mkdir -p logs/
+#mkdir -p logs/
 
-module load Python/3.10.5-gimkl-2022a
-source venv/bin/activate
+#module load Python/3.10.5-gimkl-2022a
+#source venv/bin/activate
 # If running (locally) on Windows, may need to change above lines to the following: 
-#source venv/Scripts/activate
+source venv/Scripts/activate
 
 echo "JOB STARTED"
 date
 
-spacecraft=wind
+spacecraft=psp
 echo "SPACECRAFT: $spacecraft"
 
 # Specify total number of files
-total_files=4
+total_files=3
 echo "TOTAL FILES: $total_files"
 
 # Set number of files to be processed by each task
-n_files=4 # Adjust this value as needed (should really be defined based on number of job array tasks)
+n_files=3 # Adjust this value as needed (should really be defined based on number of job array tasks)
 task_id=$SLURM_ARRAY_TASK_ID
 
 # Calculate start index for this task ($task_id if on HPC, 0 if local)

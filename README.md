@@ -92,11 +92,11 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     9. Gap the input intervals both uniformly and in chunks multiple times. 
     10. Calculate the SF and slope from the gapped interval
     11. Linearly interpolate the gapped interval and calculate the SF and slope
-    12. Save outputs to a dictionary pickle file, with file name prefixed by the input file that the stats we calculated from.
+    12. Save outputs to a dictionary pickle file, with file name the same as the input file that the stats we calculated from.
 
     *Running locally (with a subset of the data):*
 
-    1. In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and likely `times_to_gap` as well
+    1. In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and `times_to_gap` as well
 
     1. In `1_compute_sfs.sh`, change `start_index` to 0 
     
@@ -104,7 +104,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     *Running on an HPC (required for full dataset):* 
     
-    1. In `src/params.py`, adjust `data_prefix_path`, depending on where you are storing the data (if local, likely in code dir, so set to `""`), and likely `times_to_gap` as well
+    1. In `src/params.py`, adjust `data_path_prefix`, depending on where you are storing the data, and likely `times_to_gap` as well
 
     2. Set job resource requests in `1_compute_sfs.sh`:
         - Average of 20-40min/file: e.g. put on for 6 hours if running on 10 files/core
@@ -123,6 +123,10 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 
 3. **Assign the errors to each bin for each file**
+
+    *Output*:
+
+    `data/processed/psp/train/errors/[file_name]_pe_[dim]_[bins]_[naive/lint].pkl`
 
     *Local:*
 
@@ -145,6 +149,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 - 4a. **Merge the binned errors and calculate the correction factor**  
 
+    *Output:* `data/corrections/[path]/correction_lookup_[dim]_[bins].pkl`
+
     *Local:* **`bash 4a_finalise_correction.sh`**
 
     *HPC:* 
@@ -161,6 +167,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 - 4b. **Calculate the stats (average slope and corr time, error trend lines) for the training set**
 
+    *Output:* `training_stats.txt
+
     **`bash 4b_compute_training_stats.sh`**
 
     **NB**: Limit the number of files, as we will not be able to plot the error trendlines locally in step 7b on the full dataset. We can do *at least* 20 files.
@@ -176,7 +184,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     
     1. If you are after minimal output from the full dataset, set `full_output = False`. (These files, used by the next script, go into `data/processed`.) If you are after full output (from just a few intervals) for later plotting in case studies, set `full_output = True`. (These files go into `data/corrections`.)
     
-    **`for i in $(seq 0 1); do python 5_correct_test_sfs.py $spacecraft $i $n_bins; done`**
+    **`for i in $(seq 0 2); do python 5_correct_test_sfs.py $spacecraft $i $n_bins; done`**
 
     *HPC:* 
     1. Set job resource requests:
@@ -195,7 +203,10 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     2. **`sbatch 6_compute_test_stats.sh`**
 
-    *Output*: `test_corrected_{spacecraft}_{bins}_bins.pkl`, not including `ints`, `ints_gapped`, `sfs`, or `sfs_gapped_corrected`
+    *Output*: 
+    - `test_corrected_{spacecraft}_{bins}_bins.pkl`, not including `ints`, `ints_gapped`, `sfs`, or `sfs_gapped_corrected`
+    - `test_corrected_{spacecraft}_{bins}_bins_corrs.csv`
+    - `test_corrected_{spacecraft}_{bins}_bins_stats.csv`
 
 ## Plotting results
 

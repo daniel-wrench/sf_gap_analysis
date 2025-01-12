@@ -15,7 +15,7 @@ source venv/bin/activate
 echo "JOB STARTED"
 date
 
-spacecraft="psp"
+spacecraft="wind"
 echo "SPACECRAFT: $spacecraft"
 
 python 6_compute_test_stats.py $spacecraft

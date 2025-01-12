@@ -199,7 +199,7 @@ if tc < 0:
 else:
     new_cadence = tc_n * tc / params.int_length
     print(
-        f"Correlation time (integral method) = {np.round(tc,2)}s -> data resampled to new cadence of {np.round(new_cadence,2)}s, for {tc_n}tc across {params.int_length} points"
+        f"Correlation time (integral method) = {np.round(tc,2)}s -> data resampled to cadence of {np.round(new_cadence,2)}s, for {tc_n}tc across {params.int_length} points"
     )
 
 tc_list.append(tc)
@@ -238,9 +238,9 @@ if len(ints) == 0:
 
 else:
     print(
-        "Given this correlation time and data quality, this file yields",
+        "Given correlation time and data completeness, this file yields",
         len(ints),
-        "standardised interval/s (see details below)\nThese will be now decimated in",
+        "standardised interval/s (see details below)\nThese will be now gapped",
         times_to_gap,
         "different ways",
     )

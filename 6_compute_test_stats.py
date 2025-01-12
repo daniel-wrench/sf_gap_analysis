@@ -1,11 +1,13 @@
 # STEP 4: FOR ALL INTERVALS IN TEST SET: get overall test set results
 
-import pickle
-import numpy as np
-import src.sf_funcs as sf
 import glob
+import pickle
 import sys
+
+import numpy as np
+
 import src.params as params
+import src.sf_funcs as sf
 
 np.random.seed(123)  # For reproducibility
 
@@ -40,7 +42,9 @@ for n_bins in n_bins_list:
         files_metadata,
         ints_metadata,
         ints_gapped_metadata,
-    ) = sf.get_all_metadata(input_file_list[:20])  # LIMIT HERE!!
+    ) = sf.get_all_metadata(
+        input_file_list[:20]
+    )  # LIMIT HERE!!
 
     print(
         f"Successfully read in and concatenated {len(files_metadata)} files, starting with {input_file_list[0]}\n \
@@ -107,10 +111,10 @@ for n_bins in n_bins_list:
 
     # Save as csv
     correction_stats.to_csv(
-        f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins_stats_.csv"
+        f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins_stats.csv"
     )
     correction_corrs.to_csv(
-        f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins_corrs_.csv"
+        f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins_corrs.csv"
     )
 
     print("Saved correction stats to csv")

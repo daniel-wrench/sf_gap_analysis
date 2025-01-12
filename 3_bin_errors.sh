@@ -17,14 +17,14 @@ echo "JOB STARTED"
 date
 
 # Specify total number of files
-total_files=4380
+total_files=3 #4380
 
 # Set number of files to be processed by each task
-n_files=73 # Adjust this value as needed (should really be defined based on number of job array tasks)
+n_files=3 #73 - Adjust this value as needed (should really be defined based on number of job array tasks)
 task_id=$SLURM_ARRAY_TASK_ID
 
 # Calculate start index for this task ($task_id if on HPC, 0 if local)
-start_index=$task_id
+start_index=0
 
 # Calculate the stride (number of files to skip between reads)
 stride=$(( total_files / n_files ))

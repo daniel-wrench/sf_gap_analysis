@@ -15,7 +15,7 @@ source venv/bin/activate
 echo "JOB STARTED"
 date
 
-python 4b_compute_training_stats.py
+python 4b_compute_training_stats.py > training_stats.txt
 
 echo "JOB FINISHED"
 date

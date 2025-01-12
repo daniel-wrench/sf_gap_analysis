@@ -283,9 +283,12 @@ for gap_handling in ["lint", "naive"]:
                 )
                 plt.close()
 
-            if gap_handling == "lint":
+            if dim == 3 and gap_handling == "naive":
+                pass
+            else:
                 # Export the lookup tables as a pickle file
-                output_file_path = f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins.pkl"
+                # WE NEED TO DO THIS FOR NAIVE AS WELL, FOR PLOTS
+                output_file_path = f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_{gap_handling}.pkl"
                 with open(
                     output_file_path,
                     "wb",

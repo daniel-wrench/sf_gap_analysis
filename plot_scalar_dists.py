@@ -3,12 +3,15 @@
 # Inspired by Fig. 6 (Taylor scales) in Reynolds paper
 
 # For publication, perhaps add asterisks to indicate significance of difference of means
+import sys
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from scikit_posthocs import posthoc_dunn
 from scipy.stats import kruskal, levene, shapiro, wilcoxon
+
+import src.params as params
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=10)
@@ -17,7 +20,8 @@ plt.rcParams["ytick.direction"] = "in"
 
 # Load data
 ints = pd.read_csv("gapped_ints_metadata.csv")
-variable = "tce"  # Change this to the variable you want to analyze
+variable = sys.argv[1]  # Change this to the variable you want to analyze
+output_path = params.output_path
 
 data_naive = ints[ints.gap_handling == "naive"][variable]
 data_lint = ints[ints.gap_handling == "lint"][variable]
@@ -108,7 +112,7 @@ if variable == "slope":
     plt.ylim(1e-2, 1e1)
     plt.xlim(-0.15, 1.25)
 
-# plt.savefig("plots/results/final/slopes_hist_log.pdf", bbox_inches="tight")
+plt.savefig(f"plots/results/{output_path}/dist_{variable}.pdf", bbox_inches="tight")
 plt.show()
 
 # STATISTICAL TEST OF DIFFERENCE OF MEANS

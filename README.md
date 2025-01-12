@@ -220,6 +220,9 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     3. **`python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`**
 
+    4. **`python plot_scalar_dists.py slope > test_results_slope.txt`**
+
+    5. 4. **`python plot_scalar_dists.py tce > test_results_tce.txt`**
 
 ## Notes/next steps
 

@@ -157,6 +157,23 @@ for n_bins in n_bins_list:
         suffixes=("_orig", ""),
     )
 
+
+    # Now we want to be able to calculate the slope and tce for both the gapped and 
+    # original SFs all using the same nested loop. 
+    # However, we have to be a bit hacky with the true SFS, as they do not have a *version*
+    # (or *gap_handling*) as have not been gapped multiple times. Here we give them artificial versions,
+    # which will also ensure they exist in the same frequency as the gapped SFs, which should make 
+    # for more accurate plotting later on, I think.
+
+    sfs["gap_handling"] = "true"
+
+    sfs_true_full = pd.DataFrame()
+    for i in range(times_to_gap):
+        sfs["version"] = i
+        sfs_true_full = pd.concat([sfs_true_full, sfs])
+
+    sfs_gapped_corrected = pd.concat([sfs_gapped_corrected, sfs_true_full])
+
     # Calculate lag-scale errors (sf_2_pe)
     # This is the first time we calculate these errors, for this specific dataset (they were calculated before for the training set)
     #
@@ -182,43 +199,47 @@ for n_bins in n_bins_list:
         for j in range(len(ints_metadata["file_index"] == i)):
             for k in range(times_to_gap):
                 for gap_handling in sfs_gapped_corrected.gap_handling.unique():
-                    # Calculate MAPE for 2D and 3D corrected SFs
 
-                    ints_gapped_metadata.loc[
-                        (ints_gapped_metadata["file_index"] == i)
-                        & (ints_gapped_metadata["int_index"] == j)
-                        & (ints_gapped_metadata["version"] == k)
-                        & (ints_gapped_metadata["gap_handling"] == gap_handling),
-                        "mape",
-                    ] = np.mean(
-                        np.abs(
+                    if gap_handling != "true":
+                        # Save metadata to the gapped metadata df
+
+                        # Calculate MAPE for 2D and 3D corrected SFs
+
+                        ints_gapped_metadata.loc[
+                            (ints_gapped_metadata["file_index"] == i)
+                            & (ints_gapped_metadata["int_index"] == j)
+                            & (ints_gapped_metadata["version"] == k)
+                            & (ints_gapped_metadata["gap_handling"] == gap_handling),
+                            "mape",
+                        ] = np.mean(
+                            np.abs(
+                                sfs_gapped_corrected.loc[
+                                    (sfs_gapped_corrected["file_index"] == i)
+                                    & (sfs_gapped_corrected["int_index"] == j)
+                                    & (sfs_gapped_corrected["version"] == k)
+                                    & (
+                                        sfs_gapped_corrected["gap_handling"] == gap_handling
+                                    ),
+                                    "sf_2_pe",
+                                ]
+                            )
+                        )
+
+                        ints_gapped_metadata.loc[
+                            (ints_gapped_metadata["file_index"] == i)
+                            & (ints_gapped_metadata["int_index"] == j)
+                            & (ints_gapped_metadata["version"] == k)
+                            & (ints_gapped_metadata["gap_handling"] == gap_handling),
+                            "mpe",
+                        ] = np.mean(
                             sfs_gapped_corrected.loc[
                                 (sfs_gapped_corrected["file_index"] == i)
                                 & (sfs_gapped_corrected["int_index"] == j)
                                 & (sfs_gapped_corrected["version"] == k)
-                                & (
-                                    sfs_gapped_corrected["gap_handling"] == gap_handling
-                                ),
+                                & (sfs_gapped_corrected["gap_handling"] == gap_handling),
                                 "sf_2_pe",
                             ]
                         )
-                    )
-
-                    ints_gapped_metadata.loc[
-                        (ints_gapped_metadata["file_index"] == i)
-                        & (ints_gapped_metadata["int_index"] == j)
-                        & (ints_gapped_metadata["version"] == k)
-                        & (ints_gapped_metadata["gap_handling"] == gap_handling),
-                        "mpe",
-                    ] = np.mean(
-                        sfs_gapped_corrected.loc[
-                            (sfs_gapped_corrected["file_index"] == i)
-                            & (sfs_gapped_corrected["int_index"] == j)
-                            & (sfs_gapped_corrected["version"] == k)
-                            & (sfs_gapped_corrected["gap_handling"] == gap_handling),
-                            "sf_2_pe",
-                        ]
-                    )
 
                     # Calculate power-law slope for 2D and 3D corrected SFs
                     current_int = sfs_gapped_corrected.loc[
@@ -248,14 +269,6 @@ for n_bins in n_bins_list:
                         1,
                     )[0]
 
-                    ints_gapped_metadata.loc[
-                        (ints_gapped_metadata["file_index"] == i)
-                        & (ints_gapped_metadata["int_index"] == j)
-                        & (ints_gapped_metadata["version"] == k)
-                        & (ints_gapped_metadata["gap_handling"] == gap_handling),
-                        "slope",
-                    ] = slope
-
                     # Get ACF from SF
                     # var_signal = np.sum(np.var(input, axis=0))
                     acf_from_sf = 1 - (
@@ -271,14 +284,40 @@ for n_bins in n_bins_list:
                     # plt.show()
                     # NB: if plotting, will not work if tce is not found
 
-                    # Calculate correlation scale from acf_from_sf
-                    ints_gapped_metadata.loc[
-                        (ints_gapped_metadata["file_index"] == i)
-                        & (ints_gapped_metadata["int_index"] == j)
-                        & (ints_gapped_metadata["version"] == k)
-                        & (ints_gapped_metadata["gap_handling"] == gap_handling),
-                        "tce",
-                    ] = tce
+                    if gap_handling != "true":
+                        # Save metadata to the gapped metadata df
+
+                        ints_gapped_metadata.loc[
+                            (ints_gapped_metadata["file_index"] == i)
+                            & (ints_gapped_metadata["int_index"] == j)
+                            & (ints_gapped_metadata["version"] == k)
+                            & (ints_gapped_metadata["gap_handling"] == gap_handling),
+                            "slope",
+                        ] = slope
+
+                        # Calculate correlation scale from acf_from_sf
+                        ints_gapped_metadata.loc[
+                            (ints_gapped_metadata["file_index"] == i)
+                            & (ints_gapped_metadata["int_index"] == j)
+                            & (ints_gapped_metadata["version"] == k)
+                            & (ints_gapped_metadata["gap_handling"] == gap_handling),
+                            "tce",
+                        ] = tce
+
+                    elif gap_handling == "true":
+                        # Save metadata to the original metadata df
+
+                        ints_metadata.loc[
+                            (ints_metadata["file_index"] == i)
+                            & (ints_metadata["int_index"] == j),
+                            "slope",
+                        ] = slope
+
+                        ints_metadata.loc[
+                            (ints_metadata["file_index"] == i)
+                            & (ints_metadata["int_index"] == j),
+                            "tce",
+                        ] = tce
 
     # Calculate slope errors
     ints_gapped_metadata = pd.merge(

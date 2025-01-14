@@ -19,7 +19,7 @@ plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
 # Load data
-ints = pd.read_csv("gapped_ints_metadata.csv")
+ints = pd.read_csv("ints_gapped_metadata.csv")
 variable = sys.argv[1]  # Change this to the variable you want to analyze
 output_path = params.output_path
 

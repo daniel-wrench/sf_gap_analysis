@@ -106,11 +106,14 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     
     1. In `src/params.py`, adjust `data_path_prefix`, depending on where you are storing the data, and likely `times_to_gap` as well
 
+    2. In `1_compute_sfs.py`, comment out matplotlib params section as indicated after library imports
+
+
     2. Set job resource requests in `1_compute_sfs.sh`:
-        - Average of 20-40min/file: e.g. put on for 6 hours if running on 10 files/core
-        - Only ever need 2GB per core
-        - If some jobs do time out, meaning some files remain unprocessed, we can limit the `data/raw` directory to those unprocessed files by moving them with `python move_matching_files.py`. *Maybe in future make this part of the slurm/python job*
-        - Processed PSP and Wind files are between 32 (~400MB used in step 1) and 156MB (~300MB) each. For PSP, there are an average of 4 files/file
+        - CORES: As many as possible
+        - TIME: 20-40min/file (e.g. put on for 6 hours if running on 10 files/core)
+        - MEM: 2GB/core, regardless of # files
+        - *If some jobs do time out, meaning some files remain unprocessed, we can limit the `data/raw` directory to those unprocessed files by moving them with `python move_matching_files.py`. Maybe in future make this part of the slurm/python job*
 
     2. **`sbatch 1_compute_sfs.sh`**
     
@@ -137,9 +140,9 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     *HPC:* 
 
     1. Set job resource requests in `3_bin_errors.sh`:
-        - LATEST: 20 files/core, {2d, 3d} {15,20,25 bins} = 300MB, 3.5min
-        - 5o files/core "" = CONSTANT 500MB, no matter how many files, 15s/file
-        - Basically 15min to do the whole lot across 60 cores (73 files/core)
+        - CORES: As many as possible
+        - TIME: 15s/file/core
+        - MEM: 500MB/core, regardless of # files
 
     2. In `3_bin_errors.py`, adjust `data_prefix_path`, depending on where you are storing the data
 
@@ -151,7 +154,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     *Output:* 
     - `data/corrections/[path]/correction_lookup_[dim]_[bins]_lint.pkl` (for correction and plotting)
-    - `data/corrections/[path]/correction_lookup_[dim]_[bins]_lint.pkl` (for plotting)
+    - `data/corrections/[path]/correction_lookup_[dim]_[bins]_naive.pkl` (for plotting)
     - Some interim plots for inspection
 
     *Local:* **`bash 4a_finalise_correction.sh`**
@@ -159,7 +162,9 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     *HPC:* 
 
     1. Set job resource requests in `4a_finalise_correction.sh`
-        - LATEST: 10 files (SERIAL JOB), {2d, 3d} {15,20,25 bins} = 200MB, 90s
+        - CORES: 1 (serial job)
+        - MEM: see below
+        - TIME: see below
         - 100 files "" = 350MB, 120s
         - 200 files "" = 500MB, 150s
         - 400 files "" = 820MB, 210s
@@ -189,7 +194,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     *Output:* `plots/results/train_psp_error.png`
 
-    1. Download the outputs from previous step.
+    1. Download the outputs from step 4a.
 
     2. **`python 4c_plot_training_results.py`**
 
@@ -231,23 +236,26 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 ## Plotting results
 
-7.  **Plot the test set results**
+7.  **Plot the test set results** 
 
     1. If on an HPC, download the following files first:
     - all outputs in `sf_gap_analysis/data/processed`, including heatmaps
     - first few corrected files in `/nesi/nobackup/vuw04187/data/processed/wind` to plot as case studies
          
-    2. **`python 7a_plot_test_results.py {spacecraft} {n_bins}`**
+    2. **`python 7a_plot_test_results.py {spacecraft} {n_bins}`** (scatterplots, boxplots)
 
     3. **`python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`**
 
     4. **`python plot_scalar_dists.py slope > test_results_slope.txt`**
 
-    5. 4. **`python plot_scalar_dists.py tce > test_results_tce.txt`**
+    5. **`python plot_scalar_dists.py tce > test_results_tce.txt`**
+
+    6. **`python plot_scalar_dists.py ttu > test_results_ttu.txt`**
 
 ## Notes/next steps
 
 - Create correction factor file
+- Lines 367-387 in `1_compute_sfs.py` aren't strictly necessary, as we compute all these derived stats now in step 5. However, those stats are used in the preprocessing plots that are output by this script.
 - Add line about data size, e.g. *The HPC version of the code currently ingests 300GB across 10,000 CDF files (data from 1995-2022) and produces an 18MB CSV file.*
 - Include typical duration (range) of standardised intervals for each spacecraft 
 - Normal**iz**ation for Voyager plots (better pipeline in that script)

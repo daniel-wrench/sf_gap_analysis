@@ -1,10 +1,11 @@
 import pickle
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import sys
-import src.params as params
 import warnings
+
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+
+import src.params as params
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif", serif="Computer Modern", size=10)
@@ -23,7 +24,6 @@ times_to_gap = params.times_to_gap
 # Import all corrected (test) files
 spacecraft = "wind"
 n_bins = 25
-# times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
 
@@ -40,7 +40,7 @@ ints_metadata = data["ints_metadata"]
 # ints = data["ints"]
 ints_gapped_metadata = data["ints_gapped_metadata"]
 # Export as csv
-ints_gapped_metadata.to_csv("gapped_ints_metadata.csv")
+ints_gapped_metadata.to_csv("ints_gapped_metadata.csv")
 files_metadata.to_csv("files_metadata.csv")
 
 

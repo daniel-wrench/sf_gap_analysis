@@ -201,7 +201,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 5. **Perform the correction on the test set, file by file**
 
-    And also calculates the slopes and correlation scales from all the SF estimates. Before this, they had only been calculated for the true SF back in `1_compute_sfs.py`.
+    And also calculates the slopes, correlation scales, taylor scales from all the SF estimates. Before this, they had only been calculated for the true SF back in `1_compute_sfs.py` *(which is not strictly necessary any more, other than making preprocessing plots for interest)*.
 
     - NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE?
     - Cannot correct PSP right now, only Wind. This is due to file output paths: PSP has `psp/train,test`, Wind does not.
@@ -251,6 +251,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     5. **`python plot_scalar_dists.py tce > test_results_tce.txt`**
 
     6. **`python plot_scalar_dists.py ttu > test_results_ttu.txt`**
+
+Final publication-ready plots are then moved to `figs/`
 
 ## Notes/next steps
 

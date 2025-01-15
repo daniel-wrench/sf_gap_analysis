@@ -19,7 +19,6 @@ warnings.filterwarnings("ignore", category=np.RankWarning)
 np.random.seed(123)  # For reproducibility
 
 output_path = params.output_path
-times_to_gap = params.times_to_gap
 
 # Import all corrected (test) files
 spacecraft = "wind"
@@ -49,7 +48,7 @@ files_metadata.to_csv("files_metadata.csv")
 # sfs_gapped_corrected = data["sfs_gapped_corrected"]
 
 print(
-    f"Now plotting test set results for the {len(ints_metadata)}x{times_to_gap} intervals in the {spacecraft} test set"
+    f"Now plotting test set results for the {len(ints_metadata)} (original) intervals in the {spacecraft} test set"
 )
 
 

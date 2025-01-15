@@ -111,7 +111,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     2. Set job resource requests in `1_compute_sfs.sh`:
         - CORES: As many as possible
-        - TIME: 20-40min/file (e.g. put on for 6 hours if running on 10 files/core)
+        - TIME: 30min/file (e.g. put on for 6 hours if running on 10 files/core. Some files will be done much more quickly if fewers std ints can be extracted, but that's OK)
         - MEM: 2GB/core, regardless of # files
         - *If some jobs do time out, meaning some files remain unprocessed, we can limit the `data/raw` directory to those unprocessed files by moving them with `python move_matching_files.py`. Maybe in future make this part of the slurm/python job*
 

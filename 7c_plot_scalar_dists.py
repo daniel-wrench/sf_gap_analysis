@@ -130,10 +130,10 @@ for i, variable in enumerate(variables):
     # Add labels and title specific to the variable
     ax.set_xlabel(xlabels[i])
     ax.set_yticks([])
-    if i % 2 == 0:
-        ax.set_ylabel("Density")
-    else:
-        ax.set_ylabel("")
+    # if i % 2 == 0:
+    #     ax.set_ylabel("Density")
+    # else:
+    ax.set_ylabel("")
 
     x_annotat = 0.8
 

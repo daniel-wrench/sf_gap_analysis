@@ -3,6 +3,7 @@
 # Inspired by Fig. 6 (Taylor scales) in Reynolds paper
 
 # For publication, perhaps add asterisks to indicate significance of difference of means
+import math
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -125,6 +126,8 @@ for bin in bin_labels + ["all_data"]:
             variable_to_plot = "Re_lt_log"
         if variable == "ttu":
             variable_to_plot = "ttu_log"
+        if variable == "tce":
+            variable_to_plot = "tce_log"
 
         # Create the KDE plot for each distribution
         sns.kdeplot(
@@ -161,35 +164,36 @@ for bin in bin_labels + ["all_data"]:
 
         # Add labels and title specific to the variable
         ax.set_xlabel(xlabels[i])
+        ax.set_ylim(0, 3.7)
         ax.set_yticks([])
         # if i % 2 == 0:
         #     ax.set_ylabel("Density")
         # else:
         ax.set_ylabel("")
 
-        x_annotat = 0.75
-        ax.set_xlim(-200, 2500)
+        x_annotat = 0.05
 
-        if variable == "Re_lt":
-            x_annotat = 0.05
-            ax.set_xlim(1, 8)
-            # Customize the x-axis to show original data scale
-            ticks = ax.get_xticks()  # Get current ticks on the log scale
-            ax.set_xticklabels(
-                [f"$10^{{{int(tick)}}}$" for tick in ticks]
-            )  # Replace with exponent labels
+        if variable != "es_slope":
 
-        if variable == "ttu":
-            ax.set_xlim(0, 3)
-            # Customize the x-axis to show original data scale
-            ticks = ax.get_xticks()
-            ax.set_xticklabels(
-                [f"$10^{{{int(tick)}}}$" for tick in ticks]
-            )  # Replace with exponent labels
+            if variable == "tce":
+                xmin, xmax = 1.3, 3.6
+
+            elif variable == "ttu":
+                xmin, xmax = 0, 2.3
+
+            elif variable == "Re_lt":
+                xmin, xmax = 2.2, 6.7
+
+            ax.set_xlim(xmin, xmax)
+            ticks = np.arange(
+                math.ceil(xmin), math.floor(xmax) + 1, 1
+            )  # Creates ticks from 2 to 8 with step size 1
+            ax.set_xticks(ticks)
+            ax.set_xticklabels([f"$10^{{{int(x)}}}$" for x in ax.get_xticks()])
 
         # Add annotations of the mean of each distribution
         ax.annotate(
-            r"\textbf{" + f"{data_true[variable].mean():.3g}" + "}",
+            r"\textbf{" + f"{data_true[variable + '_orig'].mean():.3g}" + "}",
             xy=(x_annotat, 0.85),
             xycoords="axes fraction",
             fontsize=7,
@@ -225,9 +229,9 @@ for bin in bin_labels + ["all_data"]:
             # Add vertical line and annotation for K41 prediction
             ax.axvline(-5 / 3, color="mediumblue", linestyle="solid", alpha=0.3, lw=0.5)
             ax.text(
-                -5 / 3 - 0.3,
-                3,
-                "K41",
+                -5 / 3 - 0.4,
+                2.8,
+                r"\textit{K41}",
                 va="center",
                 ha="left",
                 fontsize=7,
@@ -235,7 +239,7 @@ for bin in bin_labels + ["all_data"]:
                 alpha=0.5,
             )
 
-            ax.set_xlim(-2.5, -0.5)
+            ax.set_xlim(-2.8, -0.8)
 
         # STATISTICAL TEST OF DIFFERENCE OF MEANS
         # Perform an ANOVA test to see if the means are significantly different?
@@ -336,9 +340,9 @@ for bin in bin_labels + ["all_data"]:
         )
 
     if bin == "all_data":
-        plt.suptitle("Full dataset", x=-0.01, y=0.7, ha="right")
+        plt.suptitle("Full dataset", x=-0.001, y=0.7, ha="right")
     else:
-        plt.suptitle(f"{bin}\% missing", x=-0.01, y=0.7, ha="right")
+        plt.suptitle(f"{bin}\% missing", x=-0.001, y=0.7, ha="right")
 
     # Tighten layout and adjust spacing
     plt.tight_layout()

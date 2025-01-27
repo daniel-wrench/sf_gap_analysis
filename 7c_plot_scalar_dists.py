@@ -4,12 +4,11 @@
 
 # For publication, perhaps add asterisks to indicate significance of difference of means
 
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scikit_posthocs import posthoc_tukey
+from scikit_posthocs import posthoc_dunn
 from scipy.stats import kruskal, levene, shapiro, wilcoxon
 
 import src.params as params
@@ -41,27 +40,20 @@ len(ints[ints.tce_orig < 0])
 # Calculate ttu-based Reynolds number
 ints["Re_lt"] = 27 * (ints["tce"] / ints["ttu"]) ** 2
 ints["Re_lt_orig"] = 27 * (ints["tce_orig"] / ints["ttu_orig"]) ** 2
-# Log versions (plot better than densities than using ax.semilogx())
+
+# Calculate logarithms of log-distributed stats
+# (this plots better densities than using ax.semilogx())
 ints["Re_lt_log"] = np.log10(ints["Re_lt"])
 ints["Re_lt_log_orig"] = np.log10(ints["Re_lt_orig"])
 
 ints["ttu_log"] = np.log10(ints["ttu"])
 ints["ttu_log_orig"] = np.log10(ints["ttu_orig"])
+
 ints["tce_log"] = np.log10(ints["tce"])
 ints["tce_log_orig"] = np.log10(ints["tce_orig"])
 
 
-# Get # unique combinations of file_index and int_index
-n_combinations = len(ints.groupby(["file_index", "int_index"]))
-
-print("Plotting and testing distributions of SF-derived stats\n")
-
-print(
-    f"{n_combinations} Wind intervals, gapped {len(ints.version.unique())} times each"
-)
-
-
-# Define functions to convert between spectral index and slope of the regression line
+# Convert between spectral index and slope of the regression line
 def sf_to_psd(x):
     return -(x + 1)
 
@@ -73,7 +65,18 @@ def psd_to_sf(x):
 ints["es_slope"] = ints["slope"].apply(sf_to_psd)
 ints["es_slope_orig"] = ints["slope_orig"].apply(sf_to_psd)
 
-variables = ["es_slope", "tce", "ttu_log", "Re_lt_log"]
+
+print("Plotting and testing distributions of SF-derived stats\n")
+
+# Get # unique combinations of file_index and int_index
+n_combinations = len(ints.groupby(["file_index", "int_index"]))
+
+print(
+    f"{n_combinations} Wind intervals, gapped {len(ints.version.unique())} times each"
+)
+
+# Define the variables to plot
+variables = ["es_slope", "tce", "ttu", "Re_lt"]
 
 # Create list of x-labels with usual Latex symbols
 xlabels = [
@@ -82,228 +85,275 @@ xlabels = [
     r"$\lambda_T$ (lags)",
     r"$Re_{\lambda_T}$",
 ]
-# Create a 2x2 multipanel plot
-fig, axes = plt.subplots(2, 2, figsize=(4, 3))
 
-for i, variable in enumerate(variables):
-    # Prepare data for each variable
-    data_naive = ints[ints.gap_handling == "naive"][variable]
-    data_lint = ints[ints.gap_handling == "lint"][variable]
-    data_corrected = ints[ints.gap_handling == "corrected_3d"][variable]
-    data_true = ints[ints.gap_handling == "naive"][f"{variable}_orig"]
+# Create column "tgp_bins" to store the bins of the TGP
+bin_labels = ["0-25", "25-50", "50-75", "75-100"]
+ints["tgp_bin"] = pd.cut(
+    ints["missing_percent_overall"],
+    bins=[0, 25, 50, 75, 100],
+    labels=bin_labels,
+)
 
-    ax = axes[i // 2, i % 2]
+# Loop over each bin of missing data, including the full dataset
+for bin in bin_labels + ["all_data"]:
 
-    # Create the KDE plot for each distribution
-    sns.kdeplot(
-        data_true,
-        label=r"\textbf{True}",
-        color="lightgrey",
-        lw=2,
-        ax=ax,
-    )
-    sns.kdeplot(
-        data_corrected,
-        label="Corrected",
-        color="#1b9e77",
-        linestyle="dotted",
-        lw=0.8,
-        ax=ax,
-    )
-    sns.kdeplot(
-        data_naive,
-        label="Naive",
-        color="indianred",
-        linestyle="dashed",
-        ax=ax,
-        lw=0.8,
-    )
-    sns.kdeplot(
-        data_lint,
-        label="LINT",
-        color="black",
-        linestyle="dashdot",
-        ax=ax,
-        lw=0.8,
-    )
+    print(f"\n######################\n\nResults for {bin}\n\n######################\n")
 
-    # Add labels and title specific to the variable
-    ax.set_xlabel(xlabels[i])
-    ax.set_yticks([])
-    # if i % 2 == 0:
-    #     ax.set_ylabel("Density")
-    # else:
-    ax.set_ylabel("")
+    if bin == "all_data":
+        # Condition data for the full dataset
+        data_naive = ints[ints.gap_handling == "naive"]
+        data_lint = ints[ints.gap_handling == "lint"]
+        data_corrected = ints[ints.gap_handling == "corrected_3d"]
+        data_true = ints[ints.gap_handling == "naive"]
+    else:
+        # Condition data based on gap handling method and TGP bin
+        data_naive = ints[(ints.gap_handling == "naive") & (ints.tgp_bin == bin)]
+        data_lint = ints[(ints.gap_handling == "lint") & (ints.tgp_bin == bin)]
+        data_corrected = ints[
+            (ints.gap_handling == "corrected_3d") & (ints.tgp_bin == bin)
+        ]
+        data_true = ints[(ints.gap_handling == "naive") & (ints.tgp_bin == bin)]
 
-    x_annotat = 0.8
+    # Create a 2x2 multipanel plot
+    fig, axes = plt.subplots(1, 4, figsize=(6, 1.5))
 
-    if variable == "Re_lt_log":
-        # For getting means of original data
-        x_annotat = 0.05
-        variable = "Re_lt"
-        data_naive = ints[ints.gap_handling == "naive"][variable]
-        data_lint = ints[ints.gap_handling == "lint"][variable]
-        data_corrected = ints[ints.gap_handling == "corrected_3d"][variable]
-        data_true = ints[ints.gap_handling == "naive"][f"{variable}_orig"]
+    for i, variable in enumerate(variables):
+        variable_to_plot = variable
+        ax = axes[i]
 
-        # Step 4: Customize the x-axis to show original data scale
-        ticks = ax.get_xticks()  # Get current ticks on the log scale
-        ax.set_xticklabels(
-            [f"$10^{{{int(tick)}}}$" for tick in ticks]
-        )  # Replace with exponent labels
+        if variable == "Re_lt":
+            variable_to_plot = "Re_lt_log"
+        if variable == "ttu":
+            variable_to_plot = "ttu_log"
 
-    if variable == "ttu_log":
-        # For getting means of original data
-        variable = "ttu"
-        data_naive = ints[ints.gap_handling == "naive"][variable]
-        data_lint = ints[ints.gap_handling == "lint"][variable]
-        data_corrected = ints[ints.gap_handling == "corrected_3d"][variable]
-        data_true = ints[ints.gap_handling == "naive"][f"{variable}_orig"]
+        # Create the KDE plot for each distribution
+        sns.kdeplot(
+            data_true[f"{variable_to_plot}_orig"],
+            label=r"\textbf{True}",
+            color="lightgrey",
+            lw=2,
+            ax=ax,
+        )
+        sns.kdeplot(
+            data_corrected[variable_to_plot],
+            label="Corrected",
+            color="#1b9e77",
+            linestyle="dotted",
+            lw=0.8,
+            ax=ax,
+        )
+        sns.kdeplot(
+            data_naive[variable_to_plot],
+            label="Naive",
+            color="indianred",
+            linestyle="dashed",
+            ax=ax,
+            lw=0.8,
+        )
+        sns.kdeplot(
+            data_lint[variable_to_plot],
+            label="LINT",
+            color="black",
+            linestyle="dashdot",
+            ax=ax,
+            lw=0.8,
+        )
 
-        # Step 4: Customize the x-axis to show original data scale
-        ticks = ax.get_xticks()
-        ax.set_xticklabels(
-            [f"$10^{{{int(tick)}}}$" for tick in ticks]
-        )  # Replace with exponent labels
+        # Add labels and title specific to the variable
+        ax.set_xlabel(xlabels[i])
+        ax.set_yticks([])
+        # if i % 2 == 0:
+        #     ax.set_ylabel("Density")
+        # else:
+        ax.set_ylabel("")
 
-    # Add annotations of the mean of each distribution
-    ax.annotate(
-        r"\textbf{" + f"{data_true.mean():.3g}" + "}",
-        xy=(x_annotat, 0.85),
-        xycoords="axes fraction",
-        fontsize=8,
-        color="darkgrey",
-        ha="left",
-    )
-    ax.annotate(
-        f"{data_corrected.mean():.3g}",
-        xy=(x_annotat, 0.7),
-        xycoords="axes fraction",
-        fontsize=8,
-        color="#1b9e77",
-        ha="left",
-    )
-    ax.annotate(
-        f"{data_naive.mean():.3g}",
-        xy=(x_annotat, 0.55),
-        xycoords="axes fraction",
-        fontsize=8,
-        color="indianred",
-        ha="left",
-    )
-    ax.annotate(
-        f"{data_lint.mean():.3g}",
-        xy=(x_annotat, 0.4),
-        xycoords="axes fraction",
-        fontsize=8,
-        color="black",
-        ha="left",
-    )
+        x_annotat = 0.75
+        ax.set_xlim(-200, 2500)
 
-    if variable == "es_slope":
-        # Add vertical line and annotation for K41 prediction
-        ax.axvline(-5 / 3, color="mediumblue", linestyle="solid", alpha=0.3, lw=0.5)
-        ax.text(
-            -5 / 3 - 0.25,
-            3,
-            "K41",
-            va="center",
-            ha="left",
+        if variable == "Re_lt":
+            x_annotat = 0.05
+            ax.set_xlim(1, 8)
+            # Customize the x-axis to show original data scale
+            ticks = ax.get_xticks()  # Get current ticks on the log scale
+            ax.set_xticklabels(
+                [f"$10^{{{int(tick)}}}$" for tick in ticks]
+            )  # Replace with exponent labels
+
+        if variable == "ttu":
+            ax.set_xlim(0, 3)
+            # Customize the x-axis to show original data scale
+            ticks = ax.get_xticks()
+            ax.set_xticklabels(
+                [f"$10^{{{int(tick)}}}$" for tick in ticks]
+            )  # Replace with exponent labels
+
+        # Add annotations of the mean of each distribution
+        ax.annotate(
+            r"\textbf{" + f"{data_true[variable].mean():.3g}" + "}",
+            xy=(x_annotat, 0.85),
+            xycoords="axes fraction",
             fontsize=7,
-            color="mediumblue",
-            alpha=0.5,
+            color="darkgrey",
+            ha="left",
+        )
+        ax.annotate(
+            f"{data_corrected[variable].mean():.3g}",
+            xy=(x_annotat, 0.7),
+            xycoords="axes fraction",
+            fontsize=7,
+            color="#1b9e77",
+            ha="left",
+        )
+        ax.annotate(
+            f"{data_naive[variable].mean():.3g}",
+            xy=(x_annotat, 0.55),
+            xycoords="axes fraction",
+            fontsize=7,
+            color="indianred",
+            ha="left",
+        )
+        ax.annotate(
+            f"{data_lint[variable].mean():.3g}",
+            xy=(x_annotat, 0.4),
+            xycoords="axes fraction",
+            fontsize=7,
+            color="black",
+            ha="left",
         )
 
+        if variable == "es_slope":
+            # Add vertical line and annotation for K41 prediction
+            ax.axvline(-5 / 3, color="mediumblue", linestyle="solid", alpha=0.3, lw=0.5)
+            ax.text(
+                -5 / 3 - 0.3,
+                3,
+                "K41",
+                va="center",
+                ha="left",
+                fontsize=7,
+                color="mediumblue",
+                alpha=0.5,
+            )
 
-ax.legend(loc="upper center", bbox_to_anchor=(-0.05, 1.5), ncol=4, fontsize=8)
+            ax.set_xlim(-2.5, -0.5)
 
-# Save and display the plot
-plt.tight_layout()
-plt.subplots_adjust(hspace=1, wspace=0.1)
-plt.savefig(f"plots/results/{output_path}/densities.png", bbox_inches="tight", dpi=300)
+        # STATISTICAL TEST OF DIFFERENCE OF MEANS
+        # Perform an ANOVA test to see if the means are significantly different?
 
-# 108 std intervals across 40 days of Wind data, gapped 25 times each
-# (2700 ints)
+        print(f"\n\nStatistical tests for {variable}\n")
 
-# STATISTICAL TEST OF DIFFERENCE OF MEANS
-# Perform an ANOVA test to see if the means are significantly different?
+        # Print summary stats of each
+        print(f"Summary statistics for {variable}:")
+        print("Naive:")
+        print(data_naive[variable].describe())
+        print("LINT:")
+        print(data_lint[variable].describe())
+        print("Corrected:")
+        print(data_corrected[variable].describe())
+        print("True:")
+        print(data_true[variable].describe())
 
-for variable in ["slope", "tce", "ttu", "Re_lt"]:
+        if variable == "es_slope":
 
-    print(f"\n\nStatistical tests for {variable}\n")
+            # Perform a Wilcoxon signed-rank test to see if the means are significantly different from 2/3
+            print(
+                f"Results of Wilcoxon signed-rank test for difference of mean of True distribution from 2/3 for {variable}:"
+            )
+            print(wilcoxon(data_true[variable] + 5 / 3))
+            # WilcoxonResult(statistic=765975.0, pvalue=0.0)
 
-    data_naive = ints[ints.gap_handling == "naive"][variable]
-    data_lint = ints[ints.gap_handling == "lint"][variable]
-    data_corrected = ints[ints.gap_handling == "corrected_3d"][variable]
-    data_true = ints[ints.gap_handling == "naive"][f"{variable}_orig"]
+        # First, testing assumptions of ANOVA
 
-    # Print summary stats of each
-    print(f"Summary statistics for {variable}:")
-    print("Naive:")
-    print(data_naive.describe())
-    print("LINT:")
-    print(data_lint.describe())
-    print("Corrected:")
-    print(data_corrected.describe())
-    print("True:")
-    print(data_true.describe())
-
-    if variable == "slope":
-
-        # Perform a Wilcoxon signed-rank test to see if the means are significantly different from 2/3
+        # 1. Homogeneity of variances
         print(
-            f"Results of Wilcoxon signed-rank test for difference of mean of True distribution from 2/3 for {variable}:"
+            f"\nResults of Levene's test for homogeneity of variances for {variable}:"
         )
-        print(wilcoxon(data_true - 2 / 3))
-        # WilcoxonResult(statistic=765975.0, pvalue=0.0)
-
-    # First, testing assumptions of ANOVA
-
-    # 1. Homogeneity of variances
-    print(f"\nResults of Levene's test for homogeneity of variances for {variable}:")
-    print(levene(data_naive, data_lint, data_corrected, data_true))
-    # If the p-value is less than 0.05, then the variances are significantly different
-    # print("HOMOGENEITY OF VARIANCES NOT SATISFIED")
-
-    # 2. Normality
-    print(f"\nResults of Shapiro-Wilk test for normality for {variable}:")
-    print(shapiro(data_naive))
-    print(shapiro(data_lint))
-    print(shapiro(data_corrected))
-    print(shapiro(data_true))
-    # print("NORMALITY NOT SATISFIED")
-    # If the p-value is less than 0.05, then the data is not normally distributed
-    # print("\nCANNOT PROCEED WITH ANOVA")
-
-    # Combine all the data into one array
-    all_data = pd.DataFrame(
-        {
-            variable: pd.concat([data_naive, data_lint, data_corrected, data_true]),
-            "group": ["naive"] * len(data_naive)
-            + ["lint"] * len(data_lint)
-            + ["corrected"] * len(data_corrected)
-            + ["orig"] * len(data_true),
-        }
-    )
-
-    # Since we can't perform ANOVA, instead use non-parametric test for difference of means
-    # H0: The means of the groups are equal
-    # H1: At least one of the means is different
-    print(
-        f"\nResults of non-parametric Kruskal-Wallis test for difference of means for {variable}:"
-    )
-    print(kruskal(data_naive, data_lint, data_corrected, data_true))
-    # print("REJECT NULL HYPOTHESIS OF EQUAL MEANS")
-
-    # If the Kruskal-Wallis test is significant, then perform a post-hoc test to see which groups are different
-    print(f"\nResults of post-hoc Dunn's test for difference of means for {variable}:")
-    print(
-        posthoc_tukey(
-            all_data,
-            val_col=variable,
-            group_col="group",
+        print(
+            levene(
+                data_naive[variable],
+                data_lint[variable],
+                data_corrected[variable],
+                data_true[variable],
+            )
         )
+        # If the p-value is less than 0.05, then the variances are significantly different
+        # print("HOMOGENEITY OF VARIANCES NOT SATISFIED")
+
+        # 2. Normality
+        print(f"\nResults of Shapiro-Wilk test for normality for {variable}:")
+        print(shapiro(data_naive[variable]))
+        print(shapiro(data_lint[variable]))
+        print(shapiro(data_corrected[variable]))
+        print(shapiro(data_true[variable]))
+        # print("NORMALITY NOT SATISFIED")
+        # If the p-value is less than 0.05, then the data is not normally distributed
+        # print("\nCANNOT PROCEED WITH ANOVA")
+
+        # Combine all the data into one array
+        all_data = pd.DataFrame(
+            {
+                variable: pd.concat(
+                    [
+                        data_naive[variable],
+                        data_lint[variable],
+                        data_corrected[variable],
+                        data_true[variable],
+                    ]
+                ),
+                "group": ["naive"] * len(data_naive[variable])
+                + ["lint"] * len(data_lint[variable])
+                + ["corrected"] * len(data_corrected[variable])
+                + ["orig"] * len(data_true[variable]),
+            }
+        )
+
+        # Since we can't perform ANOVA, instead use non-parametric test for difference of means
+        # H0: The means of the groups are equal
+        # H1: At least one of the means is different
+        print(
+            f"\nResults of non-parametric Kruskal-Wallis test for difference of means for {variable}:"
+        )
+        print(
+            kruskal(
+                data_naive[variable],
+                data_lint[variable],
+                data_corrected[variable],
+                data_true[variable],
+            )
+        )
+        # print("REJECT NULL HYPOTHESIS OF EQUAL MEANS")
+
+        # If the Kruskal-Wallis test is significant, then perform a post-hoc test to see which groups are different
+        print(
+            f"\nResults of post-hoc Dunn's test for difference of means for {variable}:"
+        )
+        print(
+            posthoc_dunn(
+                all_data,
+                val_col=variable,
+                group_col="group",
+            )
+        )
+
+    if bin == "all_data":
+        plt.suptitle("Full dataset", x=-0.01, y=0.7, ha="right")
+    else:
+        plt.suptitle(f"{bin}\% missing", x=-0.01, y=0.7, ha="right")
+
+    # Tighten layout and adjust spacing
+    plt.tight_layout()
+    plt.subplots_adjust(
+        hspace=0, wspace=0.1, top=0.77
+    )  # Adjust `top` to make space for the legend
+
+    plt.savefig(
+        f"plots/results/{output_path}/densities_{bin}.png",
+        bbox_inches="tight",
+        dpi=300,
     )
+
+    # 108 std intervals across 40 days of Wind data, gapped 25 times each
+    # (2700 ints)
 
 # ------------------------------------------------------------------------------
 

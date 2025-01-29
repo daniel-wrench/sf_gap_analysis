@@ -2,15 +2,13 @@
 # This script plots the distributions of the slopes, correlation scales, etc., for the different gap handling methods
 # Inspired by Fig. 6 (Taylor scales) in Reynolds paper
 
-# For publication, perhaps add asterisks to indicate significance of difference of means
+# For publication, perhaps add asterisks to indicate significance of difference of medians
 import math
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scikit_posthocs import posthoc_dunn
-from scipy.stats import kruskal, levene, shapiro, wilcoxon
 
 import src.params as params
 
@@ -98,8 +96,6 @@ ints["tgp_bin"] = pd.cut(
 # Loop over each bin of missing data, including the full dataset
 for bin in bin_labels + ["all_data"]:
 
-    print(f"\n######################\n\nResults for {bin}\n\n######################\n")
-
     if bin == "all_data":
         # Condition data for the full dataset
         data_naive = ints[ints.gap_handling == "naive"]
@@ -121,6 +117,8 @@ for bin in bin_labels + ["all_data"]:
     for i, variable in enumerate(variables):
         variable_to_plot = variable
         ax = axes[i]
+
+        print(f"Plotting {variable} for bin {bin}")
 
         if variable == "Re_lt":
             variable_to_plot = "Re_lt_log"
@@ -191,9 +189,9 @@ for bin in bin_labels + ["all_data"]:
             ax.set_xticks(ticks)
             ax.set_xticklabels([f"$10^{{{int(x)}}}$" for x in ax.get_xticks()])
 
-        # Add annotations of the mean of each distribution
+        # Add annotations of the median of each distribution
         ax.annotate(
-            r"\textbf{" + f"{data_true[variable + '_orig'].mean():.3g}" + "}",
+            r"\textbf{" + f"{data_true[variable + '_orig'].median():.3g}" + "}",
             xy=(x_annotat, 0.85),
             xycoords="axes fraction",
             fontsize=7,
@@ -201,7 +199,7 @@ for bin in bin_labels + ["all_data"]:
             ha="left",
         )
         ax.annotate(
-            f"{data_corrected[variable].mean():.3g}",
+            f"{data_corrected[variable].median():.3g}",
             xy=(x_annotat, 0.7),
             xycoords="axes fraction",
             fontsize=7,
@@ -209,7 +207,7 @@ for bin in bin_labels + ["all_data"]:
             ha="left",
         )
         ax.annotate(
-            f"{data_naive[variable].mean():.3g}",
+            f"{data_naive[variable].median():.3g}",
             xy=(x_annotat, 0.55),
             xycoords="axes fraction",
             fontsize=7,
@@ -217,7 +215,7 @@ for bin in bin_labels + ["all_data"]:
             ha="left",
         )
         ax.annotate(
-            f"{data_lint[variable].mean():.3g}",
+            f"{data_lint[variable].median():.3g}",
             xy=(x_annotat, 0.4),
             xycoords="axes fraction",
             fontsize=7,
@@ -240,104 +238,6 @@ for bin in bin_labels + ["all_data"]:
             )
 
             ax.set_xlim(-2.8, -0.8)
-
-        # STATISTICAL TEST OF DIFFERENCE OF MEANS
-        # Perform an ANOVA test to see if the means are significantly different?
-
-        print(f"\n\nStatistical tests for {variable}\n")
-
-        # Print summary stats of each
-        print(f"Summary statistics for {variable}:")
-        print("Naive:")
-        print(data_naive[variable].describe())
-        print("LINT:")
-        print(data_lint[variable].describe())
-        print("Corrected:")
-        print(data_corrected[variable].describe())
-        print("True:")
-        print(data_true[variable].describe())
-
-        if variable == "es_slope":
-
-            # Perform a Wilcoxon signed-rank test to see if the means are significantly different from 2/3
-            print(
-                f"Results of Wilcoxon signed-rank test for difference of mean of True distribution from 2/3 for {variable}:"
-            )
-            print(wilcoxon(data_true[variable] + 5 / 3))
-            # WilcoxonResult(statistic=765975.0, pvalue=0.0)
-
-        # First, testing assumptions of ANOVA
-
-        # 1. Homogeneity of variances
-        print(
-            f"\nResults of Levene's test for homogeneity of variances for {variable}:"
-        )
-        print(
-            levene(
-                data_naive[variable],
-                data_lint[variable],
-                data_corrected[variable],
-                data_true[variable],
-            )
-        )
-        # If the p-value is less than 0.05, then the variances are significantly different
-        # print("HOMOGENEITY OF VARIANCES NOT SATISFIED")
-
-        # 2. Normality
-        print(f"\nResults of Shapiro-Wilk test for normality for {variable}:")
-        print(shapiro(data_naive[variable]))
-        print(shapiro(data_lint[variable]))
-        print(shapiro(data_corrected[variable]))
-        print(shapiro(data_true[variable]))
-        # print("NORMALITY NOT SATISFIED")
-        # If the p-value is less than 0.05, then the data is not normally distributed
-        # print("\nCANNOT PROCEED WITH ANOVA")
-
-        # Combine all the data into one array
-        all_data = pd.DataFrame(
-            {
-                variable: pd.concat(
-                    [
-                        data_naive[variable],
-                        data_lint[variable],
-                        data_corrected[variable],
-                        data_true[variable],
-                    ]
-                ),
-                "group": ["naive"] * len(data_naive[variable])
-                + ["lint"] * len(data_lint[variable])
-                + ["corrected"] * len(data_corrected[variable])
-                + ["orig"] * len(data_true[variable]),
-            }
-        )
-
-        # Since we can't perform ANOVA, instead use non-parametric test for difference of means
-        # H0: The means of the groups are equal
-        # H1: At least one of the means is different
-        print(
-            f"\nResults of non-parametric Kruskal-Wallis test for difference of means for {variable}:"
-        )
-        print(
-            kruskal(
-                data_naive[variable],
-                data_lint[variable],
-                data_corrected[variable],
-                data_true[variable],
-            )
-        )
-        # print("REJECT NULL HYPOTHESIS OF EQUAL MEANS")
-
-        # If the Kruskal-Wallis test is significant, then perform a post-hoc test to see which groups are different
-        print(
-            f"\nResults of post-hoc Dunn's test for difference of means for {variable}:"
-        )
-        print(
-            posthoc_dunn(
-                all_data,
-                val_col=variable,
-                group_col="group",
-            )
-        )
 
     if bin == "all_data":
         plt.suptitle("Full dataset", x=-0.001, y=0.7, ha="right")
@@ -374,7 +274,7 @@ for bin in bin_labels + ["all_data"]:
 #     # Find the total length of data set
 #     arsize = reduce(operator.mul, np.shape(ar), 1)
 #     # Find the RMS value of data set and normalize to it.
-#     rmsval = np.sqrt(np.mean(ar**2))
+#     rmsval = np.sqrt(np.median(ar**2))
 #     if rmsval != 0:
 #         ar = ar / rmsval
 #     # Reshape the array to 1D & sort it.

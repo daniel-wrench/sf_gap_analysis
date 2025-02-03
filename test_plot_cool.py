@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from dash import Input, Output, dcc, html
 
 import src.params as params
@@ -41,7 +42,7 @@ n_bins = 25
 
 data_path_prefix = params.data_path_prefix
 # output_path = params.output_path
-output_path = "testing"
+output_path = "with_scales"
 pwrl_range = params.pwrl_range
 
 index = 0
@@ -140,7 +141,7 @@ def create_faceted_scatter(selected_criteria=None):
 
     # Set default marker color and size
     df_local["marker_color"] = "blue"
-    df_local["marker_size"] = 1
+    df_local["marker_size"] = 2
 
     if selected_criteria is not None:
         file_index, int_index, version = selected_criteria
@@ -151,26 +152,27 @@ def create_faceted_scatter(selected_criteria=None):
             & (df_local["version"] == version)
         )
         # Change the marker properties for the matching rows
-        df_local.loc[mask, "marker_color"] = "red"
-        df_local.loc[mask, "marker_size"] = 2
+        df_local.loc[mask, "marker_color"] = "green"
+        df_local.loc[mask, "marker_size"] = 5
 
     # Build the scatterplot with facets
     fig = px.scatter(
         df_local,
         x="missing_percent_overall",
-        y="mape",
+        y="ttu_ape",
         color="marker_color",
         size="marker_size",
+        size_max=6,
         facet_col="gap_handling",
         hover_data=[
             "missing_percent_overall",
-            "mape",
+            "ttu_ape",
             "file_index",
             "int_index",
             "version",
             "gap_handling",
         ],
-        title="Metadata Scatter Plot",
+        # title="Metadata Scatter Plot",
     )
 
     # Remove the legend for color since we're using it just for highlighting
@@ -184,22 +186,36 @@ app = dash.Dash(__name__)
 
 app.layout = html.Div(
     [
-        html.H1("Scatter Plot and Time Series Viewer"),
-        dcc.Graph(id="scatter-plot", figure=create_faceted_scatter()),
-        html.Hr(),
+        html.H1("Interactively Exploring SF Errors From Gapped Time Series"),
+        dcc.Graph(
+            id="scatter-plot", figure=create_faceted_scatter(), style={"height": "50vh"}
+        ),
+        html.Div(
+            id="selected-info",
+            style={
+                "marginTop": "5px",
+                "fontWeight": "bold",
+                "fontSize": "20px",
+            },
+        ),
+        html.Hr(style={"margin": "0px"}),
         html.Div(
             [
-                dcc.Graph(id="ts-plot", figure={}),
-                dcc.Graph(id="sf-plot", figure={}),
+                dcc.Graph(
+                    id="ts-plot", figure={}, style={"height": "60vh", "width": "100%"}
+                ),
+                dcc.Graph(
+                    id="sf-plot", figure={}, style={"height": "60vh", "width": "100%"}
+                ),
             ],
             style={
                 "display": "flex",
                 "flexDirection": "row",
-                "justifyContent": "space-between",
+                "justifyContent": "center",
             },
         ),
-        html.Div(id="selected-info", style={"marginTop": "20px", "fontWeight": "bold"}),
-    ]
+    ],
+    style={"padding": "0px"},
 )
 
 
@@ -238,7 +254,7 @@ def update_line_plots(clickData):
         # x="lag",
         y="Bx",
         # color="gap_handling",
-        title=f"TS for file_index: {file_index}, int_index: {int_index}, version: {version}",
+        # title=f"TS for file_index: {file_index}, int_index: {int_index}, version: {version}",
     )
 
     # Filter the time series dataframe
@@ -257,7 +273,23 @@ def update_line_plots(clickData):
         color="gap_handling",
         log_x=True,
         log_y=True,
-        title=f"SF for file_index: {file_index}, int_index: {int_index}, version: {version}",
+        # title=f"SF for file_index: {file_index}, int_index: {int_index}, version: {version}",
+    )
+
+    sf_fig.add_trace(
+        go.Scatter(
+            x=sfs.loc[
+                (sfs["file_index"] == file_index) & (sfs["int_index"] == int_index),
+                "lag",
+            ],
+            y=sfs.loc[
+                (sfs["file_index"] == file_index) & (sfs["int_index"] == int_index),
+                "sf_2",
+            ],
+            mode="lines",
+            line=dict(color="grey", width=5),
+            name="true",
+        )
     )
 
     return ts_fig, sf_fig

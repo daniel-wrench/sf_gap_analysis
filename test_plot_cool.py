@@ -127,42 +127,88 @@ sfs_gapped_corrected = sfs_gapped_corrected[
     sfs_gapped_corrected.gap_handling != "corrected_2d"
 ]
 
+
+def create_faceted_scatter(selected_criteria=None):
+    """
+    Create a faceted scatter plot.
+
+    If selected_criteria is provided (a tuple: (file_index, int_index, version)),
+    update the marker color and size for points matching that criteria.
+    """
+    # Create a copy so we do not modify the original df
+    df_local = ints_gapped_metadata.copy()
+
+    # Set default marker color and size
+    df_local["marker_color"] = "blue"
+    df_local["marker_size"] = 1
+
+    if selected_criteria is not None:
+        file_index, int_index, version = selected_criteria
+        # Create a mask that matches the selected criteria
+        mask = (
+            (df_local["file_index"] == file_index)
+            & (df_local["int_index"] == int_index)
+            & (df_local["version"] == version)
+        )
+        # Change the marker properties for the matching rows
+        df_local.loc[mask, "marker_color"] = "red"
+        df_local.loc[mask, "marker_size"] = 2
+
+    # Build the scatterplot with facets
+    fig = px.scatter(
+        df_local,
+        x="missing_percent_overall",
+        y="mape",
+        color="marker_color",
+        size="marker_size",
+        facet_col="gap_handling",
+        hover_data=[
+            "missing_percent_overall",
+            "mape",
+            "file_index",
+            "int_index",
+            "version",
+            "gap_handling",
+        ],
+        title="Metadata Scatter Plot",
+    )
+
+    # Remove the legend for color since we're using it just for highlighting
+    fig.update_layout(showlegend=False)
+
+    return fig
+
+
 # Create the Dash app
 app = dash.Dash(__name__)
 
 app.layout = html.Div(
     [
         html.H1("Scatter Plot and Time Series Viewer"),
-        dcc.Graph(
-            id="scatter-plot",
-            figure=px.scatter(
-                ints_gapped_metadata,
-                x="missing_percent_overall",
-                y="mape",
-                color="gap_handling",
-                facet_col="gap_handling",
-                hover_data=[
-                    "missing_percent_overall",
-                    "mape",
-                    "file_index",
-                    "int_index",
-                    "version",
-                    "gap_handling",
-                ],
-                title="Metadata Scatter Plot",
-            ),
-        ),
+        dcc.Graph(id="scatter-plot", figure=create_faceted_scatter()),
         html.Hr(),
-        dcc.Graph(id="sf-plot", figure={}),
+        html.Div(
+            [
+                dcc.Graph(id="ts-plot", figure={}),
+                dcc.Graph(id="sf-plot", figure={}),
+            ],
+            style={
+                "display": "flex",
+                "flexDirection": "row",
+                "justifyContent": "space-between",
+            },
+        ),
+        html.Div(id="selected-info", style={"marginTop": "20px", "fontWeight": "bold"}),
     ]
 )
 
 
 @app.callback(
+    Output("ts-plot", "figure"),
     Output("sf-plot", "figure"),
     Input("scatter-plot", "clickData"),
 )
-def update_time_series(clickData):
+def update_line_plots(clickData):
     if clickData is None:
         # Return an empty figure or a default plot if no point is clicked
         return px.line(title="Click a point on the scatter plot to see its time series")
@@ -178,15 +224,34 @@ def update_time_series(clickData):
     version = point["customdata"][2]
 
     # Filter the time series dataframe
-    mask = (
+    mask_ts = (
+        (ints_gapped["file_index"] == file_index)
+        & (ints_gapped["int_index"] == int_index)
+        & (ints_gapped["version"] == version)
+        & (ints_gapped["gap_handling"] == "lint")
+    )
+
+    df_ts = ints_gapped[mask_ts]
+
+    ts_fig = px.line(
+        df_ts,
+        # x="lag",
+        y="Bx",
+        # color="gap_handling",
+        title=f"TS for file_index: {file_index}, int_index: {int_index}, version: {version}",
+    )
+
+    # Filter the time series dataframe
+    mask_sf = (
         (sfs_gapped_corrected["file_index"] == file_index)
         & (sfs_gapped_corrected["int_index"] == int_index)
         & (sfs_gapped_corrected["version"] == version)
     )
-    df_ts = sfs_gapped_corrected[mask]
+
+    df_sf = sfs_gapped_corrected[mask_sf]
 
     sf_fig = px.line(
-        df_ts,
+        df_sf,
         x="lag",
         y="sf_2",
         color="gap_handling",
@@ -195,9 +260,34 @@ def update_time_series(clickData):
         title=f"SF for file_index: {file_index}, int_index: {int_index}, version: {version}",
     )
 
-    return sf_fig
+    return ts_fig, sf_fig
+
+
+@app.callback(
+    Output("scatter-plot", "figure"),
+    Output("selected-info", "children"),
+    Input("scatter-plot", "clickData"),
+)
+def update_highlight(clickData):
+    if clickData is None:
+        return create_faceted_scatter(), "No point selected yet."
+
+    # Extract the clicked point's data.
+    # Note: Depending on your plot, the structure of clickData may vary.
+    # Here, we assume that hover_data values are available in customdata.
+    point = clickData["points"][0]
+    # The order of customdata corresponds to the order of hover_data we provided.
+    file_index = point["customdata"][0]
+    int_index = point["customdata"][1]
+    version = point["customdata"][2]
+
+    selected_info = f"Selected point -> file_index: {file_index}, int_index: {int_index}, version: {version}"
+
+    # Create a new figure with highlighted points.
+    fig = create_faceted_scatter((file_index, int_index, version))
+
+    return fig, selected_info
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
     app.run_server(debug=True)

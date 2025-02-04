@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from dash import Input, Output, dcc, html
 
 import src.params as params
@@ -75,7 +74,6 @@ all_ints_metadata = []
 all_ints = []
 all_ints_gapped_metadata = []
 all_ints_gapped = []
-all_sfs = []
 all_sfs_gapped_corrected = []
 
 for file in input_file_list:
@@ -99,7 +97,6 @@ for file in input_file_list:
     all_ints.append(data["ints"])
     all_ints_gapped_metadata.append(data["ints_gapped_metadata"])
     all_ints_gapped.append(data["ints_gapped"])
-    all_sfs.append(data["sfs"])
     all_sfs_gapped_corrected.append(data["sfs_gapped_corrected"])
 
 # Concatenate all dataframes
@@ -107,7 +104,6 @@ files_metadata = pd.concat(all_files_metadata, ignore_index=True)
 ints_metadata = pd.concat(all_ints_metadata, ignore_index=True)
 ints_gapped_metadata = pd.concat(all_ints_gapped_metadata, ignore_index=True)
 ints_gapped = pd.concat(all_ints_gapped, ignore_index=True)
-sfs = pd.concat(all_sfs, ignore_index=True)
 sfs_gapped_corrected = pd.concat(all_sfs_gapped_corrected, ignore_index=True)
 
 # Flatten the list of lists for ints
@@ -128,6 +124,43 @@ sfs_gapped_corrected = sfs_gapped_corrected[
     sfs_gapped_corrected.gap_handling != "corrected_2d"
 ]
 
+# Only getting relevant columns from particularly large dfs
+ints_gapped = ints_gapped[
+    ["time", "file_index", "int_index", "version", "gap_handling", "Bx"]
+]
+sfs_gapped_corrected = sfs_gapped_corrected[
+    ["file_index", "int_index", "version", "lag", "sf_2", "gap_handling"]
+]
+
+ints_gapped_metadata = ints_gapped_metadata[
+    [
+        "file_index",
+        "int_index",
+        "version",
+        "gap_handling",
+        "missing_percent_overall",
+        "missing_percent_chunks",
+        "slope_ape",
+        "tce_ape",
+        "ttu_ape",
+    ]
+]
+
+# Convert ins_gapped_metadata to long form for the scatter plot
+ints_gapped_metadata_long = ints_gapped_metadata.melt(
+    id_vars=[
+        "file_index",
+        "int_index",
+        "version",
+        "gap_handling",
+        "missing_percent_overall",
+        "missing_percent_chunks",
+    ],
+    value_vars=["slope_ape", "tce_ape", "ttu_ape"],
+    var_name="derived_stat",
+    value_name="ape",
+)
+
 
 def create_faceted_scatter(selected_criteria=None):
     """
@@ -140,8 +173,8 @@ def create_faceted_scatter(selected_criteria=None):
     df_local = ints_gapped_metadata.copy()
 
     # Set default marker color and size
-    df_local["marker_color"] = "blue"
-    df_local["marker_size"] = 2
+    df_local["marker_color"] = "grey"
+    df_local["marker_size"] = 3
 
     if selected_criteria is not None:
         file_index, int_index, version = selected_criteria
@@ -152,8 +185,8 @@ def create_faceted_scatter(selected_criteria=None):
             & (df_local["version"] == version)
         )
         # Change the marker properties for the matching rows
-        df_local.loc[mask, "marker_color"] = "green"
-        df_local.loc[mask, "marker_size"] = 5
+        df_local.loc[mask, "marker_color"] = "black"
+        df_local.loc[mask, "marker_size"] = 10
 
     # Build the scatterplot with facets
     fig = px.scatter(
@@ -161,12 +194,15 @@ def create_faceted_scatter(selected_criteria=None):
         x="missing_percent_overall",
         y="ttu_ape",
         color="marker_color",
+        # Fixing issue with color not being consistent
+        color_discrete_map={"grey": "gray", "black": "black"},
         size="marker_size",
-        size_max=6,
+        size_max=10,
         facet_col="gap_handling",
+        # facet_row="derived_stat",
         hover_data=[
             "missing_percent_overall",
-            "ttu_ape",
+            # "ape",
             "file_index",
             "int_index",
             "version",
@@ -187,8 +223,20 @@ app = dash.Dash(__name__)
 app.layout = html.Div(
     [
         html.H1("Interactively Exploring SF Errors From Gapped Time Series"),
+        # Need to pivot to long form for the dropdown
+        # dcc.Dropdown(
+        #     id="error-metric",
+        #     options=[
+        #         {"label": col, "value": col}
+        #         for col in ["file_index", "int_index", "version"]
+        #     ],
+        #     value="file_index",  # Default selection
+        #     clearable=False,
+        # ),
         dcc.Graph(
-            id="scatter-plot", figure=create_faceted_scatter(), style={"height": "50vh"}
+            id="scatter-plot",
+            figure=create_faceted_scatter(),
+            style={"height": "50vh"},
         ),
         html.Div(
             id="selected-info",
@@ -220,14 +268,18 @@ app.layout = html.Div(
 
 
 @app.callback(
-    Output("ts-plot", "figure"),
-    Output("sf-plot", "figure"),
+    [Output("ts-plot", "figure"), Output("sf-plot", "figure")],
     Input("scatter-plot", "clickData"),
 )
 def update_line_plots(clickData):
     if clickData is None:
-        # Return an empty figure or a default plot if no point is clicked
-        return px.line(title="Click a point on the scatter plot to see its time series")
+        default_ts_fig = px.line(
+            title="Click a point on the scatter plot to see its time series"
+        )
+        default_sf_fig = px.line(
+            title="Click a point on the scatter plot to see its structure function"
+        )
+        return default_ts_fig, default_sf_fig
 
     # Extract the clicked point's data
     # Note: The structure of clickData depends on how your figure is set up.
@@ -251,7 +303,7 @@ def update_line_plots(clickData):
 
     ts_fig = px.line(
         df_ts,
-        # x="lag",
+        x="time",
         y="Bx",
         # color="gap_handling",
         # title=f"TS for file_index: {file_index}, int_index: {int_index}, version: {version}",
@@ -275,30 +327,49 @@ def update_line_plots(clickData):
         log_y=True,
         # title=f"SF for file_index: {file_index}, int_index: {int_index}, version: {version}",
     )
+    # Add horizontal line at 3.8
+    sf_fig.add_hline(
+        y=3.8,
+        line_dash="dot",
+        line_color="black",
+        label=dict(
+            text="1/e equiv.",
+            textposition="end",
+            font=dict(size=12, color="black"),
+            yanchor="top",
+        ),
+    )
 
-    sf_fig.add_trace(
-        go.Scatter(
-            x=sfs.loc[
-                (sfs["file_index"] == file_index) & (sfs["int_index"] == int_index),
-                "lag",
-            ],
-            y=sfs.loc[
-                (sfs["file_index"] == file_index) & (sfs["int_index"] == int_index),
-                "sf_2",
-            ],
-            mode="lines",
-            line=dict(color="grey", width=5),
-            name="true",
-        )
+    sf_fig.add_vrect(
+        x0=params.tau_min,
+        x1=params.tau_max,
+        fillcolor="green",
+        opacity=0.1,
+        label=dict(
+            text="TS fit range",
+            textposition="top center",
+        ),
+        line_width=0,
+    )
+
+    sf_fig.add_vrect(
+        x0=params.pwrl_range[0],
+        x1=params.pwrl_range[1],
+        fillcolor="salmon",
+        opacity=0.1,
+        label=dict(
+            text="Slope fit range",
+            textposition="top center",
+        ),
+        line_width=0,
     )
 
     return ts_fig, sf_fig
 
 
 @app.callback(
-    Output("scatter-plot", "figure"),
-    Output("selected-info", "children"),
-    Input("scatter-plot", "clickData"),
+    [Output("scatter-plot", "figure"), Output("selected-info", "children")],
+    [Input("scatter-plot", "clickData")],
 )
 def update_highlight(clickData):
     if clickData is None:

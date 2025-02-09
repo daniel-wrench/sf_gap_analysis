@@ -1,3 +1,7 @@
+# THINGS TO FIX
+# Colouring of SFs
+# Short description next to "selected point"
+
 import glob
 import pickle
 
@@ -76,7 +80,7 @@ all_ints_gapped_metadata = []
 all_ints_gapped = []
 all_sfs_gapped_corrected = []
 
-for file in input_file_list:
+for file in input_file_list[:5]:
     try:
         with open(file, "rb") as f:
             data = pickle.load(f)
@@ -112,6 +116,12 @@ ints = [item for sublist in all_ints for item in sublist]
 print(
     f"Successfully read in {input_file_list[index]}. This contains {len(ints_metadata)}x{times_to_gap} intervals"
 )
+
+# Why does file index 4, int_index 1, v15 not have a LINT version?
+# Same with 3/0/8
+# Is it removed by the following filtering
+
+# Check sample size counts
 
 
 # Filtering out bad tces
@@ -170,11 +180,12 @@ def create_faceted_scatter(selected_criteria=None):
     update the marker color and size for points matching that criteria.
     """
     # Create a copy so we do not modify the original df
-    df_local = ints_gapped_metadata.copy()
+    df_local = ints_gapped_metadata_long.copy()
 
     # Set default marker color and size
-    df_local["marker_color"] = "grey"
     df_local["marker_size"] = 3
+    df_local["marker_symbol"] = "circle"
+    df_local["marker_color"] = df_local["gap_handling"]
 
     if selected_criteria is not None:
         file_index, int_index, version = selected_criteria
@@ -185,21 +196,31 @@ def create_faceted_scatter(selected_criteria=None):
             & (df_local["version"] == version)
         )
         # Change the marker properties for the matching rows
-        df_local.loc[mask, "marker_color"] = "black"
-        df_local.loc[mask, "marker_size"] = 10
+        df_local.loc[mask, "marker_color"] = "purple"
+        df_local.loc[mask, "marker_size"] = 15
+        df_local.loc[mask, "marker_symbol"] = "x"
 
     # Build the scatterplot with facets
     fig = px.scatter(
         df_local,
         x="missing_percent_overall",
-        y="ttu_ape",
+        y="ape",
         color="marker_color",
-        # Fixing issue with color not being consistent
-        color_discrete_map={"grey": "gray", "black": "black"},
+        # Specify colours
+        color_discrete_map={
+            "lint": "black",
+            "naive": "indianred",
+            "corrected_3d": "#1b9e77",
+            "purple": "purple",
+        },
+        # Map for symbols
+        symbol_map={"x": "x", "circle": "circle"},
+        opacity=0.4,
         size="marker_size",
-        size_max=10,
+        size_max=15,
+        symbol="marker_symbol",
         facet_col="gap_handling",
-        # facet_row="derived_stat",
+        facet_row="derived_stat",
         hover_data=[
             "missing_percent_overall",
             # "ape",
@@ -207,6 +228,7 @@ def create_faceted_scatter(selected_criteria=None):
             "int_index",
             "version",
             "gap_handling",
+            "marker_symbol",
         ],
         # title="Metadata Scatter Plot",
     )
@@ -236,7 +258,7 @@ app.layout = html.Div(
         dcc.Graph(
             id="scatter-plot",
             figure=create_faceted_scatter(),
-            style={"height": "50vh"},
+            style={"height": "100vh"},
         ),
         html.Div(
             id="selected-info",
@@ -305,7 +327,7 @@ def update_line_plots(clickData):
         df_ts,
         x="time",
         y="Bx",
-        # color="gap_handling",
+        color_discrete_sequence=["grey"],
         # title=f"TS for file_index: {file_index}, int_index: {int_index}, version: {version}",
     )
 

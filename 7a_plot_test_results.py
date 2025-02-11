@@ -76,8 +76,14 @@ fig, axes = plt.subplots(2, 2, figsize=(14, 8))
 # Flatten the 2D array of axes for easy iteration
 axes = axes.flatten()
 
-custom_order = ["naive", "lint", "corrected_2d", "corrected_3d"]
-colors = ["indianred", "dimgrey", "C0", "#1b9e77"]
+custom_order = [
+    "naive",
+    "lint",
+    "corrected_2d",
+    "corrected_3d",
+    "corrected_3d_smoothed",
+]
+colors = ["indianred", "dimgrey", "C0", "#1b9e77", "purple"]
 
 # Create boxplots for each column
 for col, ax in zip(columns, axes):
@@ -130,8 +136,14 @@ plt.savefig(
 
 # (Not including sub-par 2D corrected results)
 
-custom_order = ["naive", "lint", "corrected_3d"]
-colors = ["indianred", "dimgrey", "#1b9e77"]
+custom_order = [
+    "naive",
+    "lint",
+    "corrected_2d",
+    "corrected_3d",
+    "corrected_3d_smoothed",
+]
+colors = ["indianred", "dimgrey", "C0", "#1b9e77", "purple"]
 
 # Make scatterplot of mape vs. missing_percent, coloured by gap handling
 palette = dict(zip(custom_order, colors))
@@ -143,7 +155,7 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
     fig, ax = plt.subplots(
         1,
         len(custom_order) + 1,
-        figsize=(7, 2),
+        figsize=(len(custom_order) * 2, 2),
         sharex="col",
         sharey="row",
         tight_layout=True,
@@ -183,7 +195,16 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
         )
 
     # Move titles to inside top each plot
-    for i, title in enumerate(["Naive", "LINT", "Corrected", "Regression lines"]):
+    for i, title in enumerate(
+        [
+            "Naive",
+            "LINT",
+            "Corrected_2d",
+            "Corrected 3D",
+            "corrected 3D smoothed",
+            "Regression lines",
+        ]
+    ):
         ax[i].text(
             0.5,
             0.98,
@@ -301,7 +322,16 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
         # )
 
     # Move titles to inside top each plot
-    for i, title in enumerate(["Naive", "LINT", "Corrected", "Regression lines"]):
+    for i, title in enumerate(
+        [
+            "Naive",
+            "LINT",
+            "Corrected 2d",
+            "Corrected 3D",
+            "Corrected 3D smoothed",
+            "Regression lines",
+        ]
+    ):
         ax[i].text(
             0.5,
             0.98,

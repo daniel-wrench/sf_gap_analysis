@@ -18,7 +18,7 @@ data_path_prefix = params.data_path_prefix
 output_path = params.output_path
 
 spacecraft = "wind"
-file_index_test = 0
+file_index_test = 0  # int(sys.argv[1])
 # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
 n_bins = 25
 
@@ -210,10 +210,18 @@ sfs_gapped_corrected["sf_2_pe"] = (
 
 # Adding rows as placeholders for when we correct with 2D and 3D heatmaps and want to calculate errors
 
-dup_df = ints_gapped_metadata.replace(
-    ["naive", "lint"], ["corrected_2d", "corrected_3d"]
-)
-ints_gapped_metadata = pd.concat([ints_gapped_metadata, dup_df])
+# Define new gap_handling values
+new_gap_handling = ["corrected_2d", "corrected_3d", "corrected_3d_smoothed"]
+
+# Duplicate existing rows for each new value
+dup_df = ints_gapped_metadata.copy()
+
+# Repeat DataFrame for each new type
+dup_df = pd.concat([dup_df.assign(gap_handling=gh) for gh in new_gap_handling])
+
+# Append to original DataFrame
+ints_gapped_metadata = pd.concat([ints_gapped_metadata, dup_df], ignore_index=True)
+
 
 for i in files_metadata.file_index.unique():
     for j in range(len(ints_metadata["file_index"] == i)):
@@ -405,6 +413,8 @@ if full_output is True:
             f"_corrected_{n_bins}_bins_FULL.pkl",
         )
     )
+    print("Exporting full output (with SFs) to", output_file_path)
+
     with open(output_file_path, "wb") as f:
         pickle.dump(
             {
@@ -422,6 +432,7 @@ else:
     output_file_path = input_file_list[file_index_test].replace(
         ".pkl", f"_corrected_{n_bins}_bins.pkl"
     )
+    print("Exporting truncated output to", output_file_path)
     with open(output_file_path, "wb") as f:
         pickle.dump(
             {

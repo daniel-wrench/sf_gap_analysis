@@ -1,6 +1,8 @@
 # THINGS TO FIX
-# Colouring of SFs
-# Short description next to "selected point"
+# Option to have shared or not y-axis
+# True time series behind LINT
+# More metadata: % removed next to time series, error values next to SFs
+# USE TO GET BETTER EXAMPLES
 
 import glob
 import pickle
@@ -124,15 +126,14 @@ print(
 # Check sample size counts
 
 
-# Filtering out bad tces
+# Filtering out bad original tces, setting gap-affected ones to max when cannot be found
 ints_gapped_metadata = ints_gapped_metadata[ints_gapped_metadata.tce_orig >= 0]
-ints_gapped_metadata = ints_gapped_metadata[ints_gapped_metadata.tce >= 0]
-ints_gapped_metadata = ints_gapped_metadata[
-    ints_gapped_metadata.gap_handling != "corrected_2d"
-]
-sfs_gapped_corrected = sfs_gapped_corrected[
-    sfs_gapped_corrected.gap_handling != "corrected_2d"
-]
+ints_gapped_metadata.loc[ints_gapped_metadata.tce == -1, "tce"] = (
+    params.max_lag_prop * params.int_length
+)
+# sfs_gapped_corrected = sfs_gapped_corrected[
+#     sfs_gapped_corrected.gap_handling != "corrected_2d"
+# ]
 
 # Only getting relevant columns from particularly large dfs
 ints_gapped = ints_gapped[
@@ -211,6 +212,7 @@ def create_faceted_scatter(selected_criteria=None):
             "lint": "black",
             "naive": "indianred",
             "corrected_3d": "#1b9e77",
+            "corrected_2d": "#d95f02",
             "purple": "purple",
         },
         # Map for symbols
@@ -227,8 +229,6 @@ def create_faceted_scatter(selected_criteria=None):
             "file_index",
             "int_index",
             "version",
-            "gap_handling",
-            "marker_symbol",
         ],
         # title="Metadata Scatter Plot",
     )
@@ -345,6 +345,13 @@ def update_line_plots(clickData):
         x="lag",
         y="sf_2",
         color="gap_handling",
+        color_discrete_map={
+            "naive": "indianred",
+            "lint": "black",
+            "corrected_3d": "#1b9e77",
+            "corrected_2d": "#d95f02",
+            "true": "grey",
+        },
         log_x=True,
         log_y=True,
         # title=f"SF for file_index: {file_index}, int_index: {int_index}, version: {version}",

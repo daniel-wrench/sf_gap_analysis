@@ -42,6 +42,20 @@ ints_gapped_metadata = data["ints_gapped_metadata"]
 ints_gapped_metadata.to_csv("ints_gapped_metadata.csv", index=False)
 files_metadata.to_csv("files_metadata.csv", index=False)
 
+ints_gapped_metadata.head()
+# Give a unique identifier for each combination of file_index and int_index
+ints_gapped_metadata["id"] = (
+    ints_gapped_metadata["file_index"].astype(str)
+    + "_"
+    + ints_gapped_metadata["int_index"].astype(str)
+)
+# Why do some have 200?
+
+# Filtering out bad tces
+ints_gapped_metadata = ints_gapped_metadata[ints_gapped_metadata.tce_orig >= 0]
+ints_gapped_metadata.loc[ints_gapped_metadata.tce == -1, "tce"] = (
+    params.max_lag_prop * params.int_length
+)
 
 # ints_gapped = data["ints_gapped"]
 # fs = data["sfs"]
@@ -112,7 +126,7 @@ plt.savefig(
 
 # -------------------------------------------------------------------------------------#
 
-# Regression lines
+# Scatterplots of error vs. TGP for each gap handling method
 
 # (Not including sub-par 2D corrected results)
 
@@ -139,6 +153,7 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
     # Add regression lines for each group
 
     for i, gap_handling_method in enumerate(custom_order):
+
         subset = ints_gapped_metadata[
             ints_gapped_metadata["gap_handling"] == gap_handling_method
         ]
@@ -161,7 +176,7 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
             scatter=False,
             color=palette[gap_handling_method],
             label=gap_handling_method,
-            order=2,
+            order=1,
             ax=ax[-1],
             ci=99,
             line_kws={"linewidth": 0.8},  # Set the line width to be thinner
@@ -255,7 +270,7 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
             scatter=False,
             color=palette[gap_handling_method],
             label=gap_handling_method,
-            order=2,
+            order=1,
             ax=ax[-1],
             ci=99,
             line_kws={"linewidth": 0.8},  # Set the line width to be thinner
@@ -335,7 +350,7 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
     # plt.suptitle(f"Error vs. \% missing data for the Wind test set ({n_bins} bins)")
     # plt.show()
     plt.savefig(
-        f"plots/results/{output_path}/test_{spacecraft}_scatterplots_{n_bins}_bins_{error_metric}_NEW.png",
+        f"plots/results/{output_path}/test_{spacecraft}_scatterplots_{n_bins}_bins_{error_metric}.png",
         bbox_inches="tight",
         dpi=300,
     )

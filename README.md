@@ -176,6 +176,10 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     2. **`sbatch 4a_finalise_correction.sh`**
 
+- 4a. i. **Smooth heatmaps** to get less jumpy corrections
+
+    **`python 4a_i_smooth_correction.py`**
+
 - 4b. **Calculate stats of the training set**
 
     *Output:* 

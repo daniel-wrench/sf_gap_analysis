@@ -4,7 +4,6 @@
 
 import glob
 import pickle
-import sys
 
 import numpy as np
 import pandas as pd
@@ -18,10 +17,10 @@ pwrl_range = params.pwrl_range
 data_path_prefix = params.data_path_prefix
 output_path = params.output_path
 
-spacecraft = sys.argv[1]
-file_index_test = int(sys.argv[2])
+spacecraft = "wind"
+file_index_test = 0
 # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
-n_bins = int(sys.argv[3])
+n_bins = 25
 
 full_output = False
 
@@ -70,6 +69,11 @@ with open(
     f"data/corrections/{output_path}/correction_lookup_3d_{n_bins}_bins.pkl", "rb"
 ) as f:
     correction_lookup_3d = pickle.load(f)
+with open(
+    f"data/corrections/{output_path}/correction_lookup_3d_{n_bins}_bins_SMOOTHED.pkl",
+    "rb",
+) as f:
+    correction_lookup_3d_smoothed = pickle.load(f)
 
 # Apply 2D and 3D scaling to test set, report avg errors
 print(
@@ -78,10 +82,29 @@ print(
 sfs_lint_corrected_2d = sf.compute_scaling(sfs_gapped, 2, correction_lookup_2d, n_bins)
 
 print(
+    f"Correcting {len(ints_metadata)} intervals using SMOOTHED 3D error heatmap with {n_bins} bins"
+)
+sfs_lint_corrected_2d_3d_smoothed = sf.compute_scaling(
+    sfs_lint_corrected_2d, 3, correction_lookup_3d_smoothed, n_bins
+)
+
+# Rename smoothed columns so not over-ridden when creating non-smoothed versions below
+sfs_lint_corrected_2d_3d_smoothed = sfs_lint_corrected_2d_3d_smoothed.rename(
+    columns={
+        "sf_2_corrected_3d": "sf_2_corrected_3d_smoothed",
+        "sf_2_lower_corrected_3d": "sf_2_lower_corrected_3d_smoothed",
+        "sf_2_upper_corrected_3d": "sf_2_upper_corrected_3d_smoothed",
+    }
+)
+
+print(
     f"Correcting {len(ints_metadata)} intervals using 3D error heatmap with {n_bins} bins"
 )
 sfs_lint_corrected_2d_3d = sf.compute_scaling(
-    sfs_lint_corrected_2d, 3, correction_lookup_3d, n_bins
+    sfs_lint_corrected_2d_3d_smoothed,
+    3,
+    correction_lookup_3d,
+    n_bins,
 )
 
 correction_wide = sfs_lint_corrected_2d_3d[
@@ -93,6 +116,7 @@ correction_wide = sfs_lint_corrected_2d_3d[
         "missing_percent",
         "sf_2_corrected_2d",
         "sf_2_corrected_3d",
+        "sf_2_corrected_3d_smoothed",
     ]
 ]
 correction_long = pd.wide_to_long(
@@ -114,6 +138,8 @@ correction_bounds_wide = sfs_lint_corrected_2d_3d[
         "sf_2_lower_corrected_3d",
         "sf_2_upper_corrected_2d",
         "sf_2_upper_corrected_3d",
+        "sf_2_lower_corrected_3d_smoothed",
+        "sf_2_upper_corrected_3d_smoothed",
     ]
 ]
 

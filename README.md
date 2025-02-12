@@ -217,7 +217,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     
     1. If you are after minimal output from the full dataset, set `full_output = False`. (These files, used by the next script, go into `data/processed`.) If you are after full output (from just a few intervals) for later plotting in case studies, set `full_output = True`. (These files go into `data/corrections`.)
     
-    **`for i in $(seq 0 2); do python 5_correct_test_sfs.py $spacecraft $i $n_bins; done`**
+    **`for i in $(seq 0 2); do python 5_correct_test_sfs.py $i; done`**
 
     *HPC:* 
     1. Set job resource requests:

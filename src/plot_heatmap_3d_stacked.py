@@ -27,7 +27,7 @@ output_path = "final"  # Ensure to set this properly
 
 # Load correction lookup data
 with open(
-    f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins.pkl",
+    f"data/corrected/{output_path}/correction_lookup_{dim}d_{n_bins}_bins.pkl",
     "rb",
 ) as f:
     correction_lookup = pickle.load(f)

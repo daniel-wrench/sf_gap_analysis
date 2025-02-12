@@ -249,12 +249,12 @@ for bin in bin_labels + ["all_data"]:
     plt.subplots_adjust(
         hspace=0, wspace=0.1, top=0.77
     )  # Adjust `top` to make space for the legend
-
-    plt.savefig(
-        f"plots/results/{output_path}/densities_{bin}.png",
-        bbox_inches="tight",
-        dpi=300,
-    )
+    plt.show()
+    # plt.savefig(
+    #     f"plots/results/{output_path}/densities_{bin}.png",
+    #     bbox_inches="tight",
+    #     dpi=300,
+    # )
 
     # 108 std intervals across 40 days of Wind data, gapped 25 times each
     # (2700 ints)

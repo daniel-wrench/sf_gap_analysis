@@ -289,8 +289,8 @@ plt.suptitle(
     fontsize=18,
     y=1,
 )
-plt.savefig("all_metrics_pe_var.png")
-
+# plt.savefig("all_metrics_pe_var.png")
+plt.show()
 sys.exit()
 # My changes
 # - Make all_data a horizontal line
@@ -390,8 +390,8 @@ for ax, (group_name, group_data) in zip(axes, groups):
 # Adjust layout for better visualization
 plt.suptitle(f"Comparison of True vs. Naive, Corrected, Lint for {variable}, bin {bin}")
 plt.tight_layout()
-
-plt.savefig(f"{variable}_dists_{bin}.png")
+plt.show()
+# plt.savefig(f"{variable}_dists_{bin}.png")
 
 print("FINISHED")
 

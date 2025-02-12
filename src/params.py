@@ -7,9 +7,9 @@
 # See also accessing Wind data with HelioPy:
 # https://buildmedia.readthedocs.org/media/pdf/heliopy/0.6.0/heliopy.pdf
 
-times_to_gap = 25
+times_to_gap = 2
 data_path_prefix = ""  # /nesi/nobackup/vuw04187/
-output_path = "with_scales"  # "final" or "testing"
+output_path = "testing"  # "final" or "testing"
 pwrl_range = [50, 500]
 minimum_missing_chunks = 0.7
 n_bins_list = [25]  # 15, 20,
@@ -66,7 +66,7 @@ mag_thresh = None
 mag_vars_dict = {
     "psp": ["psp_fld_l2_mag_RTN_0", "psp_fld_l2_mag_RTN_1", "psp_fld_l2_mag_RTN_2"],
     "wind": ["BGSE_0", "BGSE_1", "BGSE_2"],
-    "voyager": ["BR", "BT", "BN"],
+    "voyager": ["F1", "BR", "BT", "BN"],
 }
 
 # Parameters for estimating numerical variables

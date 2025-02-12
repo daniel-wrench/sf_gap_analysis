@@ -8,8 +8,8 @@
 # https://buildmedia.readthedocs.org/media/pdf/heliopy/0.6.0/heliopy.pdf
 
 times_to_gap = 25
-data_path_prefix = "/nesi/nobackup/vuw04187/"
-output_path = "final"  # "final" or "testing"
+data_path_prefix = ""  # /nesi/nobackup/vuw04187/
+output_path = "with_scales"  # "final" or "testing"
 pwrl_range = [50, 500]
 minimum_missing_chunks = 0.7
 n_bins_list = [25]  # 15, 20,
@@ -63,6 +63,12 @@ By = "BGSE_1"
 Bz = "BGSE_2"
 mag_thresh = None
 
+mag_vars_dict = {
+    "psp": ["psp_fld_l2_mag_RTN_0", "psp_fld_l2_mag_RTN_1", "psp_fld_l2_mag_RTN_2"],
+    "wind": ["BGSE_0", "BGSE_1", "BGSE_2"],
+    "voyager": ["BR", "BT", "BN"],
+}
+
 # Parameters for estimating numerical variables
 dt_lr = "5S"
 nlags_lr = 2000
@@ -77,3 +83,6 @@ f_min_inertial = None  # 0.005
 f_max_inertial = None  # 0.2
 f_min_kinetic = None  # 0.5
 f_max_kinetic = None  # 1.4
+
+tau_min = 1
+tau_max = 5

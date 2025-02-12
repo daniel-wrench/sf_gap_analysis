@@ -446,33 +446,60 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             ].values[0]
         ),
     )
-    # ax.plot(
-    #     sfs_gapped_corrected.loc[
-    #         (sfs_gapped_corrected["file_index"] == file_index)
-    #         & (sfs_gapped_corrected["int_index"] == int_index)
-    #         & (sfs_gapped_corrected["version"] == version)
-    #         & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
-    #         "lag",
-    #     ],
-    #     sfs_gapped_corrected.loc[
-    #         (sfs_gapped_corrected["file_index"] == file_index)
-    #         & (sfs_gapped_corrected["int_index"] == int_index)
-    #         & (sfs_gapped_corrected["version"] == version)
-    #         & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
-    #         "sf_2",
-    #     ],
-    #     color="blue",
-    #     lw=1,
-    #     label="Corrected (2D) ({:.1f})".format(
-    #         ints_gapped_metadata.loc[
-    #             (ints_gapped_metadata["file_index"] == file_index)
-    #             & (ints_gapped_metadata["int_index"] == int_index)
-    #             & (ints_gapped_metadata["version"] == version)
-    #             & (ints_gapped_metadata["gap_handling"] == "corrected_2d"),
-    #             "mape",
-    #         ].values[0]
-    #     ),
-    # )
+    ax.plot(
+        sfs_gapped_corrected.loc[
+            (sfs_gapped_corrected["file_index"] == file_index)
+            & (sfs_gapped_corrected["int_index"] == int_index)
+            & (sfs_gapped_corrected["version"] == version)
+            & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
+            "lag",
+        ],
+        sfs_gapped_corrected.loc[
+            (sfs_gapped_corrected["file_index"] == file_index)
+            & (sfs_gapped_corrected["int_index"] == int_index)
+            & (sfs_gapped_corrected["version"] == version)
+            & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
+            "sf_2",
+        ],
+        color="blue",
+        lw=1,
+        label="Corrected (2D) ({:.1f})".format(
+            ints_gapped_metadata.loc[
+                (ints_gapped_metadata["file_index"] == file_index)
+                & (ints_gapped_metadata["int_index"] == int_index)
+                & (ints_gapped_metadata["version"] == version)
+                & (ints_gapped_metadata["gap_handling"] == "corrected_2d"),
+                "mape",
+            ].values[0]
+        ),
+    )
+    ax.plot(
+        sfs_gapped_corrected.loc[
+            (sfs_gapped_corrected["file_index"] == file_index)
+            & (sfs_gapped_corrected["int_index"] == int_index)
+            & (sfs_gapped_corrected["version"] == version)
+            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d_smoothed"),
+            "lag",
+        ],
+        sfs_gapped_corrected.loc[
+            (sfs_gapped_corrected["file_index"] == file_index)
+            & (sfs_gapped_corrected["int_index"] == int_index)
+            & (sfs_gapped_corrected["version"] == version)
+            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d_smoothed"),
+            "sf_2",
+        ],
+        color="purple",
+        lw=1,
+        label="Corrected (3D), smoothed ({:.1f})".format(
+            ints_gapped_metadata.loc[
+                (ints_gapped_metadata["file_index"] == file_index)
+                & (ints_gapped_metadata["int_index"] == int_index)
+                & (ints_gapped_metadata["version"] == version)
+                & (ints_gapped_metadata["gap_handling"] == "corrected_3d_smoothed"),
+                "mape",
+            ].values[0]
+        ),
+    )
     ax.plot(
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)

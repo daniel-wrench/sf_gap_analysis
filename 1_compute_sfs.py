@@ -16,16 +16,15 @@ import numpy as np
 import pandas as pd
 from sunpy.util import SunpyUserWarning
 
-# Suppress the specific SunpyUserWarning
-warnings.filterwarnings("ignore", category=SunpyUserWarning)
-
-from sunpy.timeseries import TimeSeries
-
 import src.data_import_funcs as dif
 import src.params as params
 import src.sf_funcs as sf
 import src.ts_dashboard_utils as ts
 import src.utils as utils  # copied directly from Reynolds project, normalize() added
+
+# Suppress the specific SunpyUserWarning
+warnings.filterwarnings("ignore", category=SunpyUserWarning)
+from sunpy.timeseries import TimeSeries
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 warnings.simplefilter(action="ignore", category=UserWarning)
@@ -35,34 +34,6 @@ warnings.simplefilter(action="ignore", category=UserWarning)
 # plt.rc("font", family="serif", serif="Computer Modern", size=10)
 # plt.rcParams["xtick.direction"] = "in"
 # plt.rcParams["ytick.direction"] = "in"
-
-# Rename and keep only the first three columns
-mag_vars_dict = {
-    "psp": ["psp_fld_l2_mag_RTN_0", "psp_fld_l2_mag_RTN_1", "psp_fld_l2_mag_RTN_2"],
-    "wind": ["BGSE_0", "BGSE_1", "BGSE_2"],
-}
-
-# For current Wind importing
-sys_arg_dict = {
-    # arg1
-    "mag_path": params.mag_path,
-    "proton_path": params.proton_path,
-    "electron_path": params.electron_path,
-    # arg2
-    "mag_vars": [params.timestamp, params.Bwind_vec],
-    "proton_vars": [params.timestamp, params.np, params.Tp],
-    "electron_vars": [params.timestamp, params.ne, params.Te],
-    # arg3
-    "mag_thresh": params.mag_thresh,
-    "proton_thresh": params.proton_thresh,
-    "electron_thresh": params.electron_thresh,
-    # arg4
-    "dt_hr": params.dt_hr,
-    "int_size": params.int_size,
-    # arg5
-    "dt_lr": params.dt_lr,
-}
-
 
 # Read in data and split into standardised intervals
 
@@ -109,14 +80,14 @@ data = TimeSeries(
 
 df_raw = data.to_dataframe()
 
-df_raw = df_raw.loc[:, mag_vars_dict[spacecraft]]
+df_raw = df_raw.loc[:, params.mag_vars_dict[spacecraft]]
 
 # Rename the first three columns to Bx, By, Bz
 df_raw = df_raw.rename(
     columns={
-        mag_vars_dict[spacecraft][0]: "Bx",
-        mag_vars_dict[spacecraft][1]: "By",
-        mag_vars_dict[spacecraft][2]: "Bz",
+        params.mag_vars_dict[spacecraft][0]: "Bx",
+        params.mag_vars_dict[spacecraft][1]: "By",
+        params.mag_vars_dict[spacecraft][2]: "Bz",
     }
 )
 

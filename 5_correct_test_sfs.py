@@ -4,7 +4,6 @@
 
 import glob
 import pickle
-import sys
 
 import numpy as np
 import pandas as pd
@@ -18,10 +17,10 @@ pwrl_range = params.pwrl_range
 data_path_prefix = params.data_path_prefix
 output_path = params.output_path
 
-spacecraft = sys.argv[1]
-file_index_test = int(sys.argv[2])
+spacecraft = "wind"
+file_index_test = 0  # int(sys.argv[1])
 # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
-n_bins = int(sys.argv[3])
+n_bins = 25
 
 full_output = True
 
@@ -70,6 +69,11 @@ with open(
     f"data/corrections/{output_path}/correction_lookup_3d_{n_bins}_bins.pkl", "rb"
 ) as f:
     correction_lookup_3d = pickle.load(f)
+with open(
+    f"data/corrections/{output_path}/correction_lookup_3d_{n_bins}_bins_SMOOTHED.pkl",
+    "rb",
+) as f:
+    correction_lookup_3d_smoothed = pickle.load(f)
 
 # Apply 2D and 3D scaling to test set, report avg errors
 print(
@@ -78,10 +82,29 @@ print(
 sfs_lint_corrected_2d = sf.compute_scaling(sfs_gapped, 2, correction_lookup_2d, n_bins)
 
 print(
+    f"Correcting {len(ints_metadata)} intervals using SMOOTHED 3D error heatmap with {n_bins} bins"
+)
+sfs_lint_corrected_2d_3d_smoothed = sf.compute_scaling(
+    sfs_lint_corrected_2d, 3, correction_lookup_3d_smoothed, n_bins
+)
+
+# Rename smoothed columns so not over-ridden when creating non-smoothed versions below
+sfs_lint_corrected_2d_3d_smoothed = sfs_lint_corrected_2d_3d_smoothed.rename(
+    columns={
+        "sf_2_corrected_3d": "sf_2_corrected_3d_smoothed",
+        "sf_2_lower_corrected_3d": "sf_2_lower_corrected_3d_smoothed",
+        "sf_2_upper_corrected_3d": "sf_2_upper_corrected_3d_smoothed",
+    }
+)
+
+print(
     f"Correcting {len(ints_metadata)} intervals using 3D error heatmap with {n_bins} bins"
 )
 sfs_lint_corrected_2d_3d = sf.compute_scaling(
-    sfs_lint_corrected_2d, 3, correction_lookup_3d, n_bins
+    sfs_lint_corrected_2d_3d_smoothed,
+    3,
+    correction_lookup_3d,
+    n_bins,
 )
 
 correction_wide = sfs_lint_corrected_2d_3d[
@@ -93,6 +116,7 @@ correction_wide = sfs_lint_corrected_2d_3d[
         "missing_percent",
         "sf_2_corrected_2d",
         "sf_2_corrected_3d",
+        "sf_2_corrected_3d_smoothed",
     ]
 ]
 correction_long = pd.wide_to_long(
@@ -114,6 +138,8 @@ correction_bounds_wide = sfs_lint_corrected_2d_3d[
         "sf_2_lower_corrected_3d",
         "sf_2_upper_corrected_2d",
         "sf_2_upper_corrected_3d",
+        "sf_2_lower_corrected_3d_smoothed",
+        "sf_2_upper_corrected_3d_smoothed",
     ]
 ]
 
@@ -184,10 +210,18 @@ sfs_gapped_corrected["sf_2_pe"] = (
 
 # Adding rows as placeholders for when we correct with 2D and 3D heatmaps and want to calculate errors
 
-dup_df = ints_gapped_metadata.replace(
-    ["naive", "lint"], ["corrected_2d", "corrected_3d"]
-)
-ints_gapped_metadata = pd.concat([ints_gapped_metadata, dup_df])
+# Define new gap_handling values
+new_gap_handling = ["corrected_2d", "corrected_3d", "corrected_3d_smoothed"]
+
+# Duplicate existing rows for each new value
+dup_df = ints_gapped_metadata.copy()
+
+# Repeat DataFrame for each new type
+dup_df = pd.concat([dup_df.assign(gap_handling=gh) for gh in new_gap_handling])
+
+# Append to original DataFrame
+ints_gapped_metadata = pd.concat([ints_gapped_metadata, dup_df], ignore_index=True)
+
 
 for i in files_metadata.file_index.unique():
     for j in range(len(ints_metadata["file_index"] == i)):
@@ -379,6 +413,8 @@ if full_output is True:
             f"_corrected_{n_bins}_bins_FULL.pkl",
         )
     )
+    print("Exporting full output (with SFs) to", output_file_path)
+
     with open(output_file_path, "wb") as f:
         pickle.dump(
             {
@@ -396,6 +432,7 @@ else:
     output_file_path = input_file_list[file_index_test].replace(
         ".pkl", f"_corrected_{n_bins}_bins.pkl"
     ).replace("wind/", "wind/with_scales/")
+    print("Exporting truncated output to", output_file_path)
     with open(output_file_path, "wb") as f:
         pickle.dump(
             {

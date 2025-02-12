@@ -2,7 +2,6 @@
 
 import glob
 import pickle
-import sys
 
 import numpy as np
 
@@ -12,7 +11,7 @@ import src.sf_funcs as sf
 np.random.seed(123)  # For reproducibility
 
 # Import all corrected (test) files
-spacecraft = sys.argv[1]
+spacecraft = "wind"
 n_bins_list = params.n_bins_list
 times_to_gap = params.times_to_gap
 

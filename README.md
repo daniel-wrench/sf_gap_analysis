@@ -15,7 +15,10 @@ Data is downloaded from NASA's Space Physics Data Facility, as described in the 
 PSP magnetic field data (magnetometer instrument), 2019-2023 (4 years) = 10,731 standardised intervals.
 
 ### TESTING
-Wind magnetic field data (magnetometer instrument), 2016-03-01 to 2016-12-17 (3.5 months) = 165 standardised intervals.
+Wind magnetic field data (magnetometer instrument)
+**In submitted paper:** 2016-03-01 to 2016-12-17 (3.5 months) = 165 standardised intervals.
+
+**Now have 7.5 months worth (225 processed files)**, 200 of which successfully corrected (resource reqs not quite enough for other 25 - won't worry about for now) = 441 standardised intervals.
 
 ### APPLICATION
 Voyager 1 magnetic field data (magnetometer instrument). Two intervals:
@@ -111,8 +114,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     2. Set job resource requests in `1_compute_sfs.sh`:
         - CORES: As many as possible
-        - TIME: 20-40min/file (e.g. put on for 6 hours if running on 10 files/core)
-        - MEM: 2GB/core, regardless of # files
+        - TIME: 20min/file (e.g. put on for 6 hours if running on 10 files/core. Some files will be done much more quickly if fewers std ints can be extracted, but that's OK)
+        - MEM: 1GB/core, regardless of # files
         - *If some jobs do time out, meaning some files remain unprocessed, we can limit the `data/raw` directory to those unprocessed files by moving them with `python move_matching_files.py`. Maybe in future make this part of the slurm/python job*
 
     2. **`sbatch 1_compute_sfs.sh`**
@@ -173,6 +176,10 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     2. **`sbatch 4a_finalise_correction.sh`**
 
+- 4a. i. **Smooth heatmaps** to get less jumpy corrections
+
+    **`python 4a_i_smooth_correction.py`**
+
 - 4b. **Calculate stats of the training set**
 
     *Output:* 
@@ -201,7 +208,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 5. **Perform the correction on the test set, file by file**
 
-    And also calculates the slopes and correlation scales from all the SF estimates. Before this, they had only been calculated for the true SF back in `1_compute_sfs.py`.
+    And also calculates the slopes, correlation scales, taylor scales from all the SF estimates. Before this, they had only been calculated for the true SF back in `1_compute_sfs.py` *(which is not strictly necessary any more, other than making preprocessing plots for interest)*.
 
     - NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE?
     - Cannot correct PSP right now, only Wind. This is due to file output paths: PSP has `psp/train,test`, Wind does not.
@@ -214,7 +221,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     *HPC:* 
     1. Set job resource requests:
-        - 1GB AND 3MIN/FILE
+        - 2GB AND 3MIN/FILE
 
     2. **`sbatch 5_correct_test_sfs.sh`**
 
@@ -239,18 +246,16 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 7.  **Plot the test set results** 
 
     1. If on an HPC, download the following files first:
-    - all outputs in `sf_gap_analysis/data/processed`, including heatmaps
+    - all outputs in `sf_gap_analysis/data/corrections`, including heatmaps
     - first few corrected files in `/nesi/nobackup/vuw04187/data/processed/wind` to plot as case studies
          
     2. **`python 7a_plot_test_results.py {spacecraft} {n_bins}`** (scatterplots, boxplots)
 
     3. **`python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`**
 
-    4. **`python plot_scalar_dists.py slope > test_results_slope.txt`**
+    4. **`python plot_scalar_dists.py slope > scalar_dists_tests.txt`**
 
-    5. **`python plot_scalar_dists.py tce > test_results_tce.txt`**
-
-    6. **`python plot_scalar_dists.py ttu > test_results_ttu.txt`**
+Final publication-ready plots are then moved to `figs/`
 
 ## Notes/next steps
 

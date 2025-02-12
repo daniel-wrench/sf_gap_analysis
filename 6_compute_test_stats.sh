@@ -6,10 +6,10 @@ source venv/bin/activate
 echo "JOB STARTED"
 date
 
-spacecraft="wind"
-echo "SPACECRAFT: $spacecraft"
+# spacecraft="wind"
+# echo "SPACECRAFT: $spacecraft"
 
-python 6_compute_test_stats.py $spacecraft > 6_compute_test_stats.out
+python 6_compute_test_stats.py wind > 6_compute_test_stats.out
 
 echo "JOB FINISHED"
 date

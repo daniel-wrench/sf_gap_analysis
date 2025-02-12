@@ -4,6 +4,7 @@
 
 import glob
 import pickle
+import sys
 
 import numpy as np
 import pandas as pd
@@ -15,14 +16,14 @@ import src.utils as utils  # copied directly from Reynolds project, normalize() 
 times_to_gap = params.times_to_gap
 pwrl_range = params.pwrl_range
 data_path_prefix = params.data_path_prefix
-output_path = params.output_path
+run_mode = params.run_mode
 
 spacecraft = "wind"
-file_index_test = 0  # int(sys.argv[1])
+file_index_test = int(sys.argv[1])
 # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
 n_bins = 25
 
-full_output = True
+full_output = False
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
@@ -59,18 +60,15 @@ sfs_gapped = data["sfs_gapped"]
 print(
     f"Successfully read in {input_file_list[file_index_test]}. This contains {len(ints_metadata)}x{times_to_gap} intervals"
 )
-
 # Importing lookup table
-with open(
-    f"data/corrections/{output_path}/correction_lookup_2d_{n_bins}_bins.pkl", "rb"
-) as f:
+with open(f"results/{run_mode}/correction_lookup_2d_{n_bins}_bins_lint.pkl", "rb") as f:
     correction_lookup_2d = pickle.load(f)
 with open(
-    f"data/corrections/{output_path}/correction_lookup_3d_{n_bins}_bins.pkl", "rb"
+    f"results/{run_mode}//correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb"
 ) as f:
     correction_lookup_3d = pickle.load(f)
 with open(
-    f"data/corrections/{output_path}/correction_lookup_3d_{n_bins}_bins_SMOOTHED.pkl",
+    f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint_SMOOTHED.pkl",
     "rb",
 ) as f:
     correction_lookup_3d_smoothed = pickle.load(f)
@@ -302,7 +300,7 @@ for i in files_metadata.file_index.unique():
                 var_signal = 3
                 # will always be this variance as we are using the standardised 3D SF
                 acf_from_sf = 1 - (current_int.sf_2 / (2 * var_signal))
-                current_int.loc[:, "acf_from_sf"] = acf_from_sf.astype('float32')
+                current_int.loc[:, "acf_from_sf"] = acf_from_sf.astype("float32")
 
                 # Calculate correlation scale from acf_from_sf
                 tce = utils.compute_outer_scale_exp_trick(
@@ -405,8 +403,8 @@ if full_output is True:
     output_file_path = (
         input_file_list[file_index_test]
         .replace(
-            f"processed/{spacecraft}",
-            f"corrections/{output_path}",
+            f"data/processed/{spacecraft}",
+            f"results/{run_mode}/corrected_ints",
         )
         .replace(
             ".pkl",
@@ -429,9 +427,17 @@ if full_output is True:
             f,
         )
 else:
-    output_file_path = input_file_list[file_index_test].replace(
-        ".pkl", f"_corrected_{n_bins}_bins.pkl"
-    ).replace("wind/", "wind/with_scales/")
+    output_file_path = (
+        input_file_list[file_index_test]
+        .replace(
+            f"data/processed/{spacecraft}",
+            f"results/{run_mode}/corrected_ints",
+        )
+        .replace(
+            ".pkl",
+            f"_corrected_{n_bins}_bins.pkl",
+        )
+    )
     print("Exporting truncated output to", output_file_path)
     with open(output_file_path, "wb") as f:
         pickle.dump(

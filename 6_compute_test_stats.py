@@ -16,7 +16,7 @@ n_bins_list = params.n_bins_list
 times_to_gap = params.times_to_gap
 
 data_path_prefix = params.data_path_prefix
-output_path = params.output_path
+run_mode = params.run_mode
 
 for n_bins in n_bins_list:
     print(f"Calculating stats for {spacecraft} data with {n_bins} bins")
@@ -24,14 +24,14 @@ for n_bins in n_bins_list:
         input_file_list = sorted(
             glob.glob(
                 data_path_prefix
-                + f"data/processed/psp/test/psp_*_corrected_{n_bins}_bins.pkl"
+                + f"results/{run_mode}/corrected_ints/psp_*_corrected_{n_bins}_bins.pkl"
             )
         )
     elif spacecraft == "wind":
         input_file_list = sorted(
             glob.glob(
                 data_path_prefix
-                + f"data/processed/wind/with_scales/wi_*_corrected_{n_bins}_bins.pkl"
+                + f"results/{run_mode}/corrected_ints/wi_*_corrected_{n_bins}_bins.pkl"
             )
         )
     else:
@@ -60,16 +60,15 @@ for n_bins in n_bins_list:
 
     print("\nSummary stats of tce (original SFs):")
     print(ints_metadata["tce"].describe())
-    
+
     print("\nSummary stats of ttu (original SFs):")
     print(ints_metadata["ttu"].describe())
-    
 
     print("\nNow proceeding to calculate overall test set statistics")
 
     # Export final overall dataframes, combined from all outputs
     output_file_path = (
-        f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
+        f"results/{run_mode}/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
     )
 
     # NOT OUTPUTTING COMMENTED DFS DUE TO EXCESSIVE SIZE
@@ -117,10 +116,10 @@ for n_bins in n_bins_list:
 
     # Save as csv
     correction_stats.to_csv(
-        f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins_stats.csv"
+        f"results/{run_mode}/test_corrected_{spacecraft}_{n_bins}_bins_stats.csv"
     )
     correction_corrs.to_csv(
-        f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins_corrs.csv"
+        f"results/{run_mode}/test_corrected_{spacecraft}_{n_bins}_bins_corrs.csv"
     )
 
     print("Saved correction stats to csv")

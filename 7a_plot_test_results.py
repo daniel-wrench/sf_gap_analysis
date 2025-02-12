@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore", category=np.RankWarning)
 
 np.random.seed(123)  # For reproducibility
 
-output_path = params.output_path
+run_mode = params.run_mode
 
 # Import all corrected (test) files
 spacecraft = "wind"
@@ -26,9 +26,7 @@ n_bins = 25
 
 data_path_prefix = params.data_path_prefix
 
-output_file_path = (
-    f"data/corrections/{output_path}/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
-)
+output_file_path = f"results/{run_mode}/test_{spacecraft}_corrected_{n_bins}_bins.pkl"
 
 # Read in the file that has just been exported above
 with open(output_file_path, "rb") as f:
@@ -36,11 +34,16 @@ with open(output_file_path, "rb") as f:
 
 files_metadata = data["files_metadata"]
 ints_metadata = data["ints_metadata"]
-# ints = data["ints"]
 ints_gapped_metadata = data["ints_gapped_metadata"]
 # Export as csv
-ints_gapped_metadata.to_csv("ints_gapped_metadata.csv", index=False)
-files_metadata.to_csv("files_metadata.csv", index=False)
+ints_gapped_metadata.to_csv(
+    f"results/{run_mode}/test_{spacecraft}_corrected_{n_bins}_bins_ints_gapped_metadata.csv",
+    index=False,
+)
+files_metadata.to_csv(
+    f"results/{run_mode}/test_{spacecraft}_files_metadata.csv",
+    index=False,
+)
 
 ints_gapped_metadata.head()
 # Give a unique identifier for each combination of file_index and int_index
@@ -49,7 +52,6 @@ ints_gapped_metadata["id"] = (
     + "_"
     + ints_gapped_metadata["int_index"].astype(str)
 )
-# Why do some have 200?
 
 # Filtering out bad tces
 ints_gapped_metadata = ints_gapped_metadata[ints_gapped_metadata.tce_orig >= 0]
@@ -125,7 +127,7 @@ plt.tight_layout()
 
 plt.suptitle("")  # Remove the default title to avoid overlap
 plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_boxplots_{n_bins}_bins_NEW.pdf",
+    f"results/{run_mode}/plots/test_{spacecraft}_boxplots_{n_bins}_bins.pdf",
     bbox_inches="tight",
 )
 
@@ -153,94 +155,16 @@ palette = dict(zip(custom_order, colors))
 
 for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
     fig, ax = plt.subplots(
-        1,
-        len(custom_order) + 1,
-        figsize=(len(custom_order) * 2, 2),
+        2,
+        3,
+        figsize=(9, 4),
         sharex="col",
         sharey="row",
         tight_layout=True,
     )
     plt.subplots_adjust(wspace=0)
 
-    # Add regression lines for each group
-
-    for i, gap_handling_method in enumerate(custom_order):
-
-        subset = ints_gapped_metadata[
-            ints_gapped_metadata["gap_handling"] == gap_handling_method
-        ]
-        sns.scatterplot(
-            data=subset,
-            x="missing_percent_overall",
-            y=error_metric,
-            alpha=0.1,
-            s=10,
-            color=palette[gap_handling_method],
-            label=gap_handling_method,
-            ax=ax[i],
-            legend=False,
-        )
-
-        sns.regplot(
-            data=subset,
-            x="missing_percent_overall",
-            y=error_metric,
-            scatter=False,
-            color=palette[gap_handling_method],
-            label=gap_handling_method,
-            order=1,
-            ax=ax[-1],
-            ci=99,
-            line_kws={"linewidth": 0.8},  # Set the line width to be thinner
-        )
-
-    # Move titles to inside top each plot
-    for i, title in enumerate(
-        [
-            "Naive",
-            "LINT",
-            "Corrected_2d",
-            "Corrected 3D",
-            "corrected 3D smoothed",
-            "Regression lines",
-        ]
-    ):
-        ax[i].text(
-            0.5,
-            0.98,
-            title,
-            transform=ax[i].transAxes,
-            verticalalignment="top",
-            horizontalalignment="center",
-        )
-
-    ax[0].set(xlabel="", ylabel=f"{error_metric} (\%)")
-    ax[1].set(xlabel="", ylabel="")
-    ax[2].set(xlabel="", ylabel="")
-    ax[3].set(xlabel="", ylabel="")
-
-    # Remove gridlines and plot outlines
-
-    # Make one x-axis label for all plots
-    fig.text(0.5, 0.00, "TGP (\%)", ha="center", va="center")
-
-    for j in range(4):
-        ax[j].grid(False)
-        ax[j].set_xticks([0, 25, 50, 75, 100])
-        ax[j].set_xlim(-15, 105)
-        ax[j].spines["top"].set_visible(False)
-        ax[j].spines["right"].set_visible(False)
-
-    # Plotting the MAPE vs. missing percentage
-    fig, ax = plt.subplots(
-        1,
-        len(custom_order) + 1,
-        figsize=(7, 2),
-        sharex="col",
-        sharey="row",
-        tight_layout=True,
-    )
-    plt.subplots_adjust(wspace=0)
+    ax = ax.flatten()
 
     # Add regression lines for each group
 
@@ -293,7 +217,7 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
             label=gap_handling_method,
             order=1,
             ax=ax[-1],
-            ci=99,
+            ci=None,
             line_kws={"linewidth": 0.8},  # Set the line width to be thinner
         )
 
@@ -341,11 +265,6 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
             horizontalalignment="center",
         )
 
-    ax[0].set(xlabel="", ylabel=f"{error_metric} (\%)")
-    ax[1].set(xlabel="", ylabel="")
-    ax[2].set(xlabel="", ylabel="")
-    ax[3].set(xlabel="", ylabel="")
-
     # ax[1, 0].set(xlabel="", ylabel="Slope APE (\%)", title="")
     # ax[1, 1].set(xlabel="", ylabel="", title="")
     # ax[1, 2].set(xlabel="", ylabel="", title="")
@@ -356,31 +275,18 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
     fig.text(0.5, 0.00, "TGP (\%)", ha="center", va="center")
 
     # for i in range(2):
-    for j in range(4):
-        ax[j].grid(False)
-        ax[j].set_xticks([0, 25, 50, 75, 100])
-        ax[j].set_xlim(-15, 105)
-        ax[j].spines["top"].set_visible(False)
-        # ax[j].spines["left"].set_visible(False)
-        ax[j].spines["right"].set_visible(False)
+    for axis in ax:
+        axis.grid(False)
+        axis.set_xticks([0, 25, 50, 75, 100])
+        axis.set_xlim(-15, 105)
+        axis.set(xlabel="", ylabel="")
+        axis.spines["top"].set_visible(False)
+        axis.spines["right"].set_visible(False)
+        axis.set_ylim(0, 40)
 
-        ax[j].set_ylim(0, 60)
-        ax[j].set_xlim(-15, 105)
-        ax[j].set_ylim(0, 150)
-
-    # Remove ticks from all but first column
-    # for i in range(1, 4):
-    #     ax[i].set_yticks([])
-    #     ax[1, i].set_yticks([])
-
-    ax[0].spines["left"].set_visible(True)
-    # ax[1, 0].spines["left"].set_visible(True)
-
-    # Add title
-    # plt.suptitle(f"Error vs. \% missing data for the Wind test set ({n_bins} bins)")
-    # plt.show()
+    plt.suptitle(f"{error_metric} vs. TGP for {spacecraft} test set")
     plt.savefig(
-        f"plots/results/{output_path}/test_{spacecraft}_scatterplots_{n_bins}_bins_{error_metric}.png",
+        f"results/{run_mode}/plots/test_{spacecraft}_scatterplots_{n_bins}_bins_{error_metric}.png",
         bbox_inches="tight",
         dpi=300,
     )

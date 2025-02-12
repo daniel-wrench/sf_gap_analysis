@@ -37,7 +37,7 @@ n_bins = 25
 # times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
-output_path = params.output_path
+run_mode = params.run_mode
 pwrl_range = params.pwrl_range
 
 index = 0
@@ -52,14 +52,14 @@ if spacecraft == "psp":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/corrections/{output_path}/psp_*_corrected_{n_bins}_bins_FULL.pkl"
+            + f"data/corrections/{run_mode}/psp_*_corrected_{n_bins}_bins_FULL.pkl"
         )
     )
 elif spacecraft == "wind":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/corrections/{output_path}/wi_*_corrected_{n_bins}_bins_FULL.pkl"
+            + f"data/corrections/{run_mode}/wi_*_corrected_{n_bins}_bins_FULL.pkl"
         )
     )
 else:
@@ -365,7 +365,7 @@ plt.subplots_adjust(wspace=0.5, hspace=0.15)
 # plt.show()
 
 plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_case_study_gapping.pdf",
+    f"plots/results/{run_mode}/test_{spacecraft}_case_study_gapping.pdf",
     # bbox_inches="tight",
 )
 
@@ -667,6 +667,6 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     # )
 # plt.show()
 plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_case_study_correcting_{n_bins}_bins.pdf",
+    f"plots/results/{run_mode}/test_{spacecraft}_case_study_correcting_{n_bins}_bins.pdf",
     # bbox_inches="tight",
 )

@@ -19,7 +19,7 @@ plt.rcParams["ytick.direction"] = "in"
 
 # Load data
 ints = pd.read_csv("ints_gapped_metadata.csv")
-output_path = params.output_path
+run_mode = params.run_mode
 
 
 # Remove any tce values that are less than 0 (due to not getting proper fit)
@@ -251,7 +251,7 @@ for bin in bin_labels + ["all_data"]:
     )  # Adjust `top` to make space for the legend
     plt.show()
     # plt.savefig(
-    #     f"plots/results/{output_path}/densities_{bin}.png",
+    #     f"plots/results/{run_mode}/densities_{bin}.png",
     #     bbox_inches="tight",
     #     dpi=300,
     # )

@@ -14,6 +14,10 @@ from scipy.stats import wilcoxon
 
 import src.params as params
 
+run_mode = params.run_mode
+spacecraft = "wind"
+n_bins = 25
+
 
 # Function to calculate effect sizes
 def compute_effect_sizes(ref, sample):
@@ -27,7 +31,10 @@ def compute_effect_sizes(ref, sample):
         ref, ddof=1
     )  # Variance ratio
     ks_stat, ks_p = stats.ks_2samp(ref, sample)  # KS test
-    anderson_p = stats.anderson_ksamp([ref, sample]).pvalue  # Anderson-Darling test
+    anderson_p = stats.anderson_ksamp(
+        [ref, sample],
+        method=stats.PermutationMethod(),  # for dealing with capped/floored p-values
+    ).pvalue  # Anderson-Darling test
     levene_stat, levene_p = stats.levene(ref, sample)  # Variance test
     fligner_stat, fligner_p = stats.fligner(ref, sample)  # Robust variance test
     mw_stat, mw_p = stats.mannwhitneyu(
@@ -49,8 +56,10 @@ def compute_effect_sizes(ref, sample):
 
 
 # Load data
-ints = pd.read_csv("ints_gapped_metadata.csv")
-output_path = params.output_path
+ints = pd.read_csv(
+    f"results/{run_mode}/test_{spacecraft}_corrected_{n_bins}_bins_ints_gapped_metadata.csv"
+)
+run_mode = params.run_mode
 
 # Remove any tce values that are less than 0 (due to not getting proper fit)
 ints = ints[ints.tce_orig >= 0]
@@ -182,7 +191,8 @@ for bin in bin_labels + ["all_data"]:
 
         df_results_full = pd.concat([df_results_full, df_results])
 
-df_results_full
+print("\nResults of statistical tests:")
+print(df_results_full)
 
 
 # # Assuming df is your DataFrame

@@ -31,7 +31,7 @@ for n_bins in n_bins_list:
         input_file_list = sorted(
             glob.glob(
                 data_path_prefix
-                + f"results/{run_mode}/corrected_ints/wi_*_corrected_{n_bins}_bins.pkl"
+                + f"results/{run_mode}/corrected_ints/wi_*_corrected_{n_bins}_bins_FULL.pkl"
             )
         )
     else:
@@ -68,7 +68,7 @@ for n_bins in n_bins_list:
 
     # Export final overall dataframes, combined from all outputs
     output_file_path = (
-        f"results/{run_mode}/test_corrected_{spacecraft}_{n_bins}_bins.pkl"
+        f"results/{run_mode}/test_{spacecraft}_corrected_{n_bins}_bins.pkl"
     )
 
     # NOT OUTPUTTING COMMENTED DFS DUE TO EXCESSIVE SIZE
@@ -116,10 +116,10 @@ for n_bins in n_bins_list:
 
     # Save as csv
     correction_stats.to_csv(
-        f"results/{run_mode}/test_corrected_{spacecraft}_{n_bins}_bins_stats.csv"
+        f"results/{run_mode}/test_{spacecraft}_corrected_{n_bins}_bins_stats.csv"
     )
     correction_corrs.to_csv(
-        f"results/{run_mode}/test_corrected_{spacecraft}_{n_bins}_bins_corrs.csv"
+        f"results/{run_mode}/test_{spacecraft}_corrected_{n_bins}_bins_corr_matrix.csv"
     )
 
     print("Saved correction stats to csv")

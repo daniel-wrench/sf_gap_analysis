@@ -1,8 +1,10 @@
 # THINGS TO FIX
 # Option to have shared or not y-axis
+# (A bit problematic. Could somewhat solve using zoom_state to retain zoom when clicked)
+# Better labelling of derived stats
 # True time series behind LINT
 # More metadata: % removed next to time series, error values next to SFs
-# USE TO GET BETTER EXAMPLES
+# USE TO GET BETTER CASE STUDIES FOR PAPER
 
 import glob
 import pickle
@@ -46,8 +48,7 @@ n_bins = 25
 # times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
-# output_path = params.output_path
-output_path = "with_scales"
+run_mode = params.run_mode
 pwrl_range = params.pwrl_range
 
 index = 0
@@ -58,22 +59,11 @@ index = 0
 # Importing one corrected file
 
 print(f"Calculating stats for {spacecraft} data with {n_bins} bins")
-if spacecraft == "psp":
-    input_file_list = sorted(
-        glob.glob(
-            data_path_prefix
-            + f"data/corrections/{output_path}/psp_*_corrected_{n_bins}_bins_FULL.pkl"
-        )
+input_file_list = sorted(
+    glob.glob(
+        f"results/{run_mode}/corrected_ints/wi_*_corrected_{n_bins}_bins_FULL.pkl"
     )
-elif spacecraft == "wind":
-    input_file_list = sorted(
-        glob.glob(
-            data_path_prefix
-            + f"data/corrections/{output_path}/wi_*_corrected_{n_bins}_bins_FULL.pkl"
-        )
-    )
-else:
-    raise ValueError("Spacecraft must be 'psp' or 'wind'")
+)
 
 all_files_metadata = []
 all_ints_metadata = []
@@ -173,7 +163,7 @@ ints_gapped_metadata_long = ints_gapped_metadata.melt(
 )
 
 
-def create_faceted_scatter(selected_criteria=None):
+def create_faceted_scatter(selected_criteria=None, independent_yaxes=False):
     """
     Create a faceted scatter plot.
 
@@ -212,6 +202,7 @@ def create_faceted_scatter(selected_criteria=None):
             "lint": "black",
             "naive": "indianred",
             "corrected_3d": "#1b9e77",
+            "corrected_3d_smoothed": "purple",
             "corrected_2d": "#d95f02",
             "purple": "purple",
         },
@@ -234,10 +225,16 @@ def create_faceted_scatter(selected_criteria=None):
     )
 
     # Remove the legend for color since we're using it just for highlighting
-    fig.update_layout(showlegend=False)
+    fig.update_yaxes(matches=None if independent_yaxes else "y")  # Toggle shared y-axis
+    fig.update_layout(
+        showlegend=False,
+    )  #
 
     return fig
 
+
+# Add a global variable for shared y-axis toggle
+independent_yaxes = False
 
 # Create the Dash app
 app = dash.Dash(__name__)
@@ -255,6 +252,12 @@ app.layout = html.Div(
         #     value="file_index",  # Default selection
         #     clearable=False,
         # ),
+        dcc.Checklist(
+            id="toggle-ind-yaxes",
+            options=[{"label": "Independent Y-Axes", "value": "independent"}],
+            value=[],  # Default to non-independent (shared)
+            inline=True,
+        ),
         dcc.Graph(
             id="scatter-plot",
             figure=create_faceted_scatter(),
@@ -349,6 +352,7 @@ def update_line_plots(clickData):
             "naive": "indianred",
             "lint": "black",
             "corrected_3d": "#1b9e77",
+            "corrected_3d_smoothed": "purple",
             "corrected_2d": "#d95f02",
             "true": "grey",
         },
@@ -398,9 +402,12 @@ def update_line_plots(clickData):
 
 @app.callback(
     [Output("scatter-plot", "figure"), Output("selected-info", "children")],
-    [Input("scatter-plot", "clickData")],
+    [Input("scatter-plot", "clickData"), Input("toggle-ind-yaxes", "value")],
 )
-def update_highlight(clickData):
+def update_highlight(clickData, independent_yaxes_value):
+
+    independent_yaxes = "independent" in independent_yaxes_value
+
     if clickData is None:
         return create_faceted_scatter(), "No point selected yet."
 
@@ -416,7 +423,9 @@ def update_highlight(clickData):
     selected_info = f"Selected point -> file_index: {file_index}, int_index: {int_index}, version: {version}"
 
     # Create a new figure with highlighted points.
-    fig = create_faceted_scatter((file_index, int_index, version))
+    fig = create_faceted_scatter(
+        (file_index, int_index, version), independent_yaxes=independent_yaxes
+    )
 
     return fig, selected_info
 

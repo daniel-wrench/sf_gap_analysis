@@ -31,7 +31,7 @@ for n_bins in n_bins_list:
         input_file_list = sorted(
             glob.glob(
                 data_path_prefix
-                + f"data/processed/wind/wi_*_corrected_{n_bins}_bins.pkl"
+                + f"data/processed/wind/with_scales/wi_*_corrected_{n_bins}_bins.pkl"
             )
         )
     else:
@@ -42,12 +42,12 @@ for n_bins in n_bins_list:
         ints_metadata,
         ints_gapped_metadata,
     ) = sf.get_all_metadata(
-        input_file_list[:20]
+        input_file_list
     )  # LIMIT HERE!!
 
     print(
         f"Successfully read in and concatenated {len(files_metadata)} files, starting with {input_file_list[0]}\n \
-            Now calculating statistics of results for the {len(ints_metadata)}x{times_to_gap} copies intervals contained within"
+            Now calculating statistics of results for the {len(ints_metadata)} (original) x {times_to_gap} intervals contained within"
     )
 
     # Print summary stats of tc
@@ -57,6 +57,13 @@ for n_bins in n_bins_list:
     # Print summary stats of slope
     print("\nSummary stats of slope (original SFs):")
     print(ints_metadata["slope"].describe())
+
+    print("\nSummary stats of tce (original SFs):")
+    print(ints_metadata["tce"].describe())
+    
+    print("\nSummary stats of ttu (original SFs):")
+    print(ints_metadata["ttu"].describe())
+    
 
     print("\nNow proceeding to calculate overall test set statistics")
 

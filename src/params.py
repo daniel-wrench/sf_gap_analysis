@@ -75,8 +75,8 @@ nlags_lr = 2000
 dt_hr = "0.092S"
 dt_protons = "3S"
 nlags_hr = 100
-tau_min = 10
-tau_max = 50
+tau_min = 1
+tau_max = 5
 
 # Frequency bounds are taken from Wang et al. (2018, JGR)
 f_min_inertial = None  # 0.005

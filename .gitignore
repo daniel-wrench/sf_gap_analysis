@@ -1,6 +1,5 @@
 /data
-/results/mini
-/results/full/figs/interim
+/results
 /venv
 /logs
 /src/__pycache__
@@ -8,5 +7,5 @@
 /__pycache__
 /final_hpc_results
 /docs/old_drafts
-/corrections
+/corrections_OLD
 /doc/old_drafts

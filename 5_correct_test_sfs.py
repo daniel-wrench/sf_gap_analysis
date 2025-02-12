@@ -23,7 +23,7 @@ file_index_test = int(sys.argv[2])
 # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
 n_bins = int(sys.argv[3])
 
-full_output = False
+full_output = True
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
@@ -268,7 +268,7 @@ for i in files_metadata.file_index.unique():
                 var_signal = 3
                 # will always be this variance as we are using the standardised 3D SF
                 acf_from_sf = 1 - (current_int.sf_2 / (2 * var_signal))
-                current_int.loc[:, "acf_from_sf"] = acf_from_sf
+                current_int.loc[:, "acf_from_sf"] = acf_from_sf.astype('float32')
 
                 # Calculate correlation scale from acf_from_sf
                 tce = utils.compute_outer_scale_exp_trick(
@@ -395,7 +395,7 @@ if full_output is True:
 else:
     output_file_path = input_file_list[file_index_test].replace(
         ".pkl", f"_corrected_{n_bins}_bins.pkl"
-    )
+    ).replace("wind/", "wind/with_scales/")
     with open(output_file_path, "wb") as f:
         pickle.dump(
             {

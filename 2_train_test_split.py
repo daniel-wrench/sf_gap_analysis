@@ -1,9 +1,10 @@
 # Train-test split
 
 import glob
-import numpy as np
-import os
 import shutil
+
+import numpy as np
+
 import src.params as params
 
 # Randomly select 20% of the pickle files in data/processed/psp, and move them into a subfolder called 'test'
@@ -26,9 +27,6 @@ n_train = int(train_frac * n_files)
 train_files = processed_files[:n_train]
 test_files = processed_files[n_train:]
 
-# Create the 'train' and 'test' subfolders if they don't already exist
-os.makedirs(data_path_prefix + "data/processed/psp/train", exist_ok=True)
-
 # Delete any existing files in the 'train' subfolder
 # for file in glob.glob(data_path_prefix + "data/processed/psp/train/psp_*.pkl"):
 #    os.remove(file)
@@ -36,9 +34,6 @@ os.makedirs(data_path_prefix + "data/processed/psp/train", exist_ok=True)
 # Move the training files into the 'train' subfolder
 for file in train_files:
     shutil.move(file, file.replace("processed/psp", "processed/psp/train"))
-
-# Create the 'test' subfolder if it doesn't already exist
-os.makedirs(data_path_prefix + "data/processed/psp/test", exist_ok=True)
 
 # Delete any existing files in the 'test' subfolder
 # for file in glob.glob(data_path_prefix + "data/processed/psp/test/psp_*.pkl"):

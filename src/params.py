@@ -7,9 +7,9 @@
 # See also accessing Wind data with HelioPy:
 # https://buildmedia.readthedocs.org/media/pdf/heliopy/0.6.0/heliopy.pdf
 
-times_to_gap = 2
+times_to_gap = 3
 data_path_prefix = ""  # /nesi/nobackup/vuw04187/
-output_path = "testing"  # "final" or "testing"
+run_mode = "mini"  # "mini" (local) or "full" (hpc)
 pwrl_range = [50, 500]
 minimum_missing_chunks = 0.7
 n_bins_list = [25]  # 15, 20,
@@ -70,10 +70,10 @@ mag_vars_dict = {
 }
 
 # Parameters for estimating numerical variables
-dt_lr = "5S"
+dt_lr = "5s"
 nlags_lr = 2000
-dt_hr = "0.092S"
-dt_protons = "3S"
+dt_hr = "0.092s"
+dt_protons = "3s"
 nlags_hr = 100
 tau_min = 1
 tau_max = 5

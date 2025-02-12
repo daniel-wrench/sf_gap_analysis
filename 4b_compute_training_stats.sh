@@ -14,8 +14,9 @@ source venv/bin/activate
 
 echo "JOB STARTED"
 date
+run_mode=mini # "mini" or "full"
 
-python 4b_compute_training_stats.py > training_stats.txt
+python 4b_compute_training_stats.py > results/$run_mode/training_stats.txt
 
 echo "JOB FINISHED"
 date

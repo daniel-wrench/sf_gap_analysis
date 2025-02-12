@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore", category=np.RankWarning)
 
 np.random.seed(123)  # For reproducibility
 
-output_path = params.output_path
+run_mode = params.run_mode
 times_to_gap = params.times_to_gap
 
 spacecraft = "psp"
@@ -44,13 +44,13 @@ dim = 2
 
 # Read in binned errors for FULL SET of training intervals
 with open(
-    f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_naive.pkl",
+    f"results/{run_mode}/correction_lookup_{dim}d_{n_bins}_bins_naive.pkl",
     "rb",
 ) as f:
     correction_lookup_naive = pickle.load(f)
 
 with open(
-    f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_lint.pkl",
+    f"results/{run_mode}/correction_lookup_{dim}d_{n_bins}_bins_lint.pkl",
     "rb",
 ) as f:
     correction_lookup_lint = pickle.load(f)
@@ -228,7 +228,7 @@ plt.subplots_adjust(wspace=0.05, hspace=0.1)
 # plt.show()
 # GIANT - DO NOT SAVE AS PDF
 plt.savefig(
-    f"plots/results/{output_path}/train_psp_error.png",
+    f"results/{run_mode}/plots/train_psp_error.png",
 )
 
 # sys.exit()
@@ -240,7 +240,7 @@ dim = 3
 n_bins = 25
 
 with open(
-    f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins.pkl",
+    f"results/{run_mode}/correction_lookup_{dim}d_{n_bins}_bins_lint.pkl",
     "rb",
 ) as f:
     correction_lookup = pickle.load(f)
@@ -314,7 +314,7 @@ cbar_ax = fig.add_axes(
 cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE (\%)")  # Optional: Label the color bar
 # plt.savefig(
-#     f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_power.pdf",
+#     f"plots/results/{run_mode}/train_heatmap_{n_bins}bins_3d_lint_power.pdf",
 #     bbox_inches="tight",
 # )
 plt.close()
@@ -379,7 +379,7 @@ cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
 # plt.show()
 # plt.savefig(
-#     f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_lag.pdf",
+#     f"plots/results/{run_mode}/train_heatmap_{n_bins}bins_3d_lint_lag.pdf",
 #     bbox_inches="tight",
 # )
 plt.close()
@@ -439,7 +439,7 @@ cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
 # plt.show()
 # plt.savefig(
-#     f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_missing.pdf",
+#     f"plots/results/{run_mode}/train_heatmap_{n_bins}bins_3d_lint_missing.pdf",
 #     bbox_inches="tight",
 # )
 plt.close()

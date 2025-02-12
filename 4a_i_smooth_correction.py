@@ -4,8 +4,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage import gaussian_filter
 
+import src.params as params
+
 n_bins = 25
-output_path = "final"
+run_mode = params.run_mode
 dim = 3
 
 # Set matplotlib font size
@@ -42,13 +44,9 @@ def smooth_with_missing_values(image, sigma):
 
 # Importing lookup table
 n_bins = 25
-with open(
-    f"data/corrections/{output_path}/correction_lookup_2d_{n_bins}_bins.pkl", "rb"
-) as f:
+with open(f"results/{run_mode}/correction_lookup_2d_{n_bins}_bins_lint.pkl", "rb") as f:
     correction_lookup_2d = pickle.load(f)
-with open(
-    f"data/corrections/{output_path}/correction_lookup_3d_{n_bins}_bins.pkl", "rb"
-) as f:
+with open(f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb") as f:
     correction_lookup_3d = pickle.load(f)
 
 
@@ -95,7 +93,9 @@ correction_lookup_3d_blurred["scaling_upper"][
 ] = replacement_scaling[correction_lookup_3d_blurred["scaling_upper"] < 0]
 
 
-output_file_path = f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_SMOOTHED.pkl"
+output_file_path = (
+    f"results/{run_mode}/correction_lookup_{dim}d_{n_bins}_bins_lint_SMOOTHED.pkl"
+)
 with open(
     output_file_path,
     "wb",
@@ -177,7 +177,7 @@ cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
 
 plt.savefig(
-    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_power_SMOOTHED.pdf",
+    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_lint_power_SMOOTHED.pdf",
     bbox_inches="tight",
 )
 plt.close()
@@ -242,7 +242,7 @@ cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
 
 plt.savefig(
-    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_lag_SMOOTHED.pdf",
+    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_lint_lag_SMOOTHED.pdf",
     bbox_inches="tight",
 )
 plt.close()
@@ -302,7 +302,7 @@ cb = plt.colorbar(c, cax=cbar_ax)  # Attach the color bar to the last heatmap
 cb.set_label("MPE")  # Optional: Label the color bar
 
 plt.savefig(
-    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_lint_missing_SMOOTHED.pdf",
+    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_lint_missing_SMOOTHED.pdf",
     bbox_inches="tight",
 )
 plt.close()

@@ -13,7 +13,7 @@ spacecraft = "psp"
 gap_handling = "lint"
 missing_measure = "missing_percent"
 data_path_prefix = params.data_path_prefix
-output_path = params.output_path
+run_mode = params.run_mode
 n_bins_list = params.n_bins_list
 
 for gap_handling in ["lint", "naive"]:
@@ -95,13 +95,13 @@ for gap_handling in ["lint", "naive"]:
                 plt.xlabel("Lag ($\\tau$)")
                 plt.ylabel("Missing percentage")
                 plt.title(
-                    f"Distribution of missing proportion and lag ({gap_handling.upper()})",
+                    f"Distribution of missing proportion and lag ({gap_handling})",
                     y=1.1,
                 )
                 ax.set_facecolor("black")
                 ax.set_xscale("log")
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d_{gap_handling}.pdf",
+                    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_2d_{gap_handling}.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()
@@ -123,7 +123,7 @@ for gap_handling in ["lint", "naive"]:
                 ax.set_facecolor("black")
                 ax.set_xscale("log")
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_2d_counts.pdf",
+                    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_2d_counts.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()
@@ -205,7 +205,7 @@ for gap_handling in ["lint", "naive"]:
                         ax[i].set_ylabel("")
 
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_power.pdf",
+                    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_{gap_handling}_power.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()
@@ -241,7 +241,7 @@ for gap_handling in ["lint", "naive"]:
                         ax[i].set_ylabel("")
 
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_lag.pdf",
+                    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_{gap_handling}_lag.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()
@@ -279,7 +279,7 @@ for gap_handling in ["lint", "naive"]:
                         ax[i].set_ylabel("")
 
                 plt.savefig(
-                    f"plots/results/{output_path}/train_heatmap_{n_bins}bins_3d_{gap_handling.upper()}_missing.pdf",
+                    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_{gap_handling}_missing.pdf",
                     bbox_inches="tight",
                 )
                 plt.close()
@@ -289,7 +289,7 @@ for gap_handling in ["lint", "naive"]:
             else:
                 # Export the lookup tables as a pickle file
                 # WE NEED TO DO THIS FOR NAIVE AS WELL, FOR PLOTS
-                output_file_path = f"data/corrections/{output_path}/correction_lookup_{dim}d_{n_bins}_bins_{gap_handling}.pkl"
+                output_file_path = f"results/{run_mode}/correction_lookup_{dim}d_{n_bins}_bins_{gap_handling}.pkl"
                 with open(
                     output_file_path,
                     "wb",

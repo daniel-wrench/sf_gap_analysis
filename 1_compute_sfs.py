@@ -14,6 +14,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sunpy.timeseries import TimeSeries
 from sunpy.util import SunpyUserWarning
 
 import src.data_import_funcs as dif
@@ -24,10 +25,8 @@ import src.utils as utils  # copied directly from Reynolds project, normalize() 
 
 # Suppress the specific SunpyUserWarning
 warnings.filterwarnings("ignore", category=SunpyUserWarning)
-from sunpy.timeseries import TimeSeries
-
+# Suppress the pandas df.sum() warning
 warnings.simplefilter(action="ignore", category=FutureWarning)
-warnings.simplefilter(action="ignore", category=UserWarning)
 
 # DELETE FOLLOWING ON HPC
 # plt.rc("text", usetex=True)
@@ -49,14 +48,6 @@ np.random.seed(123)  # For reproducibility
 data_path_prefix = params.data_path_prefix
 
 spacecraft = sys.argv[1]
-# Ensure necessary directories exist
-os.makedirs(f"{data_path_prefix}data/processed/{spacecraft}", exist_ok=True)
-os.makedirs("data/corrections/final", exist_ok=True)
-os.makedirs("data/corrections/testing", exist_ok=True)
-os.makedirs(f"{data_path_prefix}plots/preprocessing/{spacecraft}", exist_ok=True)
-os.makedirs("plots/results/final", exist_ok=True)
-os.makedirs("plots/results/testing", exist_ok=True)
-os.makedirs("data/corrections", exist_ok=True)
 
 
 raw_file_list = sorted(
@@ -94,7 +85,7 @@ df_raw = df_raw.rename(
 # df_wind_hr = pd.read_pickle("data/processed/" + params.mag_path + params.dt_hr + ".pkl")
 
 
-missing = df_raw.iloc[:, 0].isna().sum() / len(df_raw)
+missing = df_raw.iloc[:, 0].isna().sum(axis=0) / len(df_raw)
 # If more than 20% of the data is missing initially, we skip this file (want robust correlation times)
 if missing > 0.2:
     print("File missing > 20% data; skipping to next file")
@@ -125,7 +116,7 @@ tc_n = 10  # Number of actual (computed) correlation times we want in our standa
 # cadence = df.index.to_series().diff().mode()[0]
 # cadence
 
-df = df_raw.resample(str(cadence_approx) + "S").mean()
+df = df_raw.resample(str(cadence_approx) + "s").mean()
 
 # Another data quality check: some are less than their stated duration
 if len(df) < nlags:
@@ -159,8 +150,8 @@ tc, fig, ax = utils.compute_outer_scale_integral(time_lags_lr, r_vec_lr, plot=Tr
 
 output_file_path = (
     raw_file_list[file_index]
-    .replace("data/raw", "plots/preprocessing")
-    .replace(".cdf", "_acf_NEW.pdf")
+    .replace(f"raw/{spacecraft}", f"processed/{spacecraft}/plots")
+    .replace(".cdf", "_acf.png")
 )
 plt.savefig(output_file_path, bbox_inches="tight")
 plt.close()
@@ -183,7 +174,7 @@ cadence_list.append(new_cadence)
 
 try:
     interval_approx_resampled = df.resample(
-        str(np.round(new_cadence, 3)) + "S"
+        str(np.round(new_cadence, 3)) + "s"
     ).mean()  # Resample to higher frequency
 
     for i in range(
@@ -191,7 +182,7 @@ try:
     ):
         interval = interval_approx_resampled.iloc[i : i + params.int_length]
         # Check if interval is complete (accept at most 1% missing after resampling)
-        if interval.Bx.isnull().sum() / len(interval) < 0.01:
+        if interval.Bx.isnull().sum(axis=0) / len(interval) < 0.01:
             # Linear interpolate (and, in case of missing values at edges, back and forward fill)
             interval = interval.interpolate(method="linear").ffill().bfill()
             int_norm = utils.normalize(interval)
@@ -290,8 +281,8 @@ else:
     ax1.legend(loc="lower left")
     output_file_path = (
         raw_file_list[file_index]
-        .replace("data/raw", "plots/preprocessing")
-        .replace(".cdf", "_ints_std_NEW.pdf")
+        .replace(f"raw/{spacecraft}", f"processed/{spacecraft}/plots")
+        .replace(".cdf", "ints.png")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
@@ -405,8 +396,8 @@ else:
     plt.legend()
     output_file_path = (
         raw_file_list[file_index]
-        .replace("data/raw", "plots/preprocessing")
-        .replace(".cdf", "_sf_example_NEW.pdf")
+        .replace(f"raw/{spacecraft}", f"processed/{spacecraft}/plots")
+        .replace(".cdf", "_first_sf.png")
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()

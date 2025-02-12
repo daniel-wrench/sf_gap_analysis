@@ -15,7 +15,7 @@ import src.sf_funcs as sf
 # Annoying deprecation warning
 
 data_path_prefix = params.data_path_prefix
-output_path = params.output_path
+run_mode = params.run_mode
 include_sfs = True
 n_files = 3  # If above is True, limit the number of files to read in
 spacecraft = "psp"
@@ -84,5 +84,7 @@ if include_sfs is True:
         f"\nMemory usage of sfs_gapped subset (for plotting trendline graphs locally): {sfs_gapped.memory_usage(deep=True).sum() / 1024 ** 2:.2f} MB\n"
     )
     # Export the sfs_gapped dataframe to a pickle file
-    sfs_gapped.to_pickle(f"data/processed/{spacecraft}_train_sfs_gapped.pkl")
-    print(f"Exported this subset to data/processed/{spacecraft}_train_sfs_gapped.pkl")
+    sfs_gapped.to_pickle(f"results/{run_mode}/{spacecraft}_train_sfs_gapped.pkl")
+    print(
+        f"Exported this subset to results/{run_mode}/{spacecraft}_train_sfs_gapped.pkl"
+    )

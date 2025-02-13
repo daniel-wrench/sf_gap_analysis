@@ -150,6 +150,8 @@ colors = ["indianred", "dimgrey", "C0", "#1b9e77", "purple"]
 # Make scatterplot of mape vs. missing_percent, coloured by gap handling
 palette = dict(zip(custom_order, colors))
 
+mean_y_coord = [0.5, 0.6, 0.7, 0.8, 0.9]
+
 # unique_gap_handling = ints_gapped_metadata["gap_handling"].unique()
 # unique_gap_handling = ["naive", "lint", "corrected_3d"]
 
@@ -221,29 +223,14 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
             line_kws={"linewidth": 0.8},  # Set the line width to be thinner
         )
 
-        # sns.scatterplot(
-        #     data=subset,
-        #     x="missing_percent_overall",
-        #     y="slope_ape",
-        #     alpha=0.3,
-        #     s=10,
-        #     color=palette[gap_handling_method],
-        #     label=gap_handling_method,
-        #     ax=ax[1, i],
-        #     legend=False,
-        # )
-
-        # sns.regplot(
-        #     data=subset,
-        #     x="missing_percent_overall",
-        #     y="slope_ape",
-        #     scatter=False,
-        #     color=palette[gap_handling_method],
-        #     label=gap_handling_method,
-        #     order=2,
-        #     ax=ax[1, -1],
-        #     ci=99,
-        # )
+        # Add annotation for the mean value
+        ax[-1].annotate(
+            f"MAPE: {subset[error_metric].mean():.1f}",
+            xy=(0.8, mean_y_coord[i]),
+            xycoords="axes fraction",
+            fontsize=8,
+            c=palette[gap_handling_method],
+        )
 
     # Move titles to inside top each plot
     for i, title in enumerate(

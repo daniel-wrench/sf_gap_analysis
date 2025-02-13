@@ -156,8 +156,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 - 4a. **Merge the binned errors and calculate the correction factor**  
 
     *Output:* 
-    - `data/corrections/[path]/correction_lookup_[dim]_[bins]_lint.pkl` (for correction and plotting)
-    - `data/corrections/[path]/correction_lookup_[dim]_[bins]_naive.pkl` (for plotting)
+    - `results/[run_mode]/correction_lookup_[dim]_[bins]_lint.pkl` (for correction and plotting)
+    - `results/[run_mode]/correction_lookup_[dim]_[bins]_naive.pkl` (for plotting)
     - Some interim plots for inspection
 
     *Local:* **`bash 4a_finalise_correction.sh`**
@@ -185,21 +185,24 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     *Output:* 
     
     - If `include_sfs=False`, for the whole set, get average slope and file corr time `training_stats.txt`
-    - If `include_sfs=True`, output lag-specific errors: `data/processed/psp_train_sfs_gapped.pkl`. These are later plotted in step 7b. **NB:** need to limit the number of files with `n_files` param in python script, beneath `include_sfs` param. We can do *at least* 20 files.
+    - If `include_sfs=True`, output lag-specific errors: `results/[run_mode]/train_psp_sfs_gapped.pkl`. These are later plotted in step 7b. **NB:** need to limit the number of files with `n_files` param in python script, beneath `include_sfs` param. We can do *at least* 20 files.
 
     *Local:*
-
-    **`bash 4b_compute_training_stats.sh`**
+    
+    1. Set `run_mode=mini` in `4b_compute_training_stats.sh`
+    2. Set `include_sfs` appropriately in `4b_compute_training_stats.py`
+    2. **`bash 4b_compute_training_stats.sh`**
 
     *HPC:*
 
     1. Set job resource requests in `4b_compute_training_stats.sh`
-
+    2. Set `run_mode=full` in `4b_compute_training_stats.sh`
+    2. Set `include_sfs` appropriately in `4b_compute_training_stats.py`
     2. **`bash 4b_compute_training_stats.sh`**
 
 - 4c. **Plot the heatmaps and error trendlines for the training set** (full dataset and subset respectively)
 
-    *Output:* `plots/results/train_psp_error.png`
+    *Output:* `results/[run_mode]/train_psp_error.png`
 
     1. Download the outputs from step 4a.
 
@@ -227,14 +230,17 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 6. **Compute the statistical results for all (corrected) test set files**
 
-    *Local*: **`bash 6_compute_test_stats.sh`**
+    *Local*: 
+    
+    1. Set `run_mode=mini` in `6_compute_test_stats.sh`
+    2. **`bash 6_compute_test_stats.sh`**
 
     *HPC*:
 
     1. Set job resource requests:
         - 30s and 100MB for the full 111 Wind files, containing 125 intervals
-
-    2. **`sbatch 6_compute_test_stats.sh`**
+    2. Set `run_mode=full` in `6_compute_test_stats.sh`
+    3. **`sbatch 6_compute_test_stats.sh`**
 
     *Output*: 
     - `test_corrected_{spacecraft}_{bins}_bins.pkl`, not including `ints`, `ints_gapped`, `sfs`, or `sfs_gapped_corrected`
@@ -245,17 +251,15 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 7.  **Plot the test set results** 
 
-    1. If on an HPC, download the following files first:
-    - all outputs in `sf_gap_analysis/data/corrections`, including heatmaps
-    - first few corrected files in `/nesi/nobackup/vuw04187/data/processed/wind` to plot as case studies
+    1. If on an HPC, download everything in the folder `results/full` to the corresponding folder locally. 
          
-    2. **`python 7a_plot_test_results.py {spacecraft} {n_bins}`** (scatterplots, boxplots)
+    2. **`python 7a_plot_test_results.py`** (scatterplots, boxplots)
 
-    3. **`python 7b_plot_test_case_studies.py  {spacecraft} {n_bins}`**
+    3. **`python 7b_plot_test_case_studies.py`**
 
-    4. **`python plot_scalar_dists.py slope > scalar_dists_tests.txt`**
+    4. **`python 7d_test_scalar_dists.py > results/{run_mode}/scalar_dists_tests.txt`**
 
-Final publication-ready plots are then moved to `figs/`
+Final publication-ready plots are then moved to `doc/figs/`
 
 ## Notes/next steps
 

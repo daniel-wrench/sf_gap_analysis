@@ -23,11 +23,11 @@ plt.rcParams["ytick.direction"] = "in"
 fig = plt.figure(figsize=(3.5, 3.5))  # Increased figure size for better visualization
 dim = 3
 n_bins = 25
-output_path = "final"  # Ensure to set this properly
+run_mode = "full"  # Ensure to set this properly
 
 # Load correction lookup data
 with open(
-    f"data/corrected/{output_path}/correction_lookup_{dim}d_{n_bins}_bins.pkl",
+    f"data/corrected/{run_mode}/correction_lookup_{dim}d_{n_bins}_bins.pkl",
     "rb",
 ) as f:
     correction_lookup = pickle.load(f)
@@ -116,4 +116,4 @@ cb.set_label("MPE (\%)", labelpad=-10)  # Move the label closer to the colorbar
 
 # Save the plot
 plt.show()
-# plt.savefig(f"plots/results/{output_path}/3d_heatmap.pdf", bbox_inches="tight")
+# plt.savefig(f"plots/results/{run_mode}/3d_heatmap.pdf", bbox_inches="tight")

@@ -263,7 +263,6 @@ plt.suptitle(
 )
 # Flatten the axis array to simplify indexing
 ax = ax.flatten()
-
 for i in range(n_bins):
     ax[i].grid(False)
     c = ax[i].pcolormesh(
@@ -279,7 +278,6 @@ for i in range(n_bins):
     ax[i].set_facecolor("black")
     ax[i].semilogx()
     ax[i].semilogy()
-
 fig.text(0.5, 0.03, "Lag ($\\tau$)", ha="center", va="center")  # Shared x-axis label
 fig.text(
     0.05,

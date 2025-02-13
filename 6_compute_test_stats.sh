@@ -5,11 +5,12 @@ source venv/bin/activate
 
 echo "JOB STARTED"
 date
+run_mode=mini # "mini" or "full"
 
 # spacecraft="wind"
 # echo "SPACECRAFT: $spacecraft"
 
-python 6_compute_test_stats.py wind > 6_compute_test_stats.out
+python 6_compute_test_stats.py wind > results/$run_mode/test_stats.out
 
 echo "JOB FINISHED"
 date

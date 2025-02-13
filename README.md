@@ -184,23 +184,23 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     *Output:* 
     
-    - If `include_sfs=False`, for the whole set, get average slope and file corr time `training_stats.txt`
-    - If `include_sfs=True`, output lag-specific errors: `results/[run_mode]/train_psp_sfs_gapped.pkl`. These are later plotted in step 7b. **NB:** need to limit the number of files with `n_files` param in python script, beneath `include_sfs` param. We can do *at least* 20 files.
+    - If `with_sfs=False`, for the whole set, get average slope and file corr time `training_stats.txt`
+    - If `with_sfs=True`, output lag-specific errors: `results/[run_mode]/train_psp_sfs_gapped.pkl`. These are later plotted in step 7b. **NB:** need to limit the number of files with `n_files` param in python script, beneath `with_sfs` param. We can do *at least* 20 files.
 
     *Local:*
     
     1. Set `run_mode=mini` in `4b_compute_training_stats.sh`
-    2. Set `include_sfs` appropriately in `4b_compute_training_stats.py`
+    2. Set `with_sfs` appropriately in `4b_compute_training_stats.py`
     2. **`bash 4b_compute_training_stats.sh`**
 
     *HPC:*
 
     1. Set job resource requests in `4b_compute_training_stats.sh`
     2. Set `run_mode=full` in `4b_compute_training_stats.sh`
-    2. Set `include_sfs` appropriately in `4b_compute_training_stats.py`
+    2. Set `with_sfs` appropriately in `4b_compute_training_stats.py`
     2. **`bash 4b_compute_training_stats.sh`**
 
-- 4c. **Plot the heatmaps and error trendlines for the training set** (full dataset and subset respectively)
+- 4c. **Plot the heatmaps and error trendlines for the training set** (full dataset and subset respectively). *CAN WAIT TILL WORKING LOCALLY FOR THIS*
 
     *Output:* `results/[run_mode]/train_psp_error.png`
 
@@ -218,7 +218,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     *Local:* 
     
-    1. If you are after minimal output from the full dataset, set `full_output = False`. (These files, used by the next script, go into `data/processed`.) If you are after full output (from just a few intervals) for later plotting in case studies, set `full_output = True`. (These files go into `data/corrections`.)
+    1. If you are after minimal output from the full dataset, set `with_sfs = False`. (These files, used by the next script, go into `data/processed`.) If you are after full output (from just a few intervals) for later plotting in case studies, set `with_sfs = True`. (These files go into `data/corrections`.)
     
     **`for i in $(seq 0 2); do python 5_correct_test_sfs.py $i; done`**
 
@@ -251,7 +251,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 7.  **Plot the test set results** 
 
-    1. If on an HPC, download everything in the folder `results/full` to the corresponding folder locally. 
+    1. If on an HPC, download everything in the folder `results/full`, excluding the non "with_sfs" corrected ints, to the corresponding folder locally. 
          
     2. **`python 7a_plot_test_results.py`** (scatterplots, boxplots)
 

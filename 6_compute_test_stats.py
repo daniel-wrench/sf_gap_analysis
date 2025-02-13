@@ -20,22 +20,11 @@ run_mode = params.run_mode
 
 for n_bins in n_bins_list:
     print(f"Calculating stats for {spacecraft} data with {n_bins} bins")
-    if spacecraft == "psp":
-        input_file_list = sorted(
-            glob.glob(
-                data_path_prefix
-                + f"results/{run_mode}/corrected_ints/psp_*_corrected_{n_bins}_bins.pkl"
-            )
+    input_file_list = sorted(
+        glob.glob(
+            data_path_prefix + f"data/processed/{spacecraft}/test/corrected/*.pkl"
         )
-    elif spacecraft == "wind":
-        input_file_list = sorted(
-            glob.glob(
-                data_path_prefix
-                + f"results/{run_mode}/corrected_ints/wi_*_corrected_{n_bins}_bins.pkl"
-            )
-        )
-    else:
-        raise ValueError("Spacecraft must be 'psp' or 'wind'")
+    )
 
     (
         files_metadata,

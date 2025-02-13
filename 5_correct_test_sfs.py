@@ -23,12 +23,12 @@ file_index_test = int(sys.argv[1])
 # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
 n_bins = 25
 
-full_output = False
+with_sfs = True
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
     input_file_list = [
-        sorted(glob.glob(data_path_prefix + "data/processed/wind/wi_*v05.pkl"))
+        sorted(glob.glob(data_path_prefix + "data/processed/wind/test/wi_*v05.pkl"))
     ][0]
 elif spacecraft == "psp":
     input_file_list = [
@@ -399,16 +399,16 @@ calculate_errors(ints_gapped_metadata, "ttu")
 
 # Export the dataframes in one big pickle file
 
-if full_output is True:
+if with_sfs is True:
     output_file_path = (
         input_file_list[file_index_test]
         .replace(
-            f"data/processed/{spacecraft}",
-            f"results/{run_mode}/corrected_ints",
+            f"data/processed/{spacecraft}/test",
+            f"results/{run_mode}/test_sfs_corrected_subset",
         )
         .replace(
             ".pkl",
-            f"_corrected_{n_bins}_bins_FULL.pkl",
+            f"_corrected_{n_bins}_bins_with_sfs.pkl",
         )
     )
     print("Exporting full output (with SFs) to", output_file_path)
@@ -430,8 +430,8 @@ else:
     output_file_path = (
         input_file_list[file_index_test]
         .replace(
-            f"data/processed/{spacecraft}",
-            f"results/{run_mode}/corrected_ints",
+            "test",
+            "test/corrected",
         )
         .replace(
             ".pkl",

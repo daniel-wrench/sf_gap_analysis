@@ -61,7 +61,7 @@ index = 0
 print(f"Calculating stats for {spacecraft} data with {n_bins} bins")
 input_file_list = sorted(
     glob.glob(
-        f"results/{run_mode}/corrected_ints/wi_*_corrected_{n_bins}_bins_FULL.pkl"
+        f"results/{run_mode}/test_sfs_corrected_subset/wi_*_corrected_{n_bins}_bins_with_sfs.pkl"
     )
 )
 

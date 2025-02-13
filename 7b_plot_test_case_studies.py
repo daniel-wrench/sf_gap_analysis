@@ -52,14 +52,14 @@ if spacecraft == "psp":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/corrections/{run_mode}/psp_*_corrected_{n_bins}_bins_FULL.pkl"
+            + f"data/corrections/{run_mode}/psp_*_corrected_{n_bins}_bins_with_sfs.pkl"
         )
     )
 elif spacecraft == "wind":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/corrections/{run_mode}/wi_*_corrected_{n_bins}_bins_FULL.pkl"
+            + f"data/corrections/{run_mode}/wi_*_corrected_{n_bins}_bins_with_sfs.pkl"
         )
     )
 else:

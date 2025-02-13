@@ -16,7 +16,7 @@ import src.sf_funcs as sf
 
 data_path_prefix = params.data_path_prefix
 run_mode = params.run_mode
-include_sfs = True
+with_sfs = True
 n_files = 3  # If above is True, limit the number of files to read in
 spacecraft = "psp"
 input_file_list = [
@@ -28,7 +28,7 @@ input_file_list = [
 ][0]
 
 # Following is for plotting error trendlines in next script.
-if include_sfs is True:
+if with_sfs is True:
     (
         files_metadata,
         ints_metadata,
@@ -37,7 +37,7 @@ if include_sfs is True:
         sfs_gapped,
     ) = sf.get_all_metadata(
         input_file_list[:n_files],  # Limit the number of files read in
-        include_sfs=True,
+        with_sfs=True,
     )
 
 else:
@@ -47,7 +47,7 @@ else:
         ints_gapped_metadata,
     ) = sf.get_all_metadata(
         input_file_list,
-        include_sfs=False,
+        with_sfs=False,
     )
 
 
@@ -65,7 +65,7 @@ print(files_metadata["tc"].describe())
 print("\nSummary stats of slope, across original (sub-)intervals:")
 print(ints_metadata["slope"].describe())
 
-if include_sfs is True:
+if with_sfs is True:
     # Calculate lag-scale errors (sf_2_pe)
     # Join original and copies dataframes and do column operation
     sfs_gapped = pd.merge(
@@ -84,7 +84,7 @@ if include_sfs is True:
         f"\nMemory usage of sfs_gapped subset (for plotting trendline graphs locally): {sfs_gapped.memory_usage(deep=True).sum() / 1024 ** 2:.2f} MB\n"
     )
     # Export the sfs_gapped dataframe to a pickle file
-    sfs_gapped.to_pickle(f"results/{run_mode}/train_{spacecraft}_sfs_gapped.pkl")
+    sfs_gapped.to_pickle(f"results/{run_mode}/train_{spacecraft}_sfs_gapped_SUBSET.pkl")
     print(
-        f"Exported this subset to results/{run_mode}/train_{spacecraft}_sfs_gapped.pkl"
+        f"Exported this subset to results/{run_mode}/train_{spacecraft}_sfs_gapped_SUBSET.pkl"
     )

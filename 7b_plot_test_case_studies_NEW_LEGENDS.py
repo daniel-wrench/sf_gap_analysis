@@ -1,15 +1,16 @@
 # CASE STUDY PLOTS
 # Pre-correction case studies
 
-import pickle
 import glob
-import numpy as np
-import matplotlib.pyplot as plt
+import pickle
 import sys
-import src.params as params
-import src.data_import_funcs as dif
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-from matplotlib.ticker import MaxNLocator, LogLocator
+from matplotlib.ticker import LogLocator
+
+import src.params as params
 
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
@@ -27,7 +28,7 @@ n_bins = 25
 # times_to_gap = params.times_to_gap # removing as will only be using this file locally
 
 data_path_prefix = params.data_path_prefix
-output_path = params.output_path
+run_mode = params.run_mode
 pwrl_range = params.pwrl_range
 
 index = 0
@@ -42,14 +43,14 @@ if spacecraft == "psp":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/corrections/{output_path}/psp_*_corrected_{n_bins}_bins_FULL.pkl"
+            + f"data/corrections/{run_mode}/psp_*_corrected_{n_bins}_bins_with_sfs.pkl"
         )
     )
 elif spacecraft == "wind":
     input_file_list = sorted(
         glob.glob(
             data_path_prefix
-            + f"data/corrections/{output_path}/wi_*_corrected_{n_bins}_bins_FULL.pkl"
+            + f"data/corrections/{run_mode}/wi_*_corrected_{n_bins}_bins_with_sfs.pkl"
         )
     )
 else:
@@ -368,7 +369,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
 plt.subplots_adjust(wspace=0.5, hspace=0.1)
 
 plt.savefig(
-    f"plots/results/{output_path}/test_{spacecraft}_case_study_gapping_NEW_LEGEND.pdf",
+    f"plots/results/{run_mode}/test_{spacecraft}_case_study_gapping_NEW_LEGEND.pdf",
     bbox_inches="tight",
 )
 
@@ -643,6 +644,6 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     # )
 plt.show()
 # plt.savefig(
-#     f"plots/results/{output_path}/test_{spacecraft}_case_study_correcting_{n_bins}_bins.pdf",
+#     f"plots/results/{run_mode}/test_{spacecraft}_case_study_correcting_{n_bins}_bins.pdf",
 #     bbox_inches="tight",
 # )

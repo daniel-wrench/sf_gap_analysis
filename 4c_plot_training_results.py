@@ -56,14 +56,14 @@ with open(
     correction_lookup_lint = pickle.load(f)
 
 # Read in lag-specific errors for SUBSET of training intervals
-sfs_gapped = pd.read_pickle("data/processed/train_psp_sfs_gapped.pkl")
+sfs_gapped = pd.read_pickle(f"results/{run_mode}/train_psp_sfs_gapped_SUBSET.pkl")
 
 # Print the number of unique int_index-file_index combinations
 print(
-    f"Number of unique int_index-file_index combinations (raw intervals): {sfs_gapped[['int_index', 'file_index']].drop_duplicates().shape[0]}"
+    f"Number of unique int_index-file_index combinations in this subset (raw intervals): {sfs_gapped[['int_index', 'file_index']].drop_duplicates().shape[0]}"
 )
 print(
-    f"Total number of intervals: {sfs_gapped[['int_index', 'file_index', 'version']].drop_duplicates().shape[0]}"
+    f"Total number of intervals in this subset: {sfs_gapped[['int_index', 'file_index', 'version']].drop_duplicates().shape[0]}"
 )
 
 

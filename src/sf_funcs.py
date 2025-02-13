@@ -1,7 +1,8 @@
 import pickle
-from matplotlib import pyplot as plt
+
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 
 # plt.rc("text", usetex=True)
 # plt.rc("font", family="serif", serif="Computer Modern", size=16)
@@ -377,8 +378,8 @@ def plot_sample(
 # into one big dataframe for each of the four dataframes
 
 
-def get_all_metadata(pickle_files, include_sfs=False):
-    if include_sfs is True:
+def get_all_metadata(pickle_files, with_sfs=False):
+    if with_sfs is True:
         concatenated_dataframes = {
             "files_metadata": [],
             "ints_metadata": [],

@@ -100,7 +100,7 @@ def remove_data(array, proportion, chunks=None):
     return (
         array_bad,
         array_bad_idx,
-        prop_removed[
+        prop_removed.iloc[
             0
         ],  # All vector components are the same, so just return the first one
     )

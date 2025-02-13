@@ -84,5 +84,5 @@ f_max_inertial = None  # 0.2
 f_min_kinetic = None  # 0.5
 f_max_kinetic = None  # 1.4
 
-tau_min = 1
-tau_max = 5
+tau_min = 3
+tau_max = 8

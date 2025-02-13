@@ -31,7 +31,7 @@ for n_bins in n_bins_list:
         input_file_list = sorted(
             glob.glob(
                 data_path_prefix
-                + f"results/{run_mode}/corrected_ints/wi_*_corrected_{n_bins}_bins_FULL.pkl"
+                + f"results/{run_mode}/corrected_ints/wi_*_corrected_{n_bins}_bins.pkl"
             )
         )
     else:
@@ -92,27 +92,20 @@ for n_bins in n_bins_list:
 
     correction_stats = ints_gapped_metadata.groupby("gap_handling")[
         [
-            "missing_percent_overall",
-            "missing_percent_chunks",
-            "slope",
-            "slope_pe",
-            "slope_ape",
-            "mpe",
+            #            "missing_percent_overall",
+            #            "missing_percent_chunks",
+            #            "slope",
+            #            "slope_pe",
+            #            "mpe",
             "mape",
+            "slope_ape",
+            "tce_ape",
+            "ttu_ape",
         ]
-    ].agg(["count", "mean", "median", "std", "min", "max"])
+    ].agg(["mean", "median"])
 
-    correction_corrs = ints_gapped_metadata.groupby("gap_handling")[
-        [
-            "missing_percent_overall",
-            "missing_percent_chunks",
-            "slope",
-            "slope_pe",
-            "slope_ape",
-            "mpe",
-            "mape",
-        ]
-    ].corr()
+    subset_to_correlate = ints_gapped_metadata.iloc[:, 3:]
+    correction_corrs = subset_to_correlate.groupby("gap_handling").corr()
 
     # Save as csv
     correction_stats.to_csv(

@@ -81,11 +81,6 @@ for n_bins in n_bins_list:
 
     correction_stats = ints_gapped_metadata.groupby("gap_handling")[
         [
-            #            "missing_percent_overall",
-            #            "missing_percent_chunks",
-            #            "slope",
-            #            "slope_pe",
-            #            "mpe",
             "mape",
             "slope_ape",
             "tce_ape",
@@ -93,8 +88,16 @@ for n_bins in n_bins_list:
         ]
     ].agg(["mean", "median"])
 
-    subset_to_correlate = ints_gapped_metadata.iloc[:, 3:]
-    correction_corrs = subset_to_correlate.groupby("gap_handling").corr()
+    correction_corrs = ints_gapped_metadata.groupby("gap_handling")[
+        [
+            "missing_percent_overall",
+            "missing_percent_chunks",
+            "mape",
+            "slope_ape",
+            "tce_ape",
+            "ttu_ape",
+        ]
+    ].corr()
 
     # Save as csv
     correction_stats.to_csv(

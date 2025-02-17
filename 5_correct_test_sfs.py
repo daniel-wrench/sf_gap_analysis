@@ -23,7 +23,7 @@ file_index_test = int(sys.argv[1])
 # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
 n_bins = 25
 
-with_sfs = True
+with_sfs = False
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
@@ -275,6 +275,18 @@ for i in files_metadata.file_index.unique():
                     & (sfs_gapped_corrected["gap_handling"] == gap_handling)
                 ]
 
+                if gap_handling == "corrected_3d":
+                    # Smoothing the occassionally jumpy correction by first
+                    # converting to logarithmically spaced lags
+                    indices = np.logspace(
+                        0, np.log10(len(current_int) - 1), 100, dtype=int
+                    )
+                    indices = np.unique(indices)  # Ensure unique indices
+
+                    current_int = current_int.iloc[indices]
+
+                    current_int.sf_2 = utils.SmoothySpec(current_int.sf_2.values, 5)
+
                 # Fit a line to the log-log plot of the structure function over the given range
 
                 slope = np.polyfit(
@@ -366,7 +378,9 @@ for i in files_metadata.file_index.unique():
                         "ttu",
                     ] = ttu
 
-# Calculate slope errors
+# Merge "true" values (ints_metadata) with gapped values (ints_gapped_metadata)
+# True value column names will get _orig" suffix, we can simply subtract one from the other
+# to get the errors
 ints_gapped_metadata = pd.merge(
     ints_gapped_metadata,
     ints_metadata.drop(["int_start", "int_end"], axis=1),
@@ -374,17 +388,6 @@ ints_gapped_metadata = pd.merge(
     on=["file_index", "int_index"],
     suffixes=("", "_orig"),
 )
-
-# maybe come back to this method of getting true slopes, could be fun
-
-# # Create a dictionary from df2 with composite keys
-# value2_dict = df2.set_index(['key1', 'key2'])['value2'].to_dict()
-
-# # Create a composite key in df1 and map the values
-# df1['composite_key'] = list(zip(df1['key1'], df1['key2']))
-# df1['value2'] = df1['composite_key'].map(value2_dict)
-
-# Calculate errors for our two scalars of interest
 
 
 def calculate_errors(df, var):

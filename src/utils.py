@@ -1,12 +1,13 @@
-import scipy.signal as signal
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import cdflib
-import statsmodels.api as sm
-from pprint import pprint
-from scipy.optimize import curve_fit
 import random
+from pprint import pprint
+
+import cdflib
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.signal as signal
+import statsmodels.api as sm
+from scipy.optimize import curve_fit
 
 # plt.rcParams.update({"font.size": 12})
 # plt.rc("text", usetex=True)
@@ -155,7 +156,7 @@ def format_epochs(dataframe: pd.DataFrame) -> pd.DataFrame:
     args:
       dataframe: pandas dataframe to format
     """
-    assert type(dataframe) == pd.core.frame.DataFrame, "Input is not of type DataFrame"
+    assert type(dataframe) is pd.core.frame.DataFrame, "Input is not of type DataFrame"
     assert (
         "Epoch" in dataframe.columns or "EPOCH" in dataframe.columns
     ), "Epoch column does not exist"
@@ -179,7 +180,7 @@ def resample_time_series(
     """
     if not cadence:
         return dataframe.set_index("Timestamp")
-    assert type(dataframe) == pd.core.frame.DataFrame, "Input is not of type DataFrame"
+    assert type(dataframe) is pd.core.frame.DataFrame, "Input is not of type DataFrame"
     assert "Timestamp" in dataframe.columns, "Timestamp column does not exist"
     if not agg_types:
         return dataframe.resample(cadence, on="Timestamp").mean()
@@ -195,10 +196,10 @@ def join_dataframes_on_timestamp(
       dataframe_1 and dataframe_2: dataframes to join, must contain a synched, formatted datetime column
     """
     assert (
-        type(dataframe_1.index) == pd.core.indexes.datetimes.DatetimeIndex
+        type(dataframe_1.index) is pd.core.indexes.datetimes.DatetimeIndex
     ), "dataframe_1 does not have a Datetime index"
     assert (
-        type(dataframe_2.index) == pd.core.indexes.datetimes.DatetimeIndex
+        type(dataframe_2.index) is pd.core.indexes.datetimes.DatetimeIndex
     ), "dataframe_2 does not have a Datetime index"
     joined_df = pd.merge(dataframe_1, dataframe_2, how="outer", on="Timestamp")
     return joined_df
@@ -650,7 +651,7 @@ def compute_outer_scale_exp_trick(
                 return 0
 
     # none found
-    return -1
+    return np.nan
 
 
 def exp_fit(r, lambda_c):
@@ -1054,7 +1055,7 @@ def plot_results(
 
     fig, axs = plt.subplots(nplotx, nplotx, sharey=True, figsize=(10, 10))
 
-    if log == True:
+    if log is True:
         for i in np.arange(0, no_samples):
             r, c = (
                 int(np.arange(0, no_samples)[i] / nplotx),

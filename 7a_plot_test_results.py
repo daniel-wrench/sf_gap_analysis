@@ -54,13 +54,15 @@ ints_gapped_metadata["id"] = (
 )
 
 # Filtering out bad tces
-ints_gapped_metadata = ints_gapped_metadata[ints_gapped_metadata.tce_orig >= 0]
-ints_gapped_metadata.loc[ints_gapped_metadata.tce == -1, "tce"] = (
-    params.max_lag_prop * params.int_length
-)
+# SHOUDLN'T BE NEEDED NOW WITH PROPER RETURNING OF NP.NAN RATHER THAN -1
+# WHEN CORRELATION SCALE CAN'T BE FOUND (STEP 5)
+# ints_gapped_metadata = ints_gapped_metadata[ints_gapped_metadata.tce_orig >= 0]
+# ints_gapped_metadata.loc[ints_gapped_metadata.tce == -1, "tce"] = (
+#     params.max_lag_prop * params.int_length
+# )
 
 # ints_gapped = data["ints_gapped"]
-# fs = data["sfs"]
+# sfs = data["sfs"]
 # sfs_gapped_corrected = data["sfs_gapped_corrected"]
 
 print(
@@ -146,7 +148,12 @@ custom_order = [
     "corrected_3d_smoothed",
 ]
 colors = ["indianred", "dimgrey", "C0", "#1b9e77", "purple"]
-
+ylims = {
+    "mape": (0, 70),
+    "slope_ape": (0, 50),
+    "tce_ape": (0, 200),
+    "ttu_ape": (0, 100),
+}
 # Make scatterplot of mape vs. missing_percent, coloured by gap handling
 palette = dict(zip(custom_order, colors))
 
@@ -269,7 +276,8 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
         axis.set(xlabel="", ylabel="")
         axis.spines["top"].set_visible(False)
         axis.spines["right"].set_visible(False)
-        axis.set_ylim(0, 40)
+
+        axis.set_ylim(ylims[error_metric])
 
     plt.suptitle(f"{error_metric} vs. TGP for {spacecraft} test set")
     plt.savefig(

@@ -17,10 +17,12 @@ plt.rc("font", family="serif", serif="Computer Modern", size=10)
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
-# Load data
-ints = pd.read_csv("ints_gapped_metadata.csv")
 run_mode = params.run_mode
 
+# Load data
+ints = pd.read_csv(
+    f"results/{run_mode}/test_wind_corrected_25_bins_ints_gapped_metadata.csv"
+)
 
 # Remove any tce values that are less than 0 (due to not getting proper fit)
 ints = ints[ints.tce_orig >= 0]
@@ -249,12 +251,12 @@ for bin in bin_labels + ["all_data"]:
     plt.subplots_adjust(
         hspace=0, wspace=0.1, top=0.77
     )  # Adjust `top` to make space for the legend
-    plt.show()
-    # plt.savefig(
-    #     f"plots/results/{run_mode}/densities_{bin}.png",
-    #     bbox_inches="tight",
-    #     dpi=300,
-    # )
+    # plt.show()
+    plt.savefig(
+        f"results/{run_mode}/plots/densities_{bin}.png",
+        bbox_inches="tight",
+        dpi=300,
+    )
 
     # 108 std intervals across 40 days of Wind data, gapped 25 times each
     # (2700 ints)

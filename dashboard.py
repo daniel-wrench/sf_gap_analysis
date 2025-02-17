@@ -64,6 +64,7 @@ input_file_list = sorted(
         f"results/{run_mode}/test_sfs_corrected_subset/wi_*_corrected_{n_bins}_bins_with_sfs.pkl"
     )
 )
+print(f"About to read {len(input_file_list)} files")
 
 all_files_metadata = []
 all_ints_metadata = []
@@ -141,6 +142,7 @@ ints_gapped_metadata = ints_gapped_metadata[
         "gap_handling",
         "missing_percent_overall",
         "missing_percent_chunks",
+        "mape",
         "slope_ape",
         "tce_ape",
         "ttu_ape",
@@ -157,7 +159,7 @@ ints_gapped_metadata_long = ints_gapped_metadata.melt(
         "missing_percent_overall",
         "missing_percent_chunks",
     ],
-    value_vars=["slope_ape", "tce_ape", "ttu_ape"],
+    value_vars=["mape", "slope_ape", "tce_ape", "ttu_ape"],
     var_name="derived_stat",
     value_name="ape",
 )
@@ -208,7 +210,7 @@ def create_faceted_scatter(selected_criteria=None, independent_yaxes=False):
         },
         # Map for symbols
         symbol_map={"x": "x", "circle": "circle"},
-        opacity=0.4,
+        opacity=0.2,
         size="marker_size",
         size_max=15,
         symbol="marker_symbol",
@@ -226,9 +228,8 @@ def create_faceted_scatter(selected_criteria=None, independent_yaxes=False):
 
     # Remove the legend for color since we're using it just for highlighting
     fig.update_yaxes(matches=None if independent_yaxes else "y")  # Toggle shared y-axis
-    fig.update_layout(
-        showlegend=False,
-    )  #
+    fig.update_layout(showlegend=False)
+    fig.update_traces(marker=dict(line=dict(width=0)))  # Remove border around points
 
     return fig
 

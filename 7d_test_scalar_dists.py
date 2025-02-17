@@ -3,7 +3,6 @@
 
 # For publication, perhaps add asterisks to indicate significance of difference of means
 
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,7 +13,7 @@ from scipy.stats import wilcoxon
 
 import src.params as params
 
-run_mode = params.run_mode
+run_mode = "full"
 spacecraft = "wind"
 n_bins = 25
 
@@ -33,7 +32,7 @@ def compute_effect_sizes(ref, sample):
     ks_stat, ks_p = stats.ks_2samp(ref, sample)  # KS test
     anderson_p = stats.anderson_ksamp(
         [ref, sample],
-        method=stats.PermutationMethod(),  # for dealing with capped/floored p-values
+        # method=stats.PermutationMethod(),  # for dealing with capped/floored p-values VERY SLOW, AT LEAST WITH DEFAULT n_resamples
     ).pvalue  # Anderson-Darling test
     levene_stat, levene_p = stats.levene(ref, sample)  # Variance test
     fligner_stat, fligner_p = stats.fligner(ref, sample)  # Robust variance test
@@ -232,7 +231,7 @@ var_names = [
 ]
 
 # Get count of numeric vars in df_to_plot
-df_to_plot.head()
+print(df_to_plot.head())
 
 # Get list of numerical columns in df_to_plot
 metrics = df_to_plot.columns[df_to_plot.dtypes == "float64"]
@@ -299,12 +298,7 @@ plt.suptitle(
     fontsize=18,
     y=1,
 )
-# plt.savefig("all_metrics_pe_var.png")
-plt.show()
-sys.exit()
-# My changes
-# - Make all_data a horizontal line
-# - A column for each variable
+plt.savefig(f"results/{run_mode}/plots/test_wind_pdf_metrics.png")
 
 
 # above: code to get test results
@@ -340,6 +334,7 @@ _, bins, _ = plt.hist(
     data_naive["es_slope"],
     bins=50,
 )
+plt.clf()
 
 # Create subplots for each pairwise comparison
 fig, axes = plt.subplots(1, len(groups), figsize=(12, 3), sharey=True, sharex=True)
@@ -400,8 +395,7 @@ for ax, (group_name, group_data) in zip(axes, groups):
 # Adjust layout for better visualization
 plt.suptitle(f"Comparison of True vs. Naive, Corrected, Lint for {variable}, bin {bin}")
 plt.tight_layout()
-plt.show()
-# plt.savefig(f"{variable}_dists_{bin}.png")
+plt.savefig("results/{run_mode}/plots/{variable}_dists_{bin}.png")
 
 print("FINISHED")
 

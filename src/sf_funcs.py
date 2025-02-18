@@ -916,20 +916,26 @@ def compute_scaling(inputs, dim, correction_lookup, n_bins=25):
             for j in range(n_bins):
                 # If there are any values, calculate the mean for that bin
                 if len(x[(xidx == i) & (yidx == j)]) > 0:
-                    inputs.loc[(xidx == i) & (yidx == j), "sf_2_corrected_2d"] = (
-                        inputs["sf_2"][(xidx == i) & (yidx == j)] * scaling[i, j]
-                    )
-                    inputs.loc[(xidx == i) & (yidx == j), "sf_2_lower_corrected_2d"] = (
-                        inputs["sf_2"][(xidx == i) & (yidx == j)] * scaling_lower[i, j]
-                    )
-                    inputs.loc[(xidx == i) & (yidx == j), "sf_2_upper_corrected_2d"] = (
-                        inputs["sf_2"][(xidx == i) & (yidx == j)] * scaling_upper[i, j]
+
+                    # Only create scaling[i,j] here
+
+                    inputs.loc[(xidx == i) & (yidx == j), "scaling"] = scaling[i, j]
+
+                    inputs.loc[(xidx == i) & (yidx == j), "scaling_lower"] = (
+                        scaling_lower[i, j]
                     )
 
-        # Smoothed version
-        inputs["sf_2_corrected_2d_smoothed"] = (
-            inputs["sf_2_corrected_2d"].rolling(50).mean()
-        )
+                    inputs.loc[(xidx == i) & (yidx == j), "scaling_upper"] = (
+                        scaling_upper[i, j]
+                    )
+
+        # Smooth scaling
+
+        # inputs["sf_2_corrected_2d_smoothed"] = (
+        #     inputs["sf_2_corrected_2d"].rolling(50).mean()
+        # )
+
+        # Outside of loop, plot and multiply by inputs["sf_2"]
 
     elif dim == 3:
         xedges = correction_lookup["xedges"]

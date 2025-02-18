@@ -2,8 +2,8 @@
 
 #SBATCH --job-name          3_bin_errors
 #SBATCH --mem               500MB
-#SBATCH --array             0-59
-#SBATCH --time              00:20:00
+#SBATCH --array             0-2
+#SBATCH --time              00:02:00
 #SBATCH --output            logs/%x_%A_%3a.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
@@ -24,7 +24,7 @@ n_files=3 #73 - Adjust this value as needed (should really be defined based on n
 task_id=$SLURM_ARRAY_TASK_ID
 
 # Calculate start index for this task ($task_id if on HPC, 0 if local)
-start_index=0
+start_index=$task_id
 
 # Calculate the stride (number of files to skip between reads)
 stride=$(( total_files / n_files ))

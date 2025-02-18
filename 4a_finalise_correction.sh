@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name          4a_finalise_correction
-#SBATCH --mem               50G 
-#SBATCH --time              04:00:00
+#SBATCH --mem               2G 
+#SBATCH --time              00:05:00
 #SBATCH --output            logs/%x_%j.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz

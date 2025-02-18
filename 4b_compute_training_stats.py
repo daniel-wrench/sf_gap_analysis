@@ -16,7 +16,7 @@ import src.sf_funcs as sf
 
 data_path_prefix = params.data_path_prefix
 run_mode = params.run_mode
-with_sfs = True
+with_sfs = False
 n_files = 3  # If above is True, limit the number of files to read in
 spacecraft = "psp"
 input_file_list = [
@@ -26,6 +26,10 @@ input_file_list = [
         )
     )
 ][0]
+
+
+print("First few files we're reading in here")
+print(input_file_list[:3])
 
 # Following is for plotting error trendlines in next script.
 if with_sfs is True:

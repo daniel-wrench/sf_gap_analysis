@@ -61,8 +61,8 @@ print(
     f"Successfully read in {input_file_list[file_index_test]}. This contains {len(ints_metadata)}x{times_to_gap} intervals"
 )
 # Importing lookup table
-with open(f"results/{run_mode}/correction_lookup_2d_{n_bins}_bins_lint.pkl", "rb") as f:
-    correction_lookup_2d = pickle.load(f)
+# with open(f"results/{run_mode}/correction_lookup_2d_{n_bins}_bins_lint.pkl", "rb") as f:
+#     correction_lookup_2d = pickle.load(f)
 with open(
     f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb"
 ) as f:
@@ -74,16 +74,16 @@ with open(
     correction_lookup_3d_smoothed = pickle.load(f)
 
 # Apply 2D and 3D scaling to test set, report avg errors
-print(
-    f"Correcting {len(ints_metadata)} intervals using 2D error heatmap with {n_bins} bins"
-)
-sfs_lint_corrected_2d = sf.compute_scaling(sfs_gapped, 2, correction_lookup_2d, n_bins)
+# print(
+#     f"Correcting {len(ints_metadata)} intervals using 2D error heatmap with {n_bins} bins"
+# )
+# sfs_lint_corrected_2d = sf.compute_scaling(sfs_gapped, 2, correction_lookup_2d, n_bins)
 
 print(
     f"Correcting {len(ints_metadata)} intervals using SMOOTHED 3D error heatmap with {n_bins} bins"
 )
 sfs_lint_corrected_2d_3d_smoothed = sf.compute_scaling(
-    sfs_lint_corrected_2d, 3, correction_lookup_3d_smoothed, n_bins
+    sfs_gapped, 3, correction_lookup_3d_smoothed, n_bins
 )
 
 # Rename smoothed columns so not over-ridden when creating non-smoothed versions below

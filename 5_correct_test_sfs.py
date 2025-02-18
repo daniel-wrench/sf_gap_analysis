@@ -112,7 +112,6 @@ correction_wide = sfs_lint_corrected_2d_3d[
         "version",
         "lag",
         "missing_percent",
-        "sf_2_corrected_2d",
         "sf_2_corrected_3d",
         "sf_2_corrected_3d_smoothed",
     ]
@@ -132,9 +131,7 @@ correction_bounds_wide = sfs_lint_corrected_2d_3d[
         "version",
         "lag",
         "missing_percent",
-        "sf_2_lower_corrected_2d",
         "sf_2_lower_corrected_3d",
-        "sf_2_upper_corrected_2d",
         "sf_2_upper_corrected_3d",
         "sf_2_lower_corrected_3d_smoothed",
         "sf_2_upper_corrected_3d_smoothed",
@@ -209,7 +206,7 @@ sfs_gapped_corrected["sf_2_pe"] = (
 # Adding rows as placeholders for when we correct with 2D and 3D heatmaps and want to calculate errors
 
 # Define new gap_handling values
-new_gap_handling = ["corrected_2d", "corrected_3d", "corrected_3d_smoothed"]
+new_gap_handling = ["corrected_3d", "corrected_3d_smoothed"]
 
 # Duplicate existing rows for each new value
 dup_df = ints_gapped_metadata.copy()

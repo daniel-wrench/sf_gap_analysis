@@ -63,9 +63,7 @@ print(
 # Importing lookup table
 # with open(f"results/{run_mode}/correction_lookup_2d_{n_bins}_bins_lint.pkl", "rb") as f:
 #     correction_lookup_2d = pickle.load(f)
-with open(
-    f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb"
-) as f:
+with open(f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb") as f:
     correction_lookup_3d = pickle.load(f)
 with open(
     f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint_SMOOTHED.pkl",
@@ -272,17 +270,17 @@ for i in files_metadata.file_index.unique():
                     & (sfs_gapped_corrected["gap_handling"] == gap_handling)
                 ]
 
-                if gap_handling == "corrected_3d":
-                    # Smoothing the occassionally jumpy correction by first
-                    # converting to logarithmically spaced lags
-                    indices = np.logspace(
-                        0, np.log10(len(current_int) - 1), 100, dtype=int
-                    )
-                    indices = np.unique(indices)  # Ensure unique indices
+                # if gap_handling == "corrected_3d":
+                #     # Smoothing the occassionally jumpy correction by first
+                #     # converting to logarithmically spaced lags
+                #     indices = np.logspace(
+                #         0, np.log10(len(current_int) - 1), 100, dtype=int
+                #     )
+                #     indices = np.unique(indices)  # Ensure unique indices
 
-                    current_int = current_int.iloc[indices]
+                #     current_int = current_int.iloc[indices]
 
-                    current_int.sf_2 = utils.SmoothySpec(current_int.sf_2.values, 5)
+                #     current_int.sf_2 = utils.SmoothySpec(current_int.sf_2.values, 5)
 
                 # Fit a line to the log-log plot of the structure function over the given range
 

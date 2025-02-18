@@ -8,7 +8,7 @@
 # https://buildmedia.readthedocs.org/media/pdf/heliopy/0.6.0/heliopy.pdf
 
 times_to_gap = 25
-data_path_prefix = ""  # /nesi/nobackup/vuw04187/
+data_path_prefix = "/nesi/nobackup/vuw04187/"
 run_mode = "full"  # "mini" (local) or "full" (hpc)
 pwrl_range = [50, 500]
 minimum_missing_chunks = 0.7

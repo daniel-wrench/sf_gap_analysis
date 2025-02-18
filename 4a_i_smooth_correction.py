@@ -10,10 +10,6 @@ n_bins = 25
 run_mode = params.run_mode
 dim = 3
 
-# Set matplotlib font size
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=10)
-
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
@@ -159,7 +155,7 @@ fig.text(
 fig.text(
     0.05,
     0.5,
-    "\% missing",
+    "% missing",
     ha="center",
     va="center",
     rotation="vertical",
@@ -219,7 +215,7 @@ for i in range(n_bins):
     ax[i].semilogy()
 
 fig.text(
-    0.5, 0.03, "\% missing", ha="center", va="center"
+    0.5, 0.03, "% missing", ha="center", va="center"
 )  # Shared x-axis label, was 0.00 y-val for 2 rows
 fig.text(
     0.05,
@@ -258,7 +254,7 @@ fig, ax = plt.subplots(
 plt.subplots_adjust(wspace=0.18, hspace=0.5)
 plt.grid(False)
 plt.suptitle(
-    r"3D error heatmap: trend with increasing \% $\mathbf{missing}$",
+    r"3D error heatmap: trend with increasing % $\mathbf{missing}$",
     y=0.98,
 )
 # Flatten the axis array to simplify indexing
@@ -304,3 +300,5 @@ plt.savefig(
     bbox_inches="tight",
 )
 plt.close()
+
+print("Heatmap smoothed and plots output")

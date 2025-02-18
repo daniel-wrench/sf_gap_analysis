@@ -1,9 +1,9 @@
 #!/bin/bash -e
 
 #SBATCH --job-name          5_correct_test_sfs
-#SBATCH --mem               1G
-#SBATCH --array             0-19 #0-224 for full wind
-#SBATCH --time              00:03:00
+#SBATCH --mem               2G
+#SBATCH --array             0-221 #0-221 for full wind
+#SBATCH --time              00:05:00
 #SBATCH --output            logs/%x_%A_%3a.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
@@ -17,12 +17,9 @@ source venv/bin/activate
 echo "JOB STARTED"
 date
 
-spacecraft=wind
-echo "SPACECRAFT: $spacecraft"
 file_index=$SLURM_ARRAY_TASK_ID # doesn't work if running locally
-n_bins=25
 
-python 5_correct_test_sfs.py $spacecraft $file_index $n_bins
+python 5_correct_test_sfs.py $file_index
 
 echo "JOB FINISHED"
 date

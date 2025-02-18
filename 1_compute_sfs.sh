@@ -2,27 +2,27 @@
 
 #SBATCH --job-name          1_compute_sfs
 #SBATCH --mem               1G
-#SBATCH --array             0-169
-#SBATCH --time              00:05:00
+#SBATCH --array             0-79
+#SBATCH --time              01:20:00
 #SBATCH --output            logs/%x_%A_%3a.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
 
 #mkdir -p logs/
 
-#module load Python/3.10.5-gimkl-2022a
-#source venv/bin/activate
+module load Python/3.10.5-gimkl-2022a
+source venv/bin/activate
 # If running (locally) on Windows, may need to change above lines to the following: 
-source venv/Scripts/activate
+#source venv/Scripts/activate
 
 echo "JOB STARTED"
 date
 
-spacecraft=psp
+spacecraft=wind
 echo "SPACECRAFT: $spacecraft"
 
 # Specify total number of files
-total_files=3
+total_files=240
 echo "TOTAL FILES: $total_files"
 
 # Set number of files to be processed by each task
@@ -30,7 +30,7 @@ n_files=3 # Adjust this value as needed (should really be defined based on numbe
 task_id=$SLURM_ARRAY_TASK_ID
 
 # Calculate start index for this task ($task_id if on HPC, 0 if local)
-start_index=0
+start_index=$task_id
 
 # Calculate the stride (number of files to skip between reads)
 stride=$(( total_files / n_files ))

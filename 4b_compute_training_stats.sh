@@ -2,7 +2,7 @@
 
 #SBATCH --job-name          4b_compute_training_stats
 #SBATCH --mem               1G 
-#SBATCH --time              00:05:00
+#SBATCH --time              00:10:00
 #SBATCH --output            logs/%x_%j.out
 ##SBATCH --mail-type         BEGIN,END,FAIL
 ##SBATCH --mail-user         daniel.wrench@vuw.ac.nz
@@ -14,7 +14,7 @@ source venv/bin/activate
 
 echo "JOB STARTED"
 date
-run_mode=mini # "mini" or "full"
+run_mode=full #"mini" or "full"
 
 python 4b_compute_training_stats.py > results/$run_mode/training_stats.txt
 

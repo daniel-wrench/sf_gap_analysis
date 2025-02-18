@@ -23,7 +23,7 @@ file_index_test = int(sys.argv[1])
 # this simply refers to one of the files in the test files, not the "file_index" variable referring to the original raw file
 n_bins = 25
 
-with_sfs = True
+with_sfs = False
 
 # Importing processed time series and structure functions
 if spacecraft == "wind":
@@ -64,7 +64,7 @@ print(
 with open(f"results/{run_mode}/correction_lookup_2d_{n_bins}_bins_lint.pkl", "rb") as f:
     correction_lookup_2d = pickle.load(f)
 with open(
-    f"results/{run_mode}//correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb"
+    f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb"
 ) as f:
     correction_lookup_3d = pickle.load(f)
 with open(
@@ -403,7 +403,7 @@ if with_sfs is True:
     output_file_path = (
         input_file_list[file_index_test]
         .replace(
-            f"data/processed/{spacecraft}/test",
+            f"{data_path_prefix}data/processed/{spacecraft}/test",
             f"results/{run_mode}/test_sfs_corrected_subset",
         )
         .replace(

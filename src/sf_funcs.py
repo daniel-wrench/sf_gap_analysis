@@ -963,31 +963,26 @@ def compute_scaling(inputs, dim, correction_lookup, n_bins=25):
         inputs["sf_2_corrected_3d"] = inputs["sf_2"].copy()
         inputs["sf_2_lower_corrected_3d"] = inputs["sf_2"].copy()
         inputs["sf_2_upper_corrected_3d"] = inputs["sf_2"].copy()
+        inputs.loc[:, "scaling"] = (
+            1  # Set default scaling if no data in corresponding bin
+        )
 
         for i in range(n_bins):
             for j in range(n_bins):
                 for k in range(n_bins):
                     # If there are any values, calculate the mean for that bin
                     if len(x[(xidx == i) & (yidx == j) & (zidx == k)]) > 0:
+
                         inputs.loc[
-                            (xidx == i) & (yidx == j) & (zidx == k), "sf_2_corrected_3d"
-                        ] = (
-                            inputs["sf_2"][(xidx == i) & (yidx == j) & (zidx == k)]
-                            * scaling[i, j, k]
-                        )
+                            (xidx == i) & (yidx == j) & (zidx == k), "scaling"
+                        ] = scaling[i, j, k]
+
                         inputs.loc[
-                            (xidx == i) & (yidx == j) & (zidx == k),
-                            "sf_2_lower_corrected_3d",
-                        ] = (
-                            inputs["sf_2"][(xidx == i) & (yidx == j) & (zidx == k)]
-                            * scaling_lower[i, j, k]
-                        )
+                            (xidx == i) & (yidx == j) & (zidx == k), "scaling_lower"
+                        ] = scaling_lower[i, j, k]
+
                         inputs.loc[
-                            (xidx == i) & (yidx == j) & (zidx == k),
-                            "sf_2_upper_corrected_3d",
-                        ] = (
-                            inputs["sf_2"][(xidx == i) & (yidx == j) & (zidx == k)]
-                            * scaling_upper[i, j, k]
-                        )
+                            (xidx == i) & (yidx == j) & (zidx == k), "scaling_upper"
+                        ] = scaling_upper[i, j, k]
 
     return inputs

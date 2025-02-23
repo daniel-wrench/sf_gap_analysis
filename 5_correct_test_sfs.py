@@ -8,6 +8,7 @@ import sys
 
 import numpy as np
 import pandas as pd
+from scipy.interpolate import interp1d
 
 import src.params as params
 import src.sf_funcs as sf
@@ -61,49 +62,163 @@ print(
     f"Successfully read in {input_file_list[file_index_test]}. This contains {len(ints_metadata)}x{times_to_gap} intervals"
 )
 # Importing lookup table
-# with open(f"results/{run_mode}/correction_lookup_2d_{n_bins}_bins_lint.pkl", "rb") as f:
-#     correction_lookup_2d = pickle.load(f)
 with open(f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb") as f:
     correction_lookup_3d = pickle.load(f)
-with open(
-    f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint_SMOOTHED.pkl",
-    "rb",
-) as f:
-    correction_lookup_3d_smoothed = pickle.load(f)
-
 # Apply 2D and 3D scaling to test set, report avg errors
-# print(
-#     f"Correcting {len(ints_metadata)} intervals using 2D error heatmap with {n_bins} bins"
-# )
-# sfs_lint_corrected_2d = sf.compute_scaling(sfs_gapped, 2, correction_lookup_2d, n_bins)
-
-print(
-    f"Correcting {len(ints_metadata)} intervals using SMOOTHED 3D error heatmap with {n_bins} bins"
-)
-sfs_lint_corrected_2d_3d_smoothed = sf.compute_scaling(
-    sfs_gapped, 3, correction_lookup_3d_smoothed, n_bins
-)
-
-# Rename smoothed columns so not over-ridden when creating non-smoothed versions below
-sfs_lint_corrected_2d_3d_smoothed = sfs_lint_corrected_2d_3d_smoothed.rename(
-    columns={
-        "sf_2_corrected_3d": "sf_2_corrected_3d_smoothed",
-        "sf_2_lower_corrected_3d": "sf_2_lower_corrected_3d_smoothed",
-        "sf_2_upper_corrected_3d": "sf_2_upper_corrected_3d_smoothed",
-    }
-)
 
 print(
     f"Correcting {len(ints_metadata)} intervals using 3D error heatmap with {n_bins} bins"
 )
-sfs_lint_corrected_2d_3d = sf.compute_scaling(
-    sfs_lint_corrected_2d_3d_smoothed,
+
+# Extract scaling factor for all SFs
+sfs_lint_corrected_3d = sf.compute_scaling(
+    sfs_gapped,
     3,
     correction_lookup_3d,
     n_bins,
 )
 
-correction_wide = sfs_lint_corrected_2d_3d[
+# NOW LOOP: SMOOTH (CORRECT, PLOT)
+
+
+# Smoothing function
+def smooth_scaling(x, y, num_bins=20):
+    bin_edges = np.logspace(np.log10(x.min()), np.log10(x.max()), num_bins)
+    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+    y_binned = np.array(
+        [
+            y[(x >= bin_edges[i]) & (x < bin_edges[i + 1])].mean()
+            for i in range(len(bin_edges) - 1)
+        ]
+    )
+
+    # Preserve the first and last values to prevent edge distortions
+    # during extrapolation
+    full_bins = np.insert(bin_centers, 0, bin_edges[0])
+    full_bins = np.append(full_bins, bin_edges[-1])
+    full_y_binned = np.insert(y_binned, 0, y.iloc[0])
+    full_y_binned = np.append(full_y_binned, y.iloc[-1])
+
+    interp_func = interp1d(
+        full_bins, full_y_binned, kind="cubic", fill_value="extrapolate"
+    )
+    return interp_func(x)
+
+
+for int_index in range(len(ints)):
+
+    for version in range(times_to_gap + 1):
+
+        single_sf = sfs_lint_corrected_3d[
+            (sfs_lint_corrected_3d["int_index"] == int_index)
+            & (sfs_lint_corrected_3d["version"] == version)
+        ]
+
+        scaling_smooth = smooth_scaling(single_sf.lag, single_sf.scaling)
+        scaling_lower_smooth = smooth_scaling(single_sf.lag, single_sf.scaling_lower)
+        scaling_upper_smooth = smooth_scaling(single_sf.lag, single_sf.scaling_upper)
+
+        # Save to the main dataframe
+        sfs_lint_corrected_3d.loc[
+            (sfs_lint_corrected_3d["int_index"] == int_index)
+            & (sfs_lint_corrected_3d["version"] == version),
+            "scaling_smooth",
+        ] = scaling_smooth
+
+        sfs_lint_corrected_3d.loc[
+            (sfs_lint_corrected_3d["int_index"] == int_index)
+            & (sfs_lint_corrected_3d["version"] == version),
+            "scaling_lower_smooth",
+        ] = scaling_lower_smooth
+
+        sfs_lint_corrected_3d.loc[
+            (sfs_lint_corrected_3d["int_index"] == int_index)
+            & (sfs_lint_corrected_3d["version"] == version),
+            "scaling_upper_smooth",
+        ] = scaling_upper_smooth
+
+        # PLOTTING INDIVIDUAL SMOOTHED SCALINGS AND CORRECTED SF,
+        # FOR VISUAL INSPECTION
+        # sf_2_corr = single_sf.sf_2 * single_sf.scaling
+        # sf_2_corr_smoothed = single_sf.sf_2 * scaling_smooth
+        # sf_2_cs_lower = single_sf.sf_2 * scaling_lower_smooth
+        # sf_2_cs_upper = single_sf.sf_2 * scaling_upper_smooth
+
+        # # Plot results
+        # plt.rcParams.update({"font.size": 8})
+        # fig, ax = plt.subplots(1, 3, figsize=(14, 3))
+
+        # ax[0].plot(
+        #     single_sf["lag"], single_sf["scaling"], label="Original scaling", alpha=0.5
+        # )
+        # ax[0].plot(
+        #     single_sf["lag"],
+        #     scaling_lower_smooth,
+        #     linestyle="--",
+        #     label="Lower bound smoothed",
+        #     c="blue",
+        # )
+        # ax[0].plot(
+        #     single_sf["lag"],
+        #     scaling_upper_smooth,
+        #     linestyle="--",
+        #     label="Upper bound smoothed",
+        #     c="red",
+        # )
+        # ax[0].plot(
+        #     single_sf["lag"],
+        #     scaling_smooth,
+        #     linewidth=2,
+        #     label="Smoothed scaling",
+        #     c="purple",
+        # )
+        # ax[0].axhline(1, c="black")
+        # ax[0].semilogx()
+        # ax[0].legend()
+
+        # ax[1].plot(sf_2_corr, label="Corrected")
+        # ax[1].plot(sf_2_corr_smoothed, label="Smoothed Correction", c="purple")
+        # ax[1].plot(sf_2_cs_lower, label="Smoothed Correction", c="blue")
+        # ax[1].plot(sf_2_cs_upper, label="Smoothed Correction", c="red")
+
+        # ax[1].plot(single_sf["sf_2"], label="LINT", c="black")
+        # ax[1].semilogx()
+        # ax[1].semilogy()
+        # ax[1].legend()
+
+        # rect = patches.Rectangle(
+        #     (100, 1),
+        #     2200,
+        #     9,
+        #     linewidth=1.5,
+        #     edgecolor="red",
+        #     facecolor="none",
+        #     linestyle="dashed",
+        # )
+        # ax[1].add_patch(rect)
+
+        # ax[2].plot(sf_2_corr, label="Corrected")
+        # ax[2].plot(sf_2_corr_smoothed, label="Smoothed Correction", c="purple")
+        # ax[2].plot(single_sf["sf_2"], label="LINT", c="black")
+        # ax[2].semilogx()
+        # ax[2].semilogy()
+        # ax[2].set_ylim(1, 10)
+        # ax[2].set_xlim(100, 2300)
+
+        # plt.show()
+
+# Apply scalings
+sfs_lint_corrected_3d["sf_2_corrected_3d"] = (
+    sfs_lint_corrected_3d["sf_2"] * sfs_lint_corrected_3d["scaling_smooth"]
+)
+sfs_lint_corrected_3d["sf_2_lower_corrected_3d"] = (
+    sfs_lint_corrected_3d["sf_2"] * sfs_lint_corrected_3d["scaling_lower_smooth"]
+)
+sfs_lint_corrected_3d["sf_2_upper_corrected_3d"] = (
+    sfs_lint_corrected_3d["sf_2"] * sfs_lint_corrected_3d["scaling_upper_smooth"]
+)
+
+correction_wide = sfs_lint_corrected_3d[
     [
         "file_index",
         "int_index",
@@ -111,7 +226,6 @@ correction_wide = sfs_lint_corrected_2d_3d[
         "lag",
         "missing_percent",
         "sf_2_corrected_3d",
-        "sf_2_corrected_3d_smoothed",
     ]
 ]
 correction_long = pd.wide_to_long(
@@ -122,7 +236,7 @@ correction_long = pd.wide_to_long(
     sep="_",
     suffix=r"\w+",
 )
-correction_bounds_wide = sfs_lint_corrected_2d_3d[
+correction_bounds_wide = sfs_lint_corrected_3d[
     [
         "file_index",
         "int_index",
@@ -131,8 +245,6 @@ correction_bounds_wide = sfs_lint_corrected_2d_3d[
         "missing_percent",
         "sf_2_lower_corrected_3d",
         "sf_2_upper_corrected_3d",
-        "sf_2_lower_corrected_3d_smoothed",
-        "sf_2_upper_corrected_3d_smoothed",
     ]
 ]
 
@@ -181,7 +293,7 @@ sfs_gapped_corrected = pd.merge(
 sfs["gap_handling"] = "true"
 
 sfs_true_full = pd.DataFrame()
-for i in range(times_to_gap):
+for i in range(times_to_gap + 1):
     sfs["version"] = i
     sfs_true_full = pd.concat([sfs_true_full, sfs])
 
@@ -201,24 +313,17 @@ sfs_gapped_corrected["sf_2_pe"] = (
 # Calculate interval-scale errors
 # This is the first time we do this. We do not need these values for the training set, because we only use that for calculating the correction factor, which uses lag-scale errors..
 
-# Adding rows as placeholders for when we correct with 2D and 3D heatmaps and want to calculate errors
+# Make a placeholder row with gap_handling=corrected_3d for inserting the correction error stats
+new_rows = ints_gapped_metadata.loc[
+    ints_gapped_metadata["gap_handling"] == "naive", :
+].copy()  # Copy the naive row
 
-# Define new gap_handling values
-new_gap_handling = ["corrected_3d", "corrected_3d_smoothed"]
-
-# Duplicate existing rows for each new value
-dup_df = ints_gapped_metadata.copy()
-
-# Repeat DataFrame for each new type
-dup_df = pd.concat([dup_df.assign(gap_handling=gh) for gh in new_gap_handling])
-
-# Append to original DataFrame
-ints_gapped_metadata = pd.concat([ints_gapped_metadata, dup_df], ignore_index=True)
-
+new_rows["gap_handling"] = "corrected_3d"
+ints_gapped_metadata = pd.concat([ints_gapped_metadata, new_rows])
 
 for i in files_metadata.file_index.unique():
     for j in range(len(ints_metadata["file_index"] == i)):
-        for k in range(times_to_gap):
+        for k in range(times_to_gap + 1):
             for gap_handling in sfs_gapped_corrected.gap_handling.unique():
 
                 if gap_handling != "true":
@@ -474,4 +579,5 @@ else:
 # )
 # ax.set_ylim(0, 7)
 # plt.legend()
+# plt.show()
 # plt.show()

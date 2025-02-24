@@ -75,7 +75,7 @@ print(
 columns = ["mpe", "mape", "slope_pe", "slope_ape"]
 
 # Create subplots
-fig, axes = plt.subplots(2, 2, figsize=(14, 8))
+fig, axes = plt.subplots(1, 4, figsize=(15, 5))
 
 # Flatten the 2D array of axes for easy iteration
 axes = axes.flatten()
@@ -83,11 +83,9 @@ axes = axes.flatten()
 custom_order = [
     "naive",
     "lint",
-    "corrected_2d",
     "corrected_3d",
-    "corrected_3d_smoothed",
 ]
-colors = ["indianred", "dimgrey", "C0", "#1b9e77", "purple"]
+colors = ["indianred", "dimgrey", "#1b9e77"]
 
 # Create boxplots for each column
 for col, ax in zip(columns, axes):
@@ -143,11 +141,9 @@ plt.savefig(
 custom_order = [
     "naive",
     "lint",
-    "corrected_2d",
     "corrected_3d",
-    "corrected_3d_smoothed",
 ]
-colors = ["indianred", "dimgrey", "C0", "#1b9e77", "purple"]
+colors = ["indianred", "dimgrey", "#1b9e77"]
 ylims = {
     "mape": (0, 70),
     "slope_ape": (0, 50),
@@ -164,9 +160,9 @@ mean_y_coord = [0.5, 0.6, 0.7, 0.8, 0.9]
 
 for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
     fig, ax = plt.subplots(
-        2,
-        3,
-        figsize=(9, 4),
+        1,
+        4,
+        figsize=(8, 2),
         sharex="col",
         sharey="row",
         tight_layout=True,
@@ -244,9 +240,7 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
         [
             "Naive",
             "LINT",
-            "Corrected 2d",
             "Corrected 3D",
-            "Corrected 3D smoothed",
             "Regression lines",
         ]
     ):

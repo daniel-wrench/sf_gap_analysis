@@ -57,6 +57,8 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     **`pip install -r requirements.txt`**
 
+3. **Move the `data/` folder to a location with plenty of memory**. Set the variable `data_path_prefix` to this location in `src/params.py`: the scripts will now know to look there.
+
 3. **Download the raw CDF files using a set of recursive `wget` commands**
 
     *Local:* **`bash 0_download_files.sh`**
@@ -185,7 +187,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     *Output:* 
     
     - If `with_sfs=False`, for the whole set, get average slope and file corr time `training_stats.txt`
-    - If `with_sfs=True`, output lag-specific errors: `results/[run_mode]/train_psp_sfs_gapped.pkl`. These are later plotted in step 7b. **NB:** need to limit the number of files with `n_files` param in python script, beneath `with_sfs` param. We can do *at least* 20 files.
+    - If `with_sfs=True`, output lag-specific errors: `results/[run_mode]/train_psp_sfs_gapped_SUBSET.pkl`. These are later plotted in step 7b. **NB:** need to limit the number of files with `n_files` param in python script, beneath `with_sfs` param. We can do *at least* 20 files.
 
     *Local:*
     
@@ -200,31 +202,23 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     2. Set `with_sfs` appropriately in `4b_compute_training_stats.py`
     2. **`bash 4b_compute_training_stats.sh`**
 
-- 4c. **Plot the heatmaps and error trendlines for the training set** (full dataset and subset respectively). *CAN WAIT TILL WORKING LOCALLY FOR THIS*
-
-    *Output:* `results/[run_mode]/train_psp_error.png`
-
-    1. Download the outputs from step 4a.
-
-    2. **`python 4c_plot_training_results.py`**
-
-
 5. **Perform the correction on the test set, file by file**
 
     And also calculates the slopes, correlation scales, taylor scales from all the SF estimates. Before this, they had only been calculated for the true SF back in `1_compute_sfs.py` *(which is not strictly necessary any more, other than making preprocessing plots for interest)*.
 
     - NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE?
-    - Cannot correct PSP right now, only Wind. This is due to file output paths: PSP has `psp/train,test`, Wind does not.
+    If you are after minimal output from the full dataset, set `with_sfs = False`. (These files, used by the next script, go into `data/processed/test/corrected`.) If you are after full output (from just a few intervals) for later plotting in case studies, set `with_sfs = True`. (These files go into `results/test_sfs_corrected_subset`.)
 
     *Local:* 
     
-    1. If you are after minimal output from the full dataset, set `with_sfs = False`. (These files, used by the next script, go into `data/processed`.) If you are after full output (from just a few intervals) for later plotting in case studies, set `with_sfs = True`. (These files go into `data/corrections`.)
-    
-    **`for i in $(seq 0 2); do python 5_correct_test_sfs.py $i; done`**
+    1. Set `with_sfs` appropriately
+    2. **`for i in $(seq 0 2); do python 5_correct_test_sfs.py $i; done`**
 
     *HPC:* 
+
+    1. Set `with_sfs` appropriately
     1. Set job resource requests:
-        - 2GB AND 3MIN/FILE
+        - 2GB AND 5MIN/JOB (succeeds for 86% of files - note large variablity in time due to different # ints per file)
 
     2. **`sbatch 5_correct_test_sfs.sh`**
 
@@ -235,12 +229,10 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     1. Set `run_mode=mini` in `6_compute_test_stats.sh`
     2. **`bash 6_compute_test_stats.sh`**
 
-    *HPC*:
+    *HPC* (takes 20 seconds so doesn't need slurm submission):
 
-    1. Set job resource requests:
-        - 30s and 100MB for the full 111 Wind files, containing 125 intervals
-    2. Set `run_mode=full` in `6_compute_test_stats.sh`
-    3. **`sbatch 6_compute_test_stats.sh`**
+    1. Set `run_mode=full` in `6_compute_test_stats.sh`
+    3. **`bash 6_compute_test_stats.sh`**
 
     *Output*: 
     - `test_corrected_{spacecraft}_{bins}_bins.pkl`, not including `ints`, `ints_gapped`, `sfs`, or `sfs_gapped_corrected`
@@ -251,11 +243,17 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
 7.  **Plot the test set results** 
 
-    1. If on an HPC, download everything in the folder `results/full`, excluding the non "with_sfs" corrected ints, to the corresponding folder locally. 
-         
+    1. If on an HPC, download everything in the folder `results/full` to the corresponding folder locally.
+
+    2. Adjust the src/params.py `run_mode` appropriately. 
+
+    2. **`python 4c_plot_training_results.py`** (`train_psp_error.png`)
+
     2. **`python 7a_plot_test_results.py`** (scatterplots, boxplots)
 
     3. **`python 7b_plot_test_case_studies.py`**
+
+    4. **`python 7c_plot_scalar_dists.py`**
 
     4. **`python 7d_test_scalar_dists.py > results/{run_mode}/scalar_dists_tests.txt`**
 

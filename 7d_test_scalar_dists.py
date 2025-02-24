@@ -60,10 +60,6 @@ ints = pd.read_csv(
 )
 run_mode = params.run_mode
 
-# Remove any tce values that are less than 0 (due to not getting proper fit)
-ints = ints[ints.tce_orig >= 0]
-ints = ints[ints.tce >= 0]
-
 # Checking proportions of above filters
 len(ints)
 # 44100
@@ -326,78 +322,80 @@ df_results.T
 # Both have significant KS values at 99.9% confidence
 
 
-# List of groups to compare with Group A
-groups = [("Naive", data_naive), ("Corrected", data_corrected), ("Lint", data_lint)]
+# # List of groups to compare with Group A
+# groups = [("Naive", data_naive), ("Corrected", data_corrected), ("Lint", data_lint)]
 
-# Set consistent bins
-_, bins, _ = plt.hist(
-    data_naive["es_slope"],
-    bins=50,
-)
-plt.clf()
+# # Set consistent bins
+# _, bins, _ = plt.hist(
+#     data_naive["es_slope"],
+#     bins=50,
+# )
+# plt.clf()
 
-# Create subplots for each pairwise comparison
-fig, axes = plt.subplots(1, len(groups), figsize=(12, 3), sharey=True, sharex=True)
+# # Create subplots for each pairwise comparison
+# fig, axes = plt.subplots(1, len(groups), figsize=(12, 3), sharey=True, sharex=True)
 
-# for row, cumulative in enumerate([False, True]):
-for ax, (group_name, group_data) in zip(axes, groups):
-    ax.hist(
-        data_true.es_slope_orig,
-        bins=bins,
-        alpha=0.5,
-        label="True",
-        color="blue",
-        cumulative=False,
-    )
-    ax.hist(
-        group_data["es_slope"],
-        bins=bins,
-        alpha=0.5,
-        label=group_name,
-        color="orange",
-        cumulative=False,
-    )
-    ax.set_title(f"True vs. {group_name}")
-    ax.set_xlabel("Values")
-    ax.set_ylabel("Frequency")
-    ax.legend()
-    # Add a line at the median of each group
-    ax.axvline(data_true.es_slope_orig.median(), color="blue", linestyle="--")
-    ax.axvline(group_data["es_slope"].median(), color="orange", linestyle="--")
+# # for row, cumulative in enumerate([False, True]):
+# for ax, (group_name, group_data) in zip(axes, groups):
+#     ax.hist(
+#         data_true.es_slope_orig,
+#         bins=bins,
+#         alpha=0.5,
+#         label="True",
+#         color="blue",
+#         cumulative=False,
+#     )
+#     ax.hist(
+#         group_data["es_slope"],
+#         bins=bins,
+#         alpha=0.5,
+#         label=group_name,
+#         color="orange",
+#         cumulative=False,
+#     )
+#     ax.set_title(f"True vs. {group_name}")
+#     ax.set_xlabel("Values")
+#     ax.set_ylabel("Frequency")
+#     ax.legend()
+#     # Add a line at the median of each group
+#     ax.axvline(data_true.es_slope_orig.median(), color="blue", linestyle="--")
+#     ax.axvline(group_data["es_slope"].median(), color="orange", linestyle="--")
 
-    ax.axvline(data_true.es_slope_orig.min(), color="blue", alpha=0.5, linestyle=":")
-    ax.axvline(data_true.es_slope_orig.max(), color="blue", alpha=0.5, linestyle=":")
-    ax.axvline(group_data["es_slope"].min(), color="orange", alpha=0.5, linestyle=":")
-    ax.axvline(group_data["es_slope"].max(), color="orange", alpha=0.5, linestyle=":")
+#     ax.axvline(data_true.es_slope_orig.min(), color="blue", alpha=0.5, linestyle=":")
+#     ax.axvline(data_true.es_slope_orig.max(), color="blue", alpha=0.5, linestyle=":")
+#     ax.axvline(group_data["es_slope"].min(), color="orange", alpha=0.5, linestyle=":")
+#     ax.axvline(group_data["es_slope"].max(), color="orange", alpha=0.5, linestyle=":")
 
-    # # Add annotation of Dunn's test results
-    # p_value = posthoc_dunn(
-    #     all_data, val_col=variable, group_col="group", p_adjust="bonferroni"
-    # ).loc["orig", f"{group_name.lower()}"]
-    # ax.text(
-    #     0.05,
-    #     0.8,
-    #     f"p={p_value:.2f}",
-    #     horizontalalignment="left",
-    #     verticalalignment="center",
-    #     transform=ax.transAxes,
-    # )
-    # Print sample size
-    ax.text(
-        0.05,
-        0.7,
-        f"n={len(group_data)}",
-        horizontalalignment="left",
-        verticalalignment="center",
-        transform=ax.transAxes,
-    )
+#     # # Add annotation of Dunn's test results
+#     # p_value = posthoc_dunn(
+#     #     all_data, val_col=variable, group_col="group", p_adjust="bonferroni"
+#     # ).loc["orig", f"{group_name.lower()}"]
+#     # ax.text(
+#     #     0.05,
+#     #     0.8,
+#     #     f"p={p_value:.2f}",
+#     #     horizontalalignment="left",
+#     #     verticalalignment="center",
+#     #     transform=ax.transAxes,
+#     # )
+#     # Print sample size
+#     ax.text(
+#         0.05,
+#         0.7,
+#         f"n={len(group_data)}",
+#         horizontalalignment="left",
+#         verticalalignment="center",
+#         transform=ax.transAxes,
+#     )
 
-# Adjust layout for better visualization
-plt.suptitle(f"Comparison of True vs. Naive, Corrected, Lint for {variable}, bin {bin}")
-plt.tight_layout()
-plt.savefig("results/{run_mode}/plots/{variable}_dists_{bin}.png")
+#     # Adjust layout for better visualization
+#     plt.suptitle(
+#         f"Comparison of True vs. Naive, Corrected, Lint for {variable}, bin {bin}"
+#     )
+#     plt.tight_layout()
+#     plt.savefig(f"results/{run_mode}/plots/{variable}_dists_{bin}.png")
 
-print("FINISHED")
+# print("FINISHED")
 
 
 # Multiple test correction just doubles the p-values as we are conducting 2 tests

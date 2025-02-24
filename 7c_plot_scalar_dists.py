@@ -24,20 +24,6 @@ ints = pd.read_csv(
     f"results/{run_mode}/test_wind_corrected_25_bins_ints_gapped_metadata.csv"
 )
 
-# Remove any tce values that are less than 0 (due to not getting proper fit)
-ints = ints[ints.tce_orig >= 0]
-ints = ints[ints.tce >= 0]
-
-# Checking proportions of above filters
-len(ints)
-# 44100
-len(ints[ints.tce < 0])
-# 2699
-len(ints[ints.tce_orig < 0])
-# 700
-
-# 1.6% of original SFs and 6.1% of the gapped SFs have negative tce values
-
 # Calculate ttu-based Reynolds number
 ints["Re_lt"] = 27 * (ints["tce"] / ints["ttu"]) ** 2
 ints["Re_lt_orig"] = 27 * (ints["tce_orig"] / ints["ttu_orig"]) ** 2

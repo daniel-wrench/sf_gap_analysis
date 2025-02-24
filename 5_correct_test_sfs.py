@@ -107,7 +107,7 @@ def smooth_scaling(x, y, num_bins=20):
 
 for int_index in range(len(ints)):
 
-    for version in range(times_to_gap + 1):
+    for version in range(times_to_gap):
 
         single_sf = sfs_lint_corrected_3d[
             (sfs_lint_corrected_3d["int_index"] == int_index)
@@ -293,7 +293,7 @@ sfs_gapped_corrected = pd.merge(
 sfs["gap_handling"] = "true"
 
 sfs_true_full = pd.DataFrame()
-for i in range(times_to_gap + 1):
+for i in range(times_to_gap):
     sfs["version"] = i
     sfs_true_full = pd.concat([sfs_true_full, sfs])
 
@@ -323,7 +323,7 @@ ints_gapped_metadata = pd.concat([ints_gapped_metadata, new_rows])
 
 for i in files_metadata.file_index.unique():
     for j in range(len(ints_metadata["file_index"] == i)):
-        for k in range(times_to_gap + 1):
+        for k in range(times_to_gap):
             for gap_handling in sfs_gapped_corrected.gap_handling.unique():
 
                 if gap_handling != "true":

@@ -2,18 +2,14 @@
 #
 # Takes 3min to read 15 Voyager files (1 year each)
 
-
 import glob
-import os
 import re
-import sys
 
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-from sunpy.net import Fido
-from sunpy.net import attrs as a
 from sunpy.timeseries import TimeSeries
-
-import src.utils as utils
 
 # So that I can read in the src files while working here in the notebooks/ folder
 # NB: does not affect working directory, so still need ../data e.g. for reading data
@@ -31,7 +27,9 @@ print("Reading in Voyager 2 data...")
 v2 = TimeSeries(v2_file_list, concatenate=True)
 
 
-# Extract the year from the first file in file_list (ow for some reason timestamp went back to 1993)
+# Extract the year from the first file in file_list
+# (ow for some reason timestamp went back to 1993)
+
 v1_start_year = re.search(r"(\d{4})", v1_file_list[0]).group(1)
 v2_start_year = re.search(r"(\d{4})", v2_file_list[0]).group(1)
 
@@ -59,14 +57,6 @@ missing = v2_df.iloc[:, 0].isna().sum() / len(v2_df)
 missing
 
 
-from datetime import datetime
-
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.ticker import FuncFormatter
-
-
 # Functions for converting between timestamp, decimal year, and distance
 def timestamp_to_decimal_year(timestamp):
     """Convert a pandas timestamp to decimal year"""
@@ -80,7 +70,7 @@ def timestamp_to_decimal_year(timestamp):
 
 
 def decimal_year_to_distance(decimal_year):
-    # Slope and constant are the results of linear fit to following points from FratEA (2021):
+    # Slope and constant are the results of linear fit to following points (FratEA2021):
     # 2013.36 = 124au
     # 2019.0 = 144au
     distance = 3.546 * decimal_year - 7015.574
@@ -163,7 +153,8 @@ def add_distance_axis(ax, num_ticks=5, round_to=10):
 # ax2 = add_distance_axis(ax, num_ticks=6, round_to=10)
 
 
-# Updated function: if doy_end and year_end are not provided, plot a single vertical line.
+# Updated function: if doy_end and year_end are not provided,
+# plot a single vertical line.
 def create_highlight_region(
     ax,
     name,
@@ -215,9 +206,6 @@ v1_end_date = v1_df.index[-1]
 v1_time_diff = v1_end_date - v1_hp_date
 
 
-import matplotlib.pyplot as plt
-
-
 def add_bulleted_textbox(ax, bullet_points, title=None, alpha=0.8):
     """
     Add a left-justified bulleted text box to the right-most third of a matplotlib axes.
@@ -238,9 +226,6 @@ def add_bulleted_textbox(ax, bullet_points, title=None, alpha=0.8):
     fig = ax.figure
     bbox = ax.get_position()
 
-    # Calculate box position (right-most third with padding)
-    x_start = bbox.x0 + (2 / 3) * bbox.width
-
     # Create text content with bullet points
     if title:
         text = f"{title}\n\n"
@@ -255,7 +240,6 @@ def add_bulleted_textbox(ax, bullet_points, title=None, alpha=0.8):
     )
 
     # Use axes coordinates instead of figure coordinates to stay within bounds
-    # This places the text in axes coordinates where 0,0 is bottom left and 1,1 is top right
     ax.text(
         0.6,
         0.45,
@@ -444,7 +428,8 @@ I intervals are from FraternaleEA 2021, where they also calculated \n \
 B intervals are from BurlagaEA 2024, where they calculated \n \
     • intermittency (using fits to PDFs)\n \
 \n \
-VOYAGER 2: \n pfa, pfb, and sha were identified in BurlagaEA 2022. \n No spectral analysis was performed."
+VOYAGER 2: \n pfa, pfb, and sha were identified in BurlagaEA 2022. \n \
+    No spectral analysis was performed."
 
 add_bulleted_textbox(ax2, bullet_points, title="Literature Review:")
 

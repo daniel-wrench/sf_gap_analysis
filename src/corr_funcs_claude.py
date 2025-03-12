@@ -178,7 +178,6 @@ def compute_outer_scale_exp_trick(
     if x_opt is None:
         return np.nan
 
-    # Round the result to 3 decimal places
     tce = round(x_opt[0], 3)
 
     # Optional plotting
@@ -295,12 +294,9 @@ def compute_outer_scale_exp_fit(
         acf[:num_lags_for_lambda_c_fit],
         p0=initial_guess,
     )
-    lambda_c = c_opt[0]
+    lambda_c = round(c_opt[0], 3)
 
-    # Convert to the requested time unit
-    unit_factor = TIME_UNIT_FACTORS[time_unit]
     unit_label = TIME_UNIT_LABELS[time_unit]
-    lambda_c_in_unit = lambda_c / unit_factor
 
     # Optional plotting
     if plot:
@@ -314,11 +310,7 @@ def compute_outer_scale_exp_fit(
         )
 
         # Plot the exponential fit
-        formatted_value = (
-            f"{lambda_c_in_unit:.1f}"
-            if lambda_c_in_unit < 10
-            else f"{lambda_c_in_unit:.0f}"
-        )
+        formatted_value = f"{lambda_c:.1f}" if lambda_c < 10 else f"{lambda_c:.0f}"
         fit_times = np.array(range(int(time_to_fit)))
         ax.plot(
             fit_times / display_factor,
@@ -328,9 +320,9 @@ def compute_outer_scale_exp_fit(
             c="black",
         )
 
-        return lambda_c_in_unit, fig, ax
+        return lambda_c, fig, ax
     else:
-        return lambda_c_in_unit
+        return lambda_c
 
 
 def compute_outer_scale_integral(
@@ -368,9 +360,8 @@ def compute_outer_scale_integral(
     idx_before = sign_changes[0]
 
     # Computing integral up to that index
-    tci = np.sum(acf[:idx_before]) * dt
+    tci = round(np.sum(acf[:idx_before]) * dt, 3)
 
-    # Convert to the requested time unit
     unit_label = TIME_UNIT_LABELS[time_unit]
 
     # Optional plotting
@@ -413,6 +404,7 @@ def compute_all_correlation_scales(
     nlags: Optional[int] = None,
     time_unit: TimeUnit = TimeUnit.SECONDS,
     xmax: Optional[int] = None,
+    title: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Compute and plot all three correlation scale methods in a single figure.
@@ -461,6 +453,8 @@ def compute_all_correlation_scales(
     if xmax is not None:
         ax.set_xlim(0, xmax)
     plt.tight_layout()
+    if title is not None:
+        plt.title(title)
 
     # Return results
     return {

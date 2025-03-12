@@ -609,8 +609,9 @@ def compute_outer_scale_exp_trick(
                 # Optional plotting, set up to eventually display all 3 corr scale methods
                 if plot is True:
                     fig, ax = plt.subplots(
-                        1, 1, figsize=(3.3, 2.5), constrained_layout=True
+                        1, 1, figsize=(5, 2.5), constrained_layout=True
                     )
+                    # PREVIOUSLY WAS 3.3 WIDE - 2.5 TALL
                     # fig.subplots_adjust(left=0.2, top=0.8, bottom=0.8)
 
                     ax.plot(
@@ -669,7 +670,13 @@ def para_fit(x, a):
 
 
 def compute_outer_scale_exp_fit(
-    time_lags, acf, seconds_to_fit, fig=None, ax=None, plot=False
+    time_lags,
+    acf,
+    seconds_to_fit,
+    fig=None,
+    ax=None,
+    plot=False,
+    initial_guess=1000,
 ):
     dt = time_lags[1] - time_lags[0]
     num_lags_for_lambda_c_fit = int(seconds_to_fit / dt)
@@ -677,7 +684,7 @@ def compute_outer_scale_exp_fit(
         exp_fit,
         time_lags[:num_lags_for_lambda_c_fit],
         acf[:num_lags_for_lambda_c_fit],
-        p0=1000,
+        p0=initial_guess,
     )
     lambda_c = c_opt[0]
 
@@ -703,9 +710,19 @@ def compute_outer_scale_exp_fit(
 
 
 def compute_outer_scale_integral(time_lags, acf, fig=None, ax=None, plot=False):
+
     dt = time_lags[1] - time_lags[0]
-    idx = np.argmin(np.abs(acf))  # Getting the index where the ACF falls to 0
-    integral = np.sum(acf[:idx]) * dt  # Computing integral up to that index
+
+    # Find where ACF changes sign (crosses zero)
+    sign_changes = np.where(np.diff(np.signbit(acf)))[0]
+
+    if len(sign_changes) == 0:
+        return None  # No zero crossing found
+
+    # Get index just before first zero crossing
+    idx_before = sign_changes[0]
+
+    integral = np.sum(acf[:idx_before]) * dt  # Computing integral up to that index
 
     # Optional plotting
     if plot is True:
@@ -716,12 +733,12 @@ def compute_outer_scale_integral(time_lags, acf, fig=None, ax=None, plot=False):
 
         elif fig is None and ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(3.3, 2.5), constrained_layout=True)
-
+        print(time_lags[idx_before])
         ax.fill_between(
             time_lags / 1000,
             0,
             acf,
-            where=acf > 0,
+            where=(acf > 0) & (time_lags < time_lags[idx_before]),
             color="black",
             alpha=0.2,
             label="Integral$\\rightarrow\\lambda_C^{{\mathrm{{int}}}}$={:.0f}s".format(

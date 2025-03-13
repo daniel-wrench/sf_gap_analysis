@@ -125,8 +125,6 @@ def compute_nd_acf(
             secax_x2 = ax.secondary_xaxis(-0.2, functions=(time_to_km, km_to_time))
             secax_x2.set_xlabel("$r$ (km)")
 
-        plt.show()
-
     return time_lags, acf
 
 
@@ -183,7 +181,7 @@ def compute_outer_scale_exp_trick(
     # Optional plotting
     if plot:
         try:
-            fig, ax = plt.subplots(1, 1, figsize=(5, 2.5), constrained_layout=True)
+            fig, ax = plt.subplots(1, 1, figsize=(6, 3), constrained_layout=True)
 
             # Plot ACF
             ax.plot(
@@ -452,14 +450,15 @@ def compute_all_correlation_scales(
     ax.legend(loc="upper right")
     if xmax is not None:
         ax.set_xlim(0, xmax)
-    plt.tight_layout()
+    ax.set_ylim(0, 1.1)
     if title is not None:
         plt.title(title)
 
+    plt.close(fig)
     # Return results
     return {
         "correlation_scale_1/e": corr_scale_exp_trick,
         "correlation_scale_exp_fit": corr_scale_exp_fit,
         "correlation_scale_integral": corr_scale_integral,
-        "figure": fig,
+        "figure_acf": fig,
     }

@@ -1,5 +1,10 @@
-# ## Plot Voyager LISM data
-#
+## Plot Voyager LISM data
+
+# TO-DO
+# - Reduce alpha of pre-heliopause data
+# - Add V2 time axis
+# - Add uncertainties
+
 # Takes 3min to read 15 Voyager files (1 year each)
 
 import glob
@@ -11,11 +16,17 @@ import numpy as np
 import pandas as pd
 from sunpy.timeseries import TimeSeries
 
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=10)
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["ytick.direction"] = "in"
+
+
 # So that I can read in the src files while working here in the notebooks/ folder
 # NB: does not affect working directory, so still need ../data e.g. for reading data
 
 
-# Get list of all Voyager 1 files in directory
+# Get list of all files in directory
 v1_file_list = glob.glob("data/raw/voyager/voyager1*")
 v2_file_list = glob.glob("data/raw/voyager/voyager2*")
 

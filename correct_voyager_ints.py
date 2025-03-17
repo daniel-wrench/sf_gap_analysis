@@ -25,6 +25,13 @@ plt.rcParams["ytick.direction"] = "in"
 
 # Read in cleaned Voyager 1 data
 df = pd.read_pickle("data/interim/voyager/voyager1_lism_cleaned.pkl")
+print("Loaded dataset")
+
+# Importing lookup table
+n_bins = 25
+run_mode = "full"
+with open(f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb") as f:
+    correction_lookup_3d = pickle.load(f)
 
 # ## Computing standardised SFs
 #
@@ -43,21 +50,38 @@ powers = [2]
 
 df_std = df.resample(str(np.round(new_cadence, 3)) + "s").mean()
 n_ints = m.floor(len(df_std) / interval_length)
-
+print(f"Number of standardised intervals to correct: {n_ints}")
 
 # We should have 24 intervals of 10,000 points each, each covering 10 correlation times = 10 * 17 days = 170 days.
 
 del df
 
+# Initialise metadata dataframe
+ints_gapped_metadata = pd.DataFrame(
+    columns=[
+        "file_index",
+        "int_index",
+        "start_time",
+        "end_time",
+        "missing",
+        "slope",
+        "tce",
+        "ttu",
+        "es_pwr_law_slope",
+        "es_pwr_law_coef",
+        "es_pwr_law_slope_std",
+        "es_pwr_law_coef_std",
+    ]
+)
+
 file_index = 0
-version = 0
+# Just getting all ints from the one dataset for now
+# (With consistent resampling)
 
 # Extract an interval
-for int_index in range(2):
-
+for int_index in range(n_ints):
+    print(f"Correcting interval {int_index}...")
     int_std = df_std[int_index * interval_length : (int_index + 1) * interval_length]
-    print(f"\nCurrent interval (int_index={int_index})\n")
-    int_std.info()
 
     int_norm = utils.normalize(int_std)
     bad_input = int_norm[["BR", "BT", "BN"]]
@@ -66,7 +90,6 @@ for int_index in range(2):
     bad_output["gap_handling"] = "naive"
     bad_output["file_index"] = file_index
     bad_output["int_index"] = int_index
-    bad_output["version"] = version
 
     interp_input = (
         bad_input.interpolate(method="linear").ffill().bfill()
@@ -78,7 +101,6 @@ for int_index in range(2):
 
     interp_output["file_index"] = 0
     interp_output["int_index"] = int_index
-    interp_output["version"] = 0
     interp_output["gap_handling"] = "lint"
 
     # Correcting sample size and uncertainty for linear interpolation, same values as no handling
@@ -92,13 +114,6 @@ for int_index in range(2):
     sfs_gapped = pd.concat([interp_output, bad_output])
 
     # ### Correcting SF
-
-    # Importing lookup table
-    n_bins = 25
-    with open(
-        f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb"
-    ) as f:
-        correction_lookup_3d = pickle.load(f)
 
     # ## Smoothing correction
     #
@@ -142,10 +157,7 @@ for int_index in range(2):
         )
         return interp_func(x)
 
-    single_sf = sfs_lint_corrected_3d[
-        (sfs_lint_corrected_3d["int_index"] == int_index)
-        & (sfs_lint_corrected_3d["version"] == version)
-    ]
+    single_sf = sfs_lint_corrected_3d[(sfs_lint_corrected_3d["int_index"] == int_index)]
 
     scaling_smooth = smooth_scaling(single_sf.lag, single_sf.scaling)
     scaling_lower_smooth = smooth_scaling(single_sf.lag, single_sf.scaling_lower)
@@ -153,20 +165,17 @@ for int_index in range(2):
 
     # Save to the main dataframe
     sfs_lint_corrected_3d.loc[
-        (sfs_lint_corrected_3d["int_index"] == int_index)
-        & (sfs_lint_corrected_3d["version"] == version),
+        (sfs_lint_corrected_3d["int_index"] == int_index),
         "scaling_smooth",
     ] = scaling_smooth
 
     sfs_lint_corrected_3d.loc[
-        (sfs_lint_corrected_3d["int_index"] == int_index)
-        & (sfs_lint_corrected_3d["version"] == version),
+        (sfs_lint_corrected_3d["int_index"] == int_index),
         "scaling_lower_smooth",
     ] = scaling_lower_smooth
 
     sfs_lint_corrected_3d.loc[
-        (sfs_lint_corrected_3d["int_index"] == int_index)
-        & (sfs_lint_corrected_3d["version"] == version),
+        (sfs_lint_corrected_3d["int_index"] == int_index),
         "scaling_upper_smooth",
     ] = scaling_upper_smooth
 
@@ -185,7 +194,6 @@ for int_index in range(2):
         [
             "file_index",
             "int_index",
-            "version",
             "lag",
             "missing_percent",
             "sf_2_corrected_3d",
@@ -194,7 +202,7 @@ for int_index in range(2):
     correction_long = pd.wide_to_long(
         correction_wide,
         ["sf_2"],
-        i=["file_index", "int_index", "version", "lag", "missing_percent"],
+        i=["file_index", "int_index", "lag", "missing_percent"],
         j="gap_handling",
         sep="_",
         suffix=r"\w+",
@@ -203,7 +211,6 @@ for int_index in range(2):
         [
             "file_index",
             "int_index",
-            "version",
             "lag",
             "missing_percent",
             "sf_2_lower_corrected_3d",
@@ -214,7 +221,7 @@ for int_index in range(2):
     correction_bounds_long = pd.wide_to_long(
         correction_bounds_wide,
         ["sf_2_lower", "sf_2_upper"],
-        i=["file_index", "int_index", "version", "lag", "missing_percent"],
+        i=["file_index", "int_index", "lag", "missing_percent"],
         j="gap_handling",
         sep="_",
         suffix=r"\w+",
@@ -227,7 +234,6 @@ for int_index in range(2):
         on=[
             "file_index",
             "int_index",
-            "version",
             "lag",
             "missing_percent",
             "gap_handling",
@@ -236,15 +242,6 @@ for int_index in range(2):
 
     # Adding the corrections, now as a form of "gap_handling", back to the gapped SF dataframe
     sfs_gapped_corrected = pd.concat([sfs_gapped, corrections_long])
-
-    # ## Calculate slopes and scales
-    # ### Initialise interval-specific statistics dataframe
-
-    # We want a new ints_gapped_metadata dataframe that contains the metadata for the corrected SFs
-    ints_gapped_metadata = sfs_gapped[
-        ["file_index", "int_index", "version"]
-    ].drop_duplicates()
-    ints_gapped_metadata["gap_handling"] = "corrected_3d"
 
     # Calculate slopes and scales
 
@@ -255,7 +252,6 @@ for int_index in range(2):
     current_int = sfs_gapped_corrected.loc[
         (sfs_gapped_corrected["file_index"] == file_index)
         & (sfs_gapped_corrected["int_index"] == int_index)
-        & (sfs_gapped_corrected["version"] == version)
         & (sfs_gapped_corrected["gap_handling"] == gap_handling)
     ]
 
@@ -312,70 +308,34 @@ for int_index in range(2):
         tau_max=params.tau_max,
     )
 
-    # ### Save results to dataframe
+    missing = bad_input["BR"].isna().sum() / len(bad_input["BR"])
 
-    if gap_handling != "true":
-        # Save metadata to the gapped metadata df
+    # Save results to dataframe
 
-        ints_gapped_metadata.loc[
-            (ints_gapped_metadata["file_index"] == file_index)
-            & (ints_gapped_metadata["int_index"] == int_index)
-            & (ints_gapped_metadata["version"] == version)
-            & (ints_gapped_metadata["gap_handling"] == gap_handling),
-            "slope",
-        ] = slope
+    new_row = pd.DataFrame(
+        {
+            "file_index": file_index,
+            "int_index": int_index,
+            "start_time": str(bad_input.index.min()),
+            "end_time": str(bad_input.index.max()),
+            "cadence": new_cadence,
+            "missing": missing,
+            "slope": slope,
+            "tce": tce,
+            "ttu": ttu,
+            "es_pwr_law_slope": popt[1],
+            "es_pwr_law_coef": popt[0],
+            "es_pwr_law_slope_std": pcov[1, 1],
+            "es_pwr_law_coef_std": pcov[0, 0],
+        },
+        index=[int_index],
+    )
 
-        ints_gapped_metadata.loc[
-            (ints_gapped_metadata["file_index"] == file_index)
-            & (ints_gapped_metadata["int_index"] == int_index)
-            & (ints_gapped_metadata["version"] == version)
-            & (ints_gapped_metadata["gap_handling"] == gap_handling),
-            "tce",
-        ] = tce
-
-        ints_gapped_metadata.loc[
-            (ints_gapped_metadata["file_index"] == file_index)
-            & (ints_gapped_metadata["int_index"] == int_index)
-            & (ints_gapped_metadata["version"] == version)
-            & (ints_gapped_metadata["gap_handling"] == gap_handling),
-            "ttu",
-        ] = ttu
-
-        ints_gapped_metadata.loc[
-            (ints_gapped_metadata["file_index"] == file_index)
-            & (ints_gapped_metadata["int_index"] == int_index)
-            & (ints_gapped_metadata["version"] == version)
-            & (ints_gapped_metadata["gap_handling"] == gap_handling),
-            "es_pwr_law_slope",
-        ] = popt[1]
-
-        ints_gapped_metadata.loc[
-            (ints_gapped_metadata["file_index"] == file_index)
-            & (ints_gapped_metadata["int_index"] == int_index)
-            & (ints_gapped_metadata["version"] == version)
-            & (ints_gapped_metadata["gap_handling"] == gap_handling),
-            "es_pwr_law_coef",
-        ] = popt[0]
-
-        ints_gapped_metadata.loc[
-            (ints_gapped_metadata["file_index"] == file_index)
-            & (ints_gapped_metadata["int_index"] == int_index)
-            & (ints_gapped_metadata["version"] == version)
-            & (ints_gapped_metadata["gap_handling"] == gap_handling),
-            "es_pwr_law_slope_std",
-        ] = np.sqrt(pcov[1, 1])
-
-        ints_gapped_metadata.loc[
-            (ints_gapped_metadata["file_index"] == file_index)
-            & (ints_gapped_metadata["int_index"] == int_index)
-            & (ints_gapped_metadata["version"] == version)
-            & (ints_gapped_metadata["gap_handling"] == gap_handling),
-            "es_pwr_law_coef_std",
-        ] = np.sqrt(pcov[0, 0])
-
-    ints_gapped_metadata
+    ints_gapped_metadata = pd.concat([ints_gapped_metadata, new_row])
 
     # ##############################################################
+
+    print("Plotting...")
 
     # fig, ax = plt.subplots(1, 3, figsize=(8, 2), constrained_layout=True)
     fig = plt.figure(figsize=(7, 6))
@@ -407,8 +367,6 @@ for int_index in range(2):
     # ax1.set_title("Magnetic field @ 154 AU (Voyager 1, interstellar medium)"),
     # ax1.set_title("Magnetic field @ 118 AU (Voyager 1, inner heliosheath)")
 
-    missing = bad_input["BR"].isna().sum() / len(bad_input["BR"])
-
     ax2.set_xlabel("Lag (s)")
     ax2.set_ylabel("SF")
 
@@ -416,7 +374,6 @@ for int_index in range(2):
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
             & (sfs_gapped_corrected["gap_handling"] == "naive"),
             "lag",
         ]
@@ -424,7 +381,6 @@ for int_index in range(2):
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
             & (sfs_gapped_corrected["gap_handling"] == "naive"),
             "sf_2",
         ],
@@ -436,7 +392,6 @@ for int_index in range(2):
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
             & (sfs_gapped_corrected["gap_handling"] == "lint"),
             "lag",
         ]
@@ -444,7 +399,6 @@ for int_index in range(2):
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
             & (sfs_gapped_corrected["gap_handling"] == "lint"),
             "sf_2",
         ],
@@ -456,7 +410,6 @@ for int_index in range(2):
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
             & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "lag",
         ]
@@ -464,7 +417,6 @@ for int_index in range(2):
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
             & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "sf_2",
         ],
@@ -476,7 +428,6 @@ for int_index in range(2):
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
             & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "lag",
         ]
@@ -484,14 +435,12 @@ for int_index in range(2):
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
             & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "sf_2_lower",
         ],
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
             & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "sf_2_upper",
         ],
@@ -505,7 +454,6 @@ for int_index in range(2):
     sf_lags = sfs_gapped_corrected.loc[
         (sfs_gapped_corrected["file_index"] == file_index)
         & (sfs_gapped_corrected["int_index"] == int_index)
-        & (sfs_gapped_corrected["version"] == version)
         & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
         "lag",
     ]
@@ -531,6 +479,16 @@ for int_index in range(2):
     ax3.set_ylabel(r"$\frac{1}{6} \tau$ SF")
 
     fig.suptitle(
-        f"Voyager 1 LISM, interval {int_index}: {missing*100:.2f}\% missing", y=1.05
+        f"Voyager 1 LISM, interval {int_index}: {missing*100:.2f}\% missing",
+        y=0.95,
+        fontsize=16,
     )
     plt.savefig(f"results/full/plots/voyager/v1_corrected_{int_index}.png", dpi=300)
+    # Close the figure to save memory
+    plt.close(fig)
+
+
+# Save metadata
+output_file_path = "results/full/voyager1_corrected_metadata.csv"
+ints_gapped_metadata.to_csv(output_file_path)
+print(f"Stats saved to {output_file_path}")

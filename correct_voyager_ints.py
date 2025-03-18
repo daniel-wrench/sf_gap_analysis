@@ -2,7 +2,6 @@
 #
 # CORRELATION LENGTH = 17 DAYS
 
-import math as m
 import pickle
 
 import matplotlib.dates as mdates
@@ -10,6 +9,10 @@ import numpy as np
 import pandas as pd
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+# Fit a power law to the corrected SF
+from scipy.optimize import curve_fit
 
 import src.params as params
 import src.sf_funcs as sf
@@ -49,7 +52,7 @@ lags = np.arange(1, params.max_lag_prop * params.int_length)
 powers = [2]
 
 df_std = df.resample(str(np.round(new_cadence, 3)) + "s").mean()
-n_ints = m.floor(len(df_std) / interval_length)
+n_ints = int(np.floor(len(df_std) / interval_length))
 print(f"Number of standardised intervals to correct: {n_ints}")
 
 # We should have 24 intervals of 10,000 points each, each covering 10 correlation times = 10 * 17 days = 170 days.
@@ -107,9 +110,6 @@ for int_index in range(n_ints):
     interp_output["n"] = bad_output["n"]
     interp_output["missing_percent"] = bad_output["missing_percent"]
     interp_output["sf_2_se"] = bad_output["sf_2_se"]
-
-    n_bins = 25
-    run_mode = "full"
 
     sfs_gapped = pd.concat([interp_output, bad_output])
 
@@ -273,9 +273,6 @@ for int_index in range(n_ints):
         1,
     )[0]
 
-    # Fit a power law to the corrected SF
-    from scipy.optimize import curve_fit
-
     def power_law(x, a, b):
         return a * x**b
 
@@ -337,132 +334,66 @@ for int_index in range(n_ints):
 
     print("Plotting...")
 
-    # fig, ax = plt.subplots(1, 3, figsize=(8, 2), constrained_layout=True)
-    fig = plt.figure(figsize=(7, 6))
+    fig = plt.figure(figsize=(11, 5))
+    gs = gridspec.GridSpec(
+        2, 3, height_ratios=[1, 1]
+    )  # Now 3 columns in the second row
+    gs.update(hspace=0.6, wspace=0.3)
 
-    gs = gridspec.GridSpec(2, 2, height_ratios=[1, 1])
-    gs.update(hspace=0.3, wspace=0.3)  # Change 0.5 to control the spacing
-    # First row, spanning both columns
+    # First row, spanning all three columns
     ax1 = fig.add_subplot(gs[0, :])
-
-    # Second row, first column
+    # Second row, three separate columns
     ax2 = fig.add_subplot(gs[1, 0])
-
-    # Second row, second column
     ax3 = fig.add_subplot(gs[1, 1])
+    ax4 = fig.add_subplot(gs[1, 2])  # New third panel
 
+    # Panel 1: Magnetic field plot
     ax1.plot(bad_input.index, bad_input["BR"], color="black", lw=0.3, label="Raw")
-    # ax1.plot(
-    #     interp_input_df["Time"],
-    #     interp_input_df["BR"],
-    #     color="black",
-    #     lw=1,
-    #     label="Linearly interpolated",
-    # )
     ax1.set_xlabel("Date")
     ax1.set_ylabel(r"$B_R$ (normalized)")
     ax1.xaxis.set_major_formatter(
         mdates.ConciseDateFormatter(ax1.xaxis.get_major_locator())
     )
-    # ax1.set_title("Magnetic field @ 154 AU (Voyager 1, interstellar medium)"),
-    # ax1.set_title("Magnetic field @ 118 AU (Voyager 1, inner heliosheath)")
 
+    # Panel 2: SF plots
     ax2.set_xlabel("Lag (s)")
     ax2.set_ylabel("SF")
+    for handling, color, label in zip(
+        ["naive", "lint", "corrected_3d"],
+        ["red", "black", "#1b9e77"],
+        ["Naive", "LINT", "Corrected"],
+    ):
+        mask = (
+            (sfs_gapped_corrected["file_index"] == file_index)
+            & (sfs_gapped_corrected["int_index"] == int_index)
+            & (sfs_gapped_corrected["gap_handling"] == handling)
+        )
+        ax2.plot(
+            sfs_gapped_corrected.loc[mask, "lag"] * new_cadence,
+            sfs_gapped_corrected.loc[mask, "sf_2"],
+            color=color,
+            lw=1,
+            label=label,
+        )
+
+    sf_lags = sfs_gapped_corrected.loc[mask, "lag"]
 
     ax2.plot(
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["gap_handling"] == "naive"),
-            "lag",
-        ]
-        * new_cadence,
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["gap_handling"] == "naive"),
-            "sf_2",
-        ],
-        color="red",
-        lw=1,
-        label="Naive",
-    )
-    ax2.plot(
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["gap_handling"] == "lint"),
-            "lag",
-        ]
-        * new_cadence,
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["gap_handling"] == "lint"),
-            "sf_2",
-        ],
+        sf_lags.iloc[pwrl_range[0] : pwrl_range[1]] * new_cadence,
+        power_law(sf_lags.iloc[pwrl_range[0] : pwrl_range[1]], 1, slope) / 5,
+        label="Slope = {:.2f}".format(slope),
+        ls="--",
+        alpha=0.5,
         color="black",
-        lw=1,
-        label="LINT",
     )
-    ax2.plot(
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
-            "lag",
-        ]
-        * new_cadence,
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
-            "sf_2",
-        ],
-        color="#1b9e77",
-        lw=1,
-        label="Corrected",
-    )
-    ax2.fill_between(
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
-            "lag",
-        ]
-        * new_cadence,
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
-            "sf_2_lower",
-        ],
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
-            "sf_2_upper",
-        ],
-        color="#1b9e77",
-        alpha=0.2,
-    )
-    ax2.legend(loc="upper left")  # lower right
+    ax2.legend(loc="upper left", fontsize=8, frameon=False)
     ax2.semilogx()
     ax2.semilogy()
 
-    sf_lags = sfs_gapped_corrected.loc[
-        (sfs_gapped_corrected["file_index"] == file_index)
-        & (sfs_gapped_corrected["int_index"] == int_index)
-        & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
-        "lag",
-    ]
-
-    # Third panel (bottom right)
+    # Panel 3: Equivalent spectrum
     ax3.plot(
         1 / (sf_lags * new_cadence),
         sf_corrected_es,
-        label="Equiv. spectrum",
         c="#1b9e77",
     )
     ax3.plot(
@@ -470,25 +401,87 @@ for int_index in range(n_ints):
         power_law(1 / sf_lags.iloc[100:700], *popt) / 5,
         label="Slope = {:.2f}".format(popt[1]),
         ls="--",
+        alpha=0.5,
         color="black",
     )
     ax3.semilogx()
     ax3.semilogy()
-    ax3.legend(loc="upper right")
+    ax3.legend(loc="lower left", frameon=False)
     ax3.set_xlabel("1/Lag ($s^{-1}$)")
     ax3.set_ylabel(r"$\frac{1}{6} \tau$ SF")
 
-    fig.suptitle(
-        f"Voyager 1 LISM, interval {int_index}: {missing*100:.2f}\% missing",
-        y=0.95,
-        fontsize=16,
+    # Panel 4: ACF from SF
+    ax4.plot(
+        current_int["lag"] * new_cadence,
+        current_int["acf_from_sf"],
+        color="#1b9e77",
+        lw=1,
     )
+    ax4.set_xlabel("Lag (s)")
+    ax4.axhline(1 / np.e, color="black", ls="dotted")
+    ax4.axvline(
+        tce * new_cadence,
+        color="black",
+        ls="dotted",
+        label=f"TCE = {tce*new_cadence/3600/24:.1f} days",
+    )
+    # Create an inset to ax4 that highlights the range of params.tau_min and params.tau_max
+
+    axins = inset_axes(ax4, width="30%", height="30%", loc="upper right")
+    axins.plot(
+        current_int["lag"] * new_cadence,
+        current_int["acf_from_sf"],
+        color="#1b9e77",
+        lw=1,
+    )
+    axins.scatter(
+        current_int.loc[params.tau_min : params.tau_max, "lag"] * new_cadence,
+        current_int.loc[params.tau_min : params.tau_max, "acf_from_sf"],
+        color="black",
+        marker="x",
+        label="Taylor max lag range",
+    )
+    axins.set_xlim(params.tau_min * new_cadence, (params.tau_max + 3) * new_cadence)
+    axins.set_ylim(current_int.loc[params.tau_max, "acf_from_sf"] - 0.01, 1)
+    axins.legend(bbox_to_anchor=(0.95, -0.3), fontsize=6, frameon=False)
+    # Reduce font size of ticklabels
+    for tick in axins.get_xticklabels():
+        tick.set_fontsize(6)
+    for tick in axins.get_yticklabels():
+        tick.set_fontsize(6)
+    # axins.set_xticklabels([])
+    # axins.set_yticklabels([])
+
+    ax4.legend(loc="lower left", fontsize=8, frameon=False)
+
+    fig.suptitle(
+        f"Voyager 1 LISM, interval {int_index}: {new_cadence/60:.1f}min resolution, {missing*100:.1f}\% missing",
+        y=0.95,
+        fontsize=20,
+    )
+
+    # Add a shared title above the 3rd and 4th panels
+    fig.text(0.65, 0.47, "SF-DERIVED CURVES", ha="center", fontsize=15)
+    fig.text(0.24, 0.47, "SF CORRECTION", ha="center", fontsize=15)
+    axins.text(
+        0.5,
+        0.88,
+        f"$\lambda_T$={ttu*new_cadence/3600:.1f} hours",
+        ha="center",
+        va="center",
+        transform=axins.transAxes,
+        fontsize=6,
+    )
+
+    ax2.set_title("SF")
+    ax3.set_title("Equivalent Spectrum")
+    ax4.set_title("ACF")
+
     plt.savefig(f"results/full/plots/voyager/v1_corrected_{int_index}.png", dpi=300)
-    # Close the figure to save memory
     plt.close(fig)
 
 
 # Save metadata
 output_file_path = "results/full/voyager1_corrected_metadata.csv"
-ints_gapped_metadata.to_csv(output_file_path)
+ints_gapped_metadata.to_csv(output_file_path, index=False)
 print(f"Stats saved to {output_file_path}")

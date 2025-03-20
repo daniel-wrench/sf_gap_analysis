@@ -10,6 +10,7 @@ import pandas as pd
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from scipy import stats
 
 # Fit a power law to the corrected SF
 from scipy.optimize import curve_fit
@@ -248,6 +249,11 @@ for int_index in range(n_ints):
     pwrl_range = params.pwrl_range
     gap_handling = "corrected_3d"
 
+    sfs_gapped_corrected.loc[:, "sf_corrected_es"] = (
+        sfs_gapped_corrected["sf_2"] * sfs_gapped_corrected["lag"] / 6
+    )
+    sfs_gapped_corrected.loc[:, "inverse_lag"] = 1 / (sfs_gapped_corrected["lag"])
+
     # Calculate power-law slope for 2D and 3D corrected SFs
     current_int = sfs_gapped_corrected.loc[
         (sfs_gapped_corrected["file_index"] == file_index)
@@ -255,32 +261,17 @@ for int_index in range(n_ints):
         & (sfs_gapped_corrected["gap_handling"] == gap_handling)
     ]
 
-    slope = np.polyfit(
-        np.log(
-            current_int.loc[
-                (current_int["lag"] >= pwrl_range[0])
-                & (current_int["lag"] <= pwrl_range[1]),
-                "lag",
-            ]
-        ),
-        np.log(
-            current_int.loc[
-                (current_int["lag"] >= pwrl_range[0])
-                & (current_int["lag"] <= pwrl_range[1]),
-                "sf_2",
-            ]
-        ),
-        1,
-    )[0]
+    # Extract power-law fit range of single interval
+    fit_range = current_int.loc[
+        (current_int["lag"] >= pwrl_range[0]) & (current_int["lag"] <= pwrl_range[1]), :
+    ]
 
-    def power_law(x, a, b):
-        return a * x**b
-
-    sf_corrected_es = current_int["sf_2"] * current_int["lag"] / 6
-
-    popt, pcov = curve_fit(
-        power_law, 1 / current_int["lag"].iloc[100:700], sf_corrected_es.iloc[100:700]
+    # Perform the linear regression with full stats
+    slope, intercept, r_value, p_value, std_err = stats.linregress(
+        np.log(fit_range["lag"]), np.log(fit_range["sf_2"])
     )
+    # sf_corrected_es = current_int["sf_2"] * current_int["lag"] / 6
+    # Previously fitted to 100-700 raw lags
 
     # Get ACF from SF
     # var_signal = np.sum(np.var(input, axis=0))
@@ -305,6 +296,8 @@ for int_index in range(n_ints):
         tau_max=params.tau_max,
     )
 
+    # Also change colour when using naive model
+
     missing = bad_input["BR"].isna().sum() / len(bad_input["BR"])
 
     # Save results to dataframe
@@ -320,10 +313,10 @@ for int_index in range(n_ints):
             "slope": slope,
             "tce": tce,
             "ttu": ttu,
-            "es_pwr_law_slope": popt[1],
-            "es_pwr_law_coef": popt[0],
-            "es_pwr_law_slope_std": pcov[1, 1],
-            "es_pwr_law_coef_std": pcov[0, 0],
+            # "es_pwr_law_slope": popt[1],
+            # "es_pwr_law_coef": popt[0],
+            # "es_pwr_law_slope_std": pcov[1, 1],
+            # "es_pwr_law_coef_std": pcov[0, 0],
         },
         index=[int_index],
     )
@@ -378,32 +371,40 @@ for int_index in range(n_ints):
 
     sf_lags = sfs_gapped_corrected.loc[mask, "lag"]
 
+    # Create smooth x values for the fit line
+    sf_lag_fit = np.linspace(pwrl_range[0], pwrl_range[1], 100)
+    sf_log_lag_fit = np.log(sf_lag_fit)
+    # Calculate prediction bands
+    sf_log_y_fit = intercept + slope * sf_log_lag_fit
+    # Transform back to original scale
+    sf_fit = np.exp(sf_log_y_fit)
+
     ax2.plot(
-        sf_lags.iloc[pwrl_range[0] : pwrl_range[1]] * new_cadence,
-        power_law(sf_lags.iloc[pwrl_range[0] : pwrl_range[1]], 1, slope) / 5,
+        sf_lag_fit * new_cadence,
+        sf_fit * 1.5,  # to raise above SF
         label="Slope = {:.2f}".format(slope),
-        ls="--",
-        alpha=0.5,
-        color="black",
+        ls="dotted",
+        lw=2.5,
+        color="#1b9e77",
     )
-    ax2.legend(loc="upper left", fontsize=8, frameon=False)
+    ax2.legend(loc="lower right", fontsize=8, frameon=False)
     ax2.semilogx()
     ax2.semilogy()
 
     # Panel 3: Equivalent spectrum
     ax3.plot(
-        1 / (sf_lags * new_cadence),
-        sf_corrected_es,
+        current_int["inverse_lag"] / new_cadence,  # Dividing coz inverse lag
+        current_int["sf_corrected_es"],
         c="#1b9e77",
     )
-    ax3.plot(
-        1 / (sf_lags.iloc[100:700] * new_cadence),
-        power_law(1 / sf_lags.iloc[100:700], *popt) / 5,
-        label="Slope = {:.2f}".format(popt[1]),
-        ls="--",
-        alpha=0.5,
-        color="black",
-    )
+    # ax3.plot(
+    #     sf_lag_fit * new_cadence,
+    #     sf_fit * 10,  # to raise above SF
+    #     label="Slope = {:.2f}".format(slope),
+    #     ls="dotted",
+    #     lw=2.5,
+    #     color="#1b9e77",
+    # )
     ax3.semilogx()
     ax3.semilogy()
     ax3.legend(loc="lower left", frameon=False)
@@ -441,8 +442,8 @@ for int_index in range(n_ints):
         marker="x",
         label="Taylor max lag range",
     )
-    axins.set_xlim(params.tau_min * new_cadence, (params.tau_max + 3) * new_cadence)
-    axins.set_ylim(current_int.loc[params.tau_max, "acf_from_sf"] - 0.01, 1)
+    axins.set_xlim(0, (params.tau_max + 3) * new_cadence)
+    axins.set_ylim(0.8, 1)
     axins.legend(bbox_to_anchor=(0.95, -0.3), fontsize=6, frameon=False)
     # Reduce font size of ticklabels
     for tick in axins.get_xticklabels():
@@ -465,7 +466,7 @@ for int_index in range(n_ints):
     fig.text(0.24, 0.47, "SF CORRECTION", ha="center", fontsize=15)
     axins.text(
         0.5,
-        0.88,
+        0.85,
         f"$\lambda_T$={ttu*new_cadence/3600:.1f} hours",
         ha="center",
         va="center",
@@ -477,11 +478,15 @@ for int_index in range(n_ints):
     ax3.set_title("Equivalent Spectrum")
     ax4.set_title("ACF")
 
+    ax1.set_ylim(-3, 3)
+    ax2.set_ylim(1e-1, 1e1)
+    ax3.set_ylim(1e-2, 1e4)
+    ax4.set_ylim(0, 1)
     plt.savefig(f"results/full/plots/voyager/v1_corrected_{int_index}.png", dpi=300)
     plt.close(fig)
 
 
 # Save metadata
-output_file_path = "results/full/voyager1_corrected_metadata.csv"
-ints_gapped_metadata.to_csv(output_file_path, index=False)
-print(f"Stats saved to {output_file_path}")
+# output_file_path = "results/full/voyager1_corrected_metadata.csv"
+# ints_gapped_metadata.to_csv(output_file_path, index=False)
+# print(f"Stats saved to {output_file_path}")

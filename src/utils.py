@@ -717,7 +717,7 @@ def compute_outer_scale_integral(time_lags, acf, fig=None, ax=None, plot=False):
     sign_changes = np.where(np.diff(np.signbit(acf)))[0]
 
     if len(sign_changes) == 0:
-        return None  # No zero crossing found
+        raise ValueError("ACF does not reach zero; will not compute integral")
 
     # Get index just before first zero crossing
     idx_before = sign_changes[0]
@@ -1098,10 +1098,9 @@ def plot_results(
 
 
 def normalize(data):
-    # Remove any NA values to calculate mean and std, but leave them in the output set
-    clean_data = data[~np.isnan(data)]
-    mean = np.mean(clean_data)
-    std = clean_data.std()
+    # These funcs can handle missing data
+    mean = data.mean()
+    std = data.std()
     result = (data - mean) / std
     return result
 

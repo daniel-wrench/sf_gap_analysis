@@ -929,14 +929,6 @@ def compute_scaling(inputs, dim, correction_lookup, n_bins=25):
                         scaling_upper[i, j]
                     )
 
-        # Smooth scaling
-
-        # inputs["sf_2_corrected_2d_smoothed"] = (
-        #     inputs["sf_2_corrected_2d"].rolling(50).mean()
-        # )
-
-        # Outside of loop, plot and multiply by inputs["sf_2"]
-
     elif dim == 3:
         xedges = correction_lookup["xedges"]
         yedges = correction_lookup["yedges"]

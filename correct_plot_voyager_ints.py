@@ -37,6 +37,10 @@ run_mode = "full"
 with open(f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb") as f:
     correction_lookup_3d = pickle.load(f)
 
+# Update lag bins to be relative to a correlation scale
+# (noting it was trained on an SF of 2,000 points = 2 corr scales)
+correction_lookup_3d["xedges"] = correction_lookup_3d["xedges"] * 10 / params.int_length
+
 # ## Computing standardised SFs
 #
 # i.e. from intervals of 10,000 points across 10 correlation lengths, calculated up to lag 2,000.
@@ -46,15 +50,28 @@ with open(f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb
 tc = 17 * 24 * 3600  # (17 days in seconds)
 
 tc_n = 10
-interval_length = params.int_length
-new_cadence = tc_n * tc / interval_length
+# interval_length = params.int_length
+# new_cadence = tc_n * tc / interval_length
+new_cadence = (
+    288  # 6-pt average, following Frat2021 while still making high-res enough for SFs
+)
 
-lags = np.arange(1, params.max_lag_prop * params.int_length)
+pwrl_range = [int(1e5 / new_cadence), int(1e6 / new_cadence)]  # params.pwrl_range
+# Reproducing Frat2019 range (5e5,5e6) would require fitting SF up to 60 days
+
+# Previously we chose the cadence based on the # points
+# Now we want to choose the number of points based on the cadence
+
+interval_length = int(tc_n * tc / new_cadence)
+
+lags = np.arange(1, params.max_lag_prop * interval_length)
 powers = [2]
 
 df_std = df.resample(str(np.round(new_cadence, 3)) + "s").mean()
 n_ints = int(np.floor(len(df_std) / interval_length))
-print(f"Number of standardised intervals to correct: {n_ints}")
+print(
+    f"Number of standardised intervals to correct: {n_ints} ({tc_n} corr lengths, {new_cadence}s cadence, {interval_length} points)"
+)
 
 # We should have 24 intervals of 10,000 points each, each covering 10 correlation times = 10 * 17 days = 170 days.
 
@@ -83,7 +100,7 @@ file_index = 0
 # (With consistent resampling)
 
 # Extract an interval
-for int_index in range(n_ints):
+for int_index in range(3):
     print(f"Correcting interval {int_index}...")
     int_std = df_std[int_index * interval_length : (int_index + 1) * interval_length]
 
@@ -113,6 +130,9 @@ for int_index in range(n_ints):
     interp_output["sf_2_se"] = bad_output["sf_2_se"]
 
     sfs_gapped = pd.concat([interp_output, bad_output])
+
+    # Making lag relative to correlation scale, for consistent correction application
+    sfs_gapped["lag_tc"] = sfs_gapped["lag"] * 10 / len(int_std)
 
     # ### Correcting SF
 
@@ -246,7 +266,6 @@ for int_index in range(n_ints):
 
     # Calculate slopes and scales
 
-    pwrl_range = params.pwrl_range
     gap_handling = "corrected_3d"
 
     sfs_gapped_corrected.loc[:, "sf_corrected_es"] = (
@@ -360,6 +379,7 @@ for int_index in range(n_ints):
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
             & (sfs_gapped_corrected["gap_handling"] == handling)
+            & (sfs_gapped_corrected["lag_tc"] >= 0.00099)
         )
         ax2.plot(
             sfs_gapped_corrected.loc[mask, "lag"] * new_cadence,
@@ -384,8 +404,15 @@ for int_index in range(n_ints):
         sf_fit * 1.5,  # to raise above SF
         label="Slope = {:.2f}".format(slope),
         ls="dotted",
-        lw=2.5,
+        lw=1,
         color="#1b9e77",
+    )
+    ax2.axvline(
+        tce * new_cadence,
+        color="black",
+        alpha=0.4,
+        ls="dotted",
+        label="TCE (see ACF)",
     )
     ax2.legend(loc="lower right", fontsize=8, frameon=False)
     ax2.semilogx()
@@ -440,10 +467,14 @@ for int_index in range(n_ints):
         current_int.loc[params.tau_min : params.tau_max, "acf_from_sf"],
         color="black",
         marker="x",
-        label="Taylor max lag range",
+        # REDUCE SIZE
+        s=3,
+        # BRING TO FRONT
+        zorder=10,
+        label=r"$\lambda_T$ max lag range",
     )
     axins.set_xlim(0, (params.tau_max + 3) * new_cadence)
-    axins.set_ylim(0.8, 1)
+    axins.set_ylim(0.9, 1)
     axins.legend(bbox_to_anchor=(0.95, -0.3), fontsize=6, frameon=False)
     # Reduce font size of ticklabels
     for tick in axins.get_xticklabels():

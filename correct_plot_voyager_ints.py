@@ -131,9 +131,6 @@ for int_index in range(3):
 
     sfs_gapped = pd.concat([interp_output, bad_output])
 
-    # Making lag relative to correlation scale, for consistent correction application
-    sfs_gapped["lag_tc"] = sfs_gapped["lag"] * 10 / len(int_std)
-
     # ### Correcting SF
 
     # ## Smoothing correction
@@ -147,8 +144,10 @@ for int_index in range(3):
     # this is done below and applied to the interval from the paper.
     #
 
-    # Apply 2D and 3D scaling to test set, report avg errors
+    # Making lag relative to correlation scale, for consistent correction application
+    sfs_gapped["lag_tc"] = sfs_gapped["lag"] * 10 / len(int_std)
 
+    # Apply 2D and 3D scaling to test set, report avg errors
     sfs_lint_corrected_3d = sf.compute_scaling(
         sfs_gapped, 3, correction_lookup_3d, n_bins
     )
@@ -341,6 +340,9 @@ for int_index in range(3):
     )
 
     ints_gapped_metadata = pd.concat([ints_gapped_metadata, new_row])
+
+    # Need to add this again for plotting of corrected SF
+    sfs_gapped_corrected["lag_tc"] = sfs_gapped_corrected["lag"] * 10 / len(int_std)
 
     # ##############################################################
 

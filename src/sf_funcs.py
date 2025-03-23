@@ -942,7 +942,7 @@ def compute_scaling(inputs, dim, correction_lookup, n_bins=25):
         # Apply the correction factor to the original data
         inputs = inputs[inputs["gap_handling"] == "lint"]
 
-        x = inputs["lag"]
+        x = inputs["lag_tc"]
         y = inputs["missing_percent"]
         z = inputs["sf_2"]
 

@@ -33,7 +33,7 @@ axes = axes.flatten()
 
 # Variables to plot
 vars_to_plot = ["slope", "es_pwr_law_slope", "missing", "tce_days", "ttu_hours"]
-colors = {"current work": "steelblue", "Frat2021": "crimson"}
+colors = {"current work": "#7fc97f", "Frat2021": "#beaed4"}
 
 # Plot histograms and marks
 for i, var in enumerate(vars_to_plot):
@@ -57,6 +57,9 @@ for i, var in enumerate(vars_to_plot):
                 frat_values,
                 y_pos + 0.3,
                 marker="*",
+                # Add thin black outline
+                edgecolors="black",
+                linewidths=0.5,
                 s=80,
                 color=colors["Frat2021"],
                 label="Frat2021",
@@ -64,7 +67,13 @@ for i, var in enumerate(vars_to_plot):
             )
 
     # Styling
-    axes[i].set_xlabel(var, labelpad=-10, fontsize=12)
+    # Format axis labels with proper units
+    if var == "tce_days":
+        axes[i].set_xlabel(r"$\lambda_C$ (days)", labelpad=-15, fontsize=12)
+    elif var == "ttu_hours":
+        axes[i].set_xlabel(r"$\lambda_T$ (hours)", labelpad=-15, fontsize=12)
+    else:
+        axes[i].set_xlabel(var, labelpad=-15, fontsize=12)
     axes[i].xaxis.set_label_position("top")
     axes[i].set_ylabel("")
 
@@ -105,9 +114,9 @@ plt.suptitle(
 plt.subplots_adjust(top=0.9)  # Make room for the title
 
 # Save and display
-# plt.savefig(
-#     "results/full/plots/voyager/voyager_corrected_stats.png",
-#     dpi=300,
-#     bbox_inches="tight",
-# )
-plt.show()
+plt.savefig(
+    "results/full/plots/voyager/voyager_corrected_stats.png",
+    dpi=300,
+    bbox_inches="tight",
+)
+# plt.show()

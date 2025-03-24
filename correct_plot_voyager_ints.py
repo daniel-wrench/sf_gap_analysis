@@ -100,7 +100,7 @@ file_index = 0
 # (With consistent resampling)
 
 # Extract an interval
-for int_index in range(3):
+for int_index in range(n_ints):
     print(f"Correcting interval {int_index}...")
     int_std = df_std[int_index * interval_length : (int_index + 1) * interval_length]
 
@@ -264,85 +264,87 @@ for int_index in range(3):
     sfs_gapped_corrected = pd.concat([sfs_gapped, corrections_long])
 
     # Calculate slopes and scales
+    for gap_handling in sfs_gapped_corrected.gap_handling.unique():
 
-    gap_handling = "corrected_3d"
+        sfs_gapped_corrected.loc[:, "sf_corrected_es"] = (
+            sfs_gapped_corrected["sf_2"] * sfs_gapped_corrected["lag"] / 6
+        )
+        sfs_gapped_corrected.loc[:, "inverse_lag"] = 1 / (sfs_gapped_corrected["lag"])
 
-    sfs_gapped_corrected.loc[:, "sf_corrected_es"] = (
-        sfs_gapped_corrected["sf_2"] * sfs_gapped_corrected["lag"] / 6
-    )
-    sfs_gapped_corrected.loc[:, "inverse_lag"] = 1 / (sfs_gapped_corrected["lag"])
+        # Calculate power-law slope for 2D and 3D corrected SFs
+        current_int = sfs_gapped_corrected.loc[
+            (sfs_gapped_corrected["file_index"] == file_index)
+            & (sfs_gapped_corrected["int_index"] == int_index)
+            & (sfs_gapped_corrected["gap_handling"] == gap_handling)
+        ]
 
-    # Calculate power-law slope for 2D and 3D corrected SFs
-    current_int = sfs_gapped_corrected.loc[
-        (sfs_gapped_corrected["file_index"] == file_index)
-        & (sfs_gapped_corrected["int_index"] == int_index)
-        & (sfs_gapped_corrected["gap_handling"] == gap_handling)
-    ]
+        # Extract power-law fit range of single interval
+        fit_range = current_int.loc[
+            (current_int["lag"] >= pwrl_range[0])
+            & (current_int["lag"] <= pwrl_range[1]),
+            :,
+        ]
 
-    # Extract power-law fit range of single interval
-    fit_range = current_int.loc[
-        (current_int["lag"] >= pwrl_range[0]) & (current_int["lag"] <= pwrl_range[1]), :
-    ]
+        # Perform the linear regression with full stats
+        slope, intercept, r_value, p_value, std_err = stats.linregress(
+            np.log(fit_range["lag"]), np.log(fit_range["sf_2"])
+        )
+        # sf_corrected_es = current_int["sf_2"] * current_int["lag"] / 6
+        # Previously fitted to 100-700 raw lags
 
-    # Perform the linear regression with full stats
-    slope, intercept, r_value, p_value, std_err = stats.linregress(
-        np.log(fit_range["lag"]), np.log(fit_range["sf_2"])
-    )
-    # sf_corrected_es = current_int["sf_2"] * current_int["lag"] / 6
-    # Previously fitted to 100-700 raw lags
+        # Get ACF from SF
+        # var_signal = np.sum(np.var(input, axis=0))
+        var_signal = 3
+        # will always be this variance as we are using the standardised 3D SF
+        acf_from_sf = 1 - (current_int.sf_2 / (2 * var_signal))
+        current_int = current_int.assign(acf_from_sf=acf_from_sf.astype("float32"))
 
-    # Get ACF from SF
-    # var_signal = np.sum(np.var(input, axis=0))
-    var_signal = 3
-    # will always be this variance as we are using the standardised 3D SF
-    acf_from_sf = 1 - (current_int.sf_2 / (2 * var_signal))
-    current_int = current_int.assign(acf_from_sf=acf_from_sf.astype("float32"))
+        # Calculate correlation scale from acf_from_sf
+        tce = utils.compute_outer_scale_exp_trick(
+            current_int["lag"].values,
+            current_int["acf_from_sf"].values,
+            plot=False,
+        )
+        # plt.show()
+        # NB: if plotting, will not work if tce is not found
 
-    # Calculate correlation scale from acf_from_sf
-    tce = utils.compute_outer_scale_exp_trick(
-        current_int["lag"].values,
-        current_int["acf_from_sf"].values,
-        plot=False,
-    )
-    # plt.show()
-    # NB: if plotting, will not work if tce is not found
+        ttu, taylor_scale_u_std = utils.compute_taylor_chuychai(
+            current_int["lag"].values,
+            current_int["acf_from_sf"].values,
+            tau_min=params.tau_min,
+            tau_max=params.tau_max,
+        )
 
-    ttu, taylor_scale_u_std = utils.compute_taylor_chuychai(
-        current_int["lag"].values,
-        current_int["acf_from_sf"].values,
-        tau_min=params.tau_min,
-        tau_max=params.tau_max,
-    )
+        # Also change colour when using naive model
 
-    # Also change colour when using naive model
+        missing = bad_input["BR"].isna().sum() / len(bad_input["BR"])
 
-    missing = bad_input["BR"].isna().sum() / len(bad_input["BR"])
+        # Save results to dataframe
 
-    # Save results to dataframe
+        new_row = pd.DataFrame(
+            {
+                "file_index": file_index,
+                "int_index": int_index,
+                "start_time": str(bad_input.index.min()),
+                "end_time": str(bad_input.index.max()),
+                "cadence": new_cadence,
+                "missing": missing,
+                "gap_handling": gap_handling,
+                "slope": slope,
+                "tce": tce,
+                "ttu": ttu,
+                # "es_pwr_law_slope": popt[1],
+                # "es_pwr_law_coef": popt[0],
+                # "es_pwr_law_slope_std": pcov[1, 1],
+                # "es_pwr_law_coef_std": pcov[0, 0],
+            },
+            index=[int_index],
+        )
 
-    new_row = pd.DataFrame(
-        {
-            "file_index": file_index,
-            "int_index": int_index,
-            "start_time": str(bad_input.index.min()),
-            "end_time": str(bad_input.index.max()),
-            "cadence": new_cadence,
-            "missing": missing,
-            "slope": slope,
-            "tce": tce,
-            "ttu": ttu,
-            # "es_pwr_law_slope": popt[1],
-            # "es_pwr_law_coef": popt[0],
-            # "es_pwr_law_slope_std": pcov[1, 1],
-            # "es_pwr_law_coef_std": pcov[0, 0],
-        },
-        index=[int_index],
-    )
+        ints_gapped_metadata = pd.concat([ints_gapped_metadata, new_row])
 
-    ints_gapped_metadata = pd.concat([ints_gapped_metadata, new_row])
-
-    # Need to add this again for plotting of corrected SF
-    sfs_gapped_corrected["lag_tc"] = sfs_gapped_corrected["lag"] * 10 / len(int_std)
+        # Need to add this again for plotting of corrected SF
+        sfs_gapped_corrected["lag_tc"] = sfs_gapped_corrected["lag"] * 10 / len(int_std)
 
     # ##############################################################
 
@@ -457,7 +459,21 @@ for int_index in range(3):
     )
     # Create an inset to ax4 that highlights the range of params.tau_min and params.tau_max
 
+    # CURRENTLY ONLY STORING CORRECTED ACF, SO CAN'T PLOT NAIVE VERSION HERE YET
+    # current_int_naive = sfs_gapped_corrected.loc[
+    #     (sfs_gapped_corrected["file_index"] == file_index)
+    #     & (sfs_gapped_corrected["int_index"] == int_index)
+    #     & (sfs_gapped_corrected["gap_handling"] == "naive"),
+    #     :,
+    # ]
+
     axins = inset_axes(ax4, width="30%", height="30%", loc="upper right")
+    # axins.plot(
+    #     current_int_naive["lag"] * new_cadence,
+    #     current_int_naive["acf_from_sf"],
+    #     color="red",
+    #     lw=1,
+    # )
     axins.plot(
         current_int["lag"] * new_cadence,
         current_int["acf_from_sf"],
@@ -520,6 +536,6 @@ for int_index in range(3):
 
 
 # Save metadata
-# output_file_path = "results/full/voyager1_corrected_metadata.csv"
-# ints_gapped_metadata.to_csv(output_file_path, index=False)
-# print(f"Stats saved to {output_file_path}")
+output_file_path = "results/full/voyager1_corrected_metadata_NEW.csv"
+ints_gapped_metadata.to_csv(output_file_path, index=False)
+print(f"Stats saved to {output_file_path}")

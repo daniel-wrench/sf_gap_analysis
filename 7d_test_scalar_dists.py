@@ -17,6 +17,13 @@ run_mode = "full"
 spacecraft = "wind"
 n_bins = 25
 
+# Set matplotlib font size
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif", serif="Computer Modern", size=10)
+
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["ytick.direction"] = "in"
+
 
 # Function to calculate effect sizes
 def compute_effect_sizes(ref, sample):
@@ -42,15 +49,15 @@ def compute_effect_sizes(ref, sample):
     wasserstein_dist = stats.wasserstein_distance(ref, sample)  # Wasserstein distance
 
     return {
-        "Mean Diff (%)": pe_mean,
-        "Median Diff (%)": pe_median,
-        "Variance Diff (%)": pe_var,
+        "Mean APE (%)": np.abs(pe_mean),
+        "Median APE (%)": np.abs(pe_median),
+        "Variance APE (%)": np.abs(pe_var),
         "Wasserstein Distance": wasserstein_dist,
-        "Mann-Whitney p-value": mw_p,
+        "Mann-Whitney": mw_p,
         # "Levene p-value": levene_p,
-        "Fligner p-value": fligner_p,
-        "KS p-value": ks_p,
-        "Anderson-Darling p-value": anderson_p,
+        "Fligner": fligner_p,
+        "KS": ks_p,
+        "Anderson-Darling": anderson_p,
     }
 
 
@@ -58,7 +65,6 @@ def compute_effect_sizes(ref, sample):
 ints = pd.read_csv(
     f"results/{run_mode}/test_{spacecraft}_corrected_{n_bins}_bins_ints_gapped_metadata.csv"
 )
-run_mode = params.run_mode
 
 # Checking proportions of above filters
 len(ints)
@@ -166,10 +172,10 @@ for bin in bin_labels + ["all_data"]:
             print(wilcoxon(data_true[variable + "_orig"] + 5 / 3))
             print("(If the p-value < 0.05, then the means are significantly different)")
 
-        true = data_true[variable + "_orig"]  # Reference distribution
-        naive = data_naive[variable]
-        corrected = data_corrected[variable]
-        lint = data_lint[variable]
+        true = data_true[variable + "_orig"].dropna()  # Reference distribution
+        naive = data_naive[variable].dropna()
+        corrected = data_corrected[variable].dropna()
+        lint = data_lint[variable].dropna()
 
         # Perform comparisons
         comparison_results = [
@@ -219,22 +225,41 @@ print(df_results_full)
 df_to_plot = df_results_full[df_results_full["bin"] != "all_data"]
 
 
-var_names = [
-    r"$\beta$",
-    r"$\lambda_C$ (lags)",
-    r"$\lambda_T$ (lags)",
-    r"$Re_{\lambda_T}$",
-]
+var_names = [r"$\beta$", r"$\lambda_C$", r"$\lambda_T$"]
 
 # Get count of numeric vars in df_to_plot
 print(df_to_plot.head())
 
 # Get list of numerical columns in df_to_plot
-metrics = df_to_plot.columns[df_to_plot.dtypes == "float64"]
-metrics.values
+# metrics = df_to_plot.columns[df_to_plot.dtypes == "float64"]
+metrics = [
+    # "Median APE (%)",
+    # "Variance APE (%)",
+    # "Wasserstein Distance",
+    "Mann-Whitney",
+    "Fligner",
+    "Anderson-Darling",
+]
+variables = ["es_slope", "tce", "ttu"]
+num_metrics = len(metrics)
+num_vars = len(variables)
+
+p_value_indices = [num_metrics - 3, num_metrics - 2, num_metrics - 1]
 
 
-fig, ax = plt.subplots(len(metrics), len(variables), figsize=(10, 2 * len(metrics)))
+fig, ax = plt.subplots(
+    num_metrics,
+    num_vars,
+    figsize=(6, 5),
+    sharex=True,
+    sharey="row",
+    gridspec_kw={"hspace": 0.15, "wspace": 0.1},
+)
+
+# Ensure p-value rows share their y-axes
+# for i in p_value_indices:
+#     for j in range(1, num_vars):
+#         ax[i, j].sharey(ax[i, 0])
 
 for i, metric in enumerate(metrics):
     for j, variable in enumerate(variables):
@@ -256,12 +281,15 @@ for i, metric in enumerate(metrics):
         else:
             ax[i, j].set_ylabel("")
 
-        if i < 4:
-            ax[i, j].axhline(0, color="black", linestyle="--", alpha=0.5)
-        else:
-            ax[i, j].set_ylim(0, 1)
+        # if i < 4:
+        #    ax[i, j].axhline(0, color="black", linestyle="--", alpha=0.5)
+        # else:
+        ax[i, j].set_ylim(0, 1)
         ax[i, j].set_xlabel("")
         ax[i, j].grid(True)
+        # Log y-axis for i > 3
+        # if i > 2:
+        #    ax[i, j].set_yscale("symlog", linthresh=1e-3)
 
 # Create a shared legend
 handles, labels = ax[0, 0].get_legend_handles_labels()
@@ -270,32 +298,43 @@ fig.legend(
     labels,
     loc="upper center",
     ncol=len(labels),
-    bbox_to_anchor=(0.5, 0.985),
+    bbox_to_anchor=(0.5, 1.015),
     fontsize=12,
 )
+ax[-1, 1].set_xlabel("Missing data bin (\%)")
 
 # Remove individual legends
 for i in range(len(metrics)):
     for j in range(len(variables)):
         ax[i, j].get_legend().remove()
+        ax[i, j].set_yscale("symlog", linthresh=1e-3)
 
 # Reduce space between subplots
-plt.tight_layout(h_pad=1.2, w_pad=0.2, rect=[0, 0, 1, 0.96])
+# plt.tight_layout(h_pad=1.2, w_pad=0.2, rect=[0, 0, 1, 0.96])
 # Add a horizontal line between the 4th and 5th rows
-line_y = 0.475  # Normalized figure coordinates (0=bottom, 1=top)
-fig.add_artist(
-    plt.Line2D(
-        [0, 1], [line_y, line_y], color="black", linewidth=2, transform=fig.transFigure
-    )
-)
+# line_y = 0.475  # Normalized figure coordinates (0=bottom, 1=top)
+# fig.add_artist(
+#     plt.Line2D(
+#         [0, 1], [line_y, line_y], color="black", linewidth=2, transform=fig.transFigure
+#     )
+# )
+# Angle the tickmarks on the (bottom) x-axis, and add labels
+for ax in ax[-1, :]:
+    ax.tick_params(axis="x", rotation=45)
 
 plt.suptitle(
-    "Quantifying Change in PDFs of SF-Derived Stats With Increasing Missing Data",
-    fontsize=18,
-    y=1,
+    "Statistical Change in PDFs of SF-Derived Stats With Increasing Missing Data",
+    fontsize=12,
+    y=1.05,
 )
-plt.savefig(f"results/{run_mode}/plots/test_wind_pdf_metrics.png")
-
+# plt.tight_layout() # not compatible
+# plt.show()
+plt.savefig(
+    f"results/{run_mode}/plots/test_wind_pdf_metrics_SLIM.png",
+    bbox_inches="tight",
+    dpi=300,
+)
+print("FINISHED")
 
 # above: code to get test results
 # below: code to plot histograms of slopes with p-values

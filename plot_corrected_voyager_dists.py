@@ -9,14 +9,14 @@ plt.rc("font", family="serif", serif="Computer Modern", size=10)
 plt.rcParams.update({"xtick.direction": "in", "ytick.direction": "in"})
 
 # Read and process data
-df = pd.read_csv("results/full/voyager1_corrected_metadata.csv")
+df = pd.read_csv("results/full/voyager1_corrected_metadata_NEW.csv")
 
 # Calculate time columns
 df["tce_s"] = df["tce"] * df["cadence"]
 df["ttu_s"] = df["ttu"] * df["cadence"]
 df["tce_days"] = df["tce_s"] / (24 * 3600)
 df["ttu_hours"] = df["ttu_s"] / 3600
-df["source"] = "current work"
+# df["source"] = "current work"
 
 # Add Fraternale 2021 data
 fraternale_data = pd.DataFrame(
@@ -28,25 +28,34 @@ fraternale_data = pd.DataFrame(
 )
 
 # Create figure
-fig, axes = plt.subplots(2, 3, figsize=(10, 6), sharey=True)
+fig, axes = plt.subplots(1, 3, figsize=(8, 2.5), sharey=True)
 axes = axes.flatten()
 
 # Variables to plot
-vars_to_plot = ["slope", "es_pwr_law_slope", "missing", "tce_days", "ttu_hours"]
-colors = {"current work": "#7fc97f", "Frat2021": "#beaed4"}
-
+vars_to_plot = ["slope", "tce_days", "ttu_hours"]
+# colors = {"current work": "#7fc97f", "Frat2021": "#beaed4"}
+# colors = {"naive":"red",  "lint":"black", "corrected_3d":"#1b9e77"}
 # Plot histograms and marks
 for i, var in enumerate(vars_to_plot):
     # Plot histogram for current work data only
-    current_data = df[df["source"] == "current work"]
-    sns.histplot(
-        current_data,
-        x=var,
-        color=colors["current work"],
-        ax=axes[i],
-        bins=10,
-        label="current work",
-    )
+    if var == "ttu_hours":
+        current_data = df[df["gap_handling"] == "naive"]
+        sns.histplot(
+            current_data,
+            x=var,
+            color="red",
+            ax=axes[i],
+            # bins=10,
+        )
+    else:
+        current_data = df[df["gap_handling"] == "corrected_3d"]
+        sns.histplot(
+            current_data,
+            x=var,
+            color="#1b9e77",
+            ax=axes[i],
+            # bins=10,
+        )
 
     # Add Fraternale data as crosses on x-axis if the variable exists in fraternale_data
     if var in fraternale_data.columns:
@@ -61,7 +70,7 @@ for i, var in enumerate(vars_to_plot):
                 edgecolors="black",
                 linewidths=0.5,
                 s=80,
-                color=colors["Frat2021"],
+                color="#beaed4",
                 label="Frat2021",
                 zorder=5,
             )
@@ -70,48 +79,61 @@ for i, var in enumerate(vars_to_plot):
     # Format axis labels with proper units
     if var == "tce_days":
         axes[i].set_xlabel(r"$\lambda_C$ (days)", labelpad=-15, fontsize=12)
+        axes[i].axvline(17, color="black", linestyle="--", label=r"Assumed $\lambda_C$")
+        # axes[i].text(17 + 0.01, 5, r"Ostensible $\lambda_C$", fontsize=10)
     elif var == "ttu_hours":
         axes[i].set_xlabel(r"$\lambda_T$ (hours)", labelpad=-15, fontsize=12)
+        # Add a curved arrow with annotation
+        axes[i].text(
+            0.95,
+            0.8,
+            "(Derived from Naive SF,\ninstead of corrected)",
+            transform=axes[i].transAxes,
+            fontsize=8,
+            verticalalignment="top",
+            horizontalalignment="right",
+            bbox=dict(facecolor="white", alpha=0.8, edgecolor="none"),
+            color="red",
+        )
     else:
-        axes[i].set_xlabel(var, labelpad=-15, fontsize=12)
+        axes[i].set_xlabel("Inertial range slope", labelpad=-15, fontsize=12)
+        axes[i].axvline(2 / 3, color="black", linestyle="dotted", label="Kolmogorov")
+        # Add annotation next to this line
+        axes[i].text(2 / 3 + 0.01, 3, r"\textit{K41}", fontsize=10)
     axes[i].xaxis.set_label_position("top")
     axes[i].set_ylabel("")
 
     # Handle special case for tce_days
-    if var == "tce_days":
-        axes[i].axvline(
-            17, color="black", linestyle="--", label=r"Ostensible $\lambda_C$"
-        )
-        handles, labels = axes[i].get_legend_handles_labels()
-        if len(handles) < 2:  # If Frat2021 not in this plot
-            # Add dummy Frat2021 entry for legend
-            handles.append(
-                plt.Line2D(
-                    [0],
-                    [0],
-                    marker="*",
-                    color="w",
-                    markerfacecolor=colors["Frat2021"],
-                    markersize=8,
-                    markeredgecolor=colors["Frat2021"],
-                )
-            )
-            labels.append("Frat2021")
-        axes[i].legend(handles, labels, loc="center right")
-    else:
-        # Remove automatically generated legends
-        if axes[i].get_legend():
-            axes[i].get_legend().remove()
+    # if var == "tce_days":
 
-# Remove the empty subplot
-fig.delaxes(axes[-1])
+    # handles, labels = axes[i].get_legend_handles_labels()
+    # if len(handles) < 2:  # If Frat2021 not in this plot
+    #     # Add dummy Frat2021 entry for legend
+    #     handles.append(
+    #         plt.Line2D(
+    #             [0],
+    #             [0],
+    #             marker="*",
+    #             color="w",
+    #             markerfacecolor="#beaed4",
+    #             markersize=8,
+    #             markeredgecolor="#beaed4",
+    #         )
+    #     )
+    #     labels.append("Frat2021")
+    # axes[i].legend(handles, labels, loc="center right")
+    # else:
+    #     # Remove automatically generated legends
+    #     if axes[i].get_legend():
+    #         axes[i].get_legend().remove()
 
 # Finalize layout
 plt.tight_layout()
 plt.suptitle(
-    "Distribution of stats from 24 corrected V1 LISM structure functions", fontsize=16
+    "SF-Derived Statistics from Voyager 1 Intervals of the Interstellar Medium",
+    fontsize=16,
 )
-plt.subplots_adjust(top=0.9)  # Make room for the title
+plt.subplots_adjust(top=0.87)  # Make room for the title
 
 # Save and display
 plt.savefig(

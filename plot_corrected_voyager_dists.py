@@ -21,9 +21,10 @@ df["ttu_hours"] = df["ttu_s"] / 3600
 # Add Fraternale 2021 data
 fraternale_data = pd.DataFrame(
     {
-        "tce_days": [63.5, 19, 76, 19, 60],
-        "ttu_hours": [0.048, 0.06, 0.07, 0.054, 0.063],
-        "source": ["Frat2021"] * 5,
+        "tce_days": [63.5, 19, 76, 19, 60, np.nan, np.nan, np.nan],  # days
+        "ttu_hours": [0.048, 0.06, 0.07, 0.054, 0.063, np.nan, np.nan, np.nan],
+        "slope": [0.36, 0.28, 0.27, 0.29, 0.67, 0.48, 0.37, 0.72],  # mins  # maxs
+        "source": ["Frat2021"] * 8,
     }
 )
 
@@ -142,3 +143,4 @@ plt.savefig(
     bbox_inches="tight",
 )
 # plt.show()
+print("Done")

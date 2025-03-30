@@ -80,7 +80,7 @@ for i, var in enumerate(vars_to_plot):
     # Format axis labels with proper units
     if var == "tce_days":
         axes[i].set_xlabel(r"$\lambda_C$ (days)", labelpad=-15, fontsize=12)
-        axes[i].axvline(17, color="black", linestyle="--", label=r"Assumed $\lambda_C$")
+        # axes[i].axvline(17, color="black", linestyle="--", label=r"Assumed $\lambda_C$")
         # axes[i].text(17 + 0.01, 5, r"Ostensible $\lambda_C$", fontsize=10)
     elif var == "ttu_hours":
         axes[i].set_xlabel(r"$\lambda_T$ (hours)", labelpad=-15, fontsize=12)
@@ -104,37 +104,37 @@ for i, var in enumerate(vars_to_plot):
     axes[i].xaxis.set_label_position("top")
     axes[i].set_ylabel("")
 
-    # Handle special case for tce_days
-    # if var == "tce_days":
-
-    # handles, labels = axes[i].get_legend_handles_labels()
-    # if len(handles) < 2:  # If Frat2021 not in this plot
-    #     # Add dummy Frat2021 entry for legend
-    #     handles.append(
-    #         plt.Line2D(
-    #             [0],
-    #             [0],
-    #             marker="*",
-    #             color="w",
-    #             markerfacecolor="#beaed4",
-    #             markersize=8,
-    #             markeredgecolor="#beaed4",
-    #         )
-    #     )
-    #     labels.append("Frat2021")
-    # axes[i].legend(handles, labels, loc="center right")
-    # else:
-    #     # Remove automatically generated legends
-    #     if axes[i].get_legend():
-    #         axes[i].get_legend().remove()
-
 # Finalize layout
 plt.tight_layout()
 plt.suptitle(
     "SF-Derived Statistics from Voyager 1 Intervals of the Interstellar Medium",
     fontsize=16,
 )
-plt.subplots_adjust(top=0.87)  # Make room for the title
+import matplotlib.lines as mlines
+
+# Create a legend entry matching the plotted stars
+frat_legend = mlines.Line2D(
+    [],
+    [],
+    color="#beaed4",
+    marker="*",
+    linestyle="None",
+    markersize=10,
+    markeredgecolor="black",
+    markeredgewidth=0.5,
+    label="Values from Fraternale et al. (2019, 2021)",
+)
+
+# Add the legend just below the title
+fig.legend(
+    handles=[frat_legend],
+    loc="upper center",
+    bbox_to_anchor=(0.5, 0.92),
+    fontsize=10,
+    frameon=False,
+)
+
+plt.subplots_adjust(top=0.8)  # Make room for the title
 
 # Save and display
 plt.savefig(
@@ -142,5 +142,5 @@ plt.savefig(
     dpi=300,
     bbox_inches="tight",
 )
-# plt.show()
+plt.show()
 print("Done")

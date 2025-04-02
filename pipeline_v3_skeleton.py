@@ -13,7 +13,7 @@ from sunpy.util import SunpyUserWarning
 
 import src.data_import_funcs as dif
 import src.params as params
-import src.sf_funcs as sf
+import src.sf_funcs as sf_funcs
 import src.ts_dashboard_utils as ts
 import src.utils as utils  # copied directly from Reynolds project, normalize() added
 
@@ -57,6 +57,8 @@ def split_into_intervals(dataframe, interval_length, spacecraft):
 
         current_start = current_end
 
+    # Print summary of intervals
+    print(f"Created {len(intervals)} intervals of length {interval_length}.")
     return intervals
 
 
@@ -77,12 +79,16 @@ def gap_fill_int(metadata, times_to_gap=5):
     modified_intervals = []
     minimum_missing_chunks = 0.7
 
-    # Retain the original interval
-    original_metadata = metadata.copy()
-    original_metadata["gap_status"] = "original"
-    modified_intervals.append(original_metadata)
-
     for j in range(times_to_gap):
+
+        # Retain the original interval
+        original_metadata = metadata.copy()
+        original_metadata["version"] = j
+        original_metadata["gap_status"] = "original"
+        original_metadata["tgp"] = np.nan
+        original_metadata["data"] = metadata["data"]
+        modified_intervals.append(original_metadata)
+
         # Create a copy of the interval
         interval_df = metadata["data"].copy()
 
@@ -107,7 +113,7 @@ def gap_fill_int(metadata, times_to_gap=5):
         # Create and update metadata for gapped version
         gapped_metadata = metadata.copy()
         gapped_metadata["version"] = j
-        gapped_metadata["gap_status"] = "gapped"
+        gapped_metadata["gap_status"] = "naive"
         gapped_metadata["tgp"] = total_removal
         gapped_metadata["data"] = data_gapped
         modified_intervals.append(gapped_metadata)
@@ -126,7 +132,7 @@ def gap_fill_int(metadata, times_to_gap=5):
     return modified_intervals
 
 
-def get_vector_stats(modified_intervals_list):
+def get_vector_stats(interval):
     """
     Process all intervals and compile results
 
@@ -136,48 +142,40 @@ def get_vector_stats(modified_intervals_list):
     Returns:
     - DataFrame with results
     """
-    vector_stats_list = []
 
-    for interval_idx, modified_intervals in enumerate(modified_intervals_list):
-        for interval_df, metadata in modified_intervals:
+    data = interval["data"]
 
-            # Interval metadata
-            start_time = interval_df.index[0]
-            end_time = interval_df.index[-1]
-            duration_s = (end_time - start_time).total_seconds()
+    lags = np.arange(1, params.max_lag_prop * len(data))
+    powers = [2]
 
-            # Compute vector stats
-            sf, sf_lags, sf_lags_n = compute_sf(interval_df, ["Vx", "Vy", "Vz"])
-            acf, acf_lags, sf_lags_n = compute_acf(
-                interval_df, ["Vx", "Vy", "Vz"]
-            )  # OR, compute from sf
-            psd, psd_freq = compute_psd(
-                interval_df, ["Vx", "Vy", "Vz"]
-            )  # OR, compute from sf
+    # Compute vector stats
+    sf = sf_funcs.compute_sf(data, lags, powers, False, False, None)
+    # Bunch of unnecessay columns made here, also don't want
+    # option of computing slope, better to do this later
+    var = np.sum(np.var(data, axis=0))
+    acf_from_sf = 1 - (sf["sf_2"] / (2 * var))
 
-            # Prepare row
-            int_results = {
-                "spacecraft": metadata["spacecraft"],
-                "interval_id": interval_idx,
-                "start_time": start_time,
-                "duration_s": duration_s,
-                "data_points": len(interval_df),
-                "gap_status": metadata["gap_status"],
-                "tgp": metadata["tgp"],
-                "sf": sf,
-                "sf_lags": sf_lags,
-                "sf_lags_n": sf_lags_n,
-                "acf": acf,
-                "acf_lags": acf_lags,
-                "acf_lags_n": sf_lags_n,
-                "psd": psd,
-                "psd_freq": psd_freq,
-            }
+    # acf, acf_lags, sf_lags_n = compute_acf(
+    #     interval_df, ["Vx", "Vy", "Vz"]
+    # )  # OR, compute from sf
+    # psd, psd_freq = compute_psd(
+    #     interval_df, ["Vx", "Vy", "Vz"]
+    # )  # OR, compute from sf
 
-            vector_stats_list.append(int_results)
+    # Prepare row
+    vector_results = {
+        "sf": sf["sf_2"],
+        "lag": lags,
+        "lag_n": sf["n"],
+        "acf": acf_from_sf,
+        # "acf_lags": acf_lags,
+        # "acf_lags_n": sf_lags_n,
+        # "psd": psd,
+        # "psd_freq": psd_freq,
+    }
 
     # Convert to DataFrame
-    return vector_stats_list
+    return vector_results
 
 
 ################################################
@@ -203,7 +201,7 @@ df_raw = df_raw.loc[:, params.mag_vars_dict[spacecraft]]
 # timestamp (index) | Bx | By | Bz | Vx | Vy | Vz | density
 
 # Define target frequency (e.g., '1min', '5s')
-resample_freq = "1s"
+resample_freq = "10s"
 
 # Resample with mean aggregation
 df = df_raw.resample(resample_freq).mean()
@@ -215,33 +213,140 @@ df = df.interpolate(method="linear")
 interval_length = "1h"  # 1 hour intervals
 clean_intervals = split_into_intervals(df, interval_length, spacecraft)
 # Outputs list of dictionaries, including metadata and data for each interval
+print(len(clean_intervals))
 
 clean_intervals[0]["data"].plot()
 
+plt.plot(clean_intervals[0]["data"])
+
 # Add gapped and linear interpolated versions of each interval
+times_to_gap = 3
+# times_to_gap = params.times_to_gap
+
 all_intervals = []
 for interval in clean_intervals:
-    gapped = gap_fill_int(metadata=interval, times_to_gap=5)
+    gapped = gap_fill_int(metadata=interval, times_to_gap=times_to_gap)
     all_intervals.append(gapped)
+
+print(len(all_intervals))
 
 all_intervals[0][0]["data"].plot()
 all_intervals[0][1]["data"].plot()
 all_intervals[0][2]["data"].plot()
 
 # Compute vector statistics (e.g., SF, ACF, PSD) for each interval
-# MAKE SURE WE CAN RUN THIS AND BELOW ON BOTH clean_intervals AND all_intervals
-vector_stats_list = get_vector_stats(all_intervals)
+# and add to metadata
+
+for interval_group in all_intervals:
+    for interval in interval_group:
+        vector_stats = get_vector_stats(interval)
+        interval.update(vector_stats)
+
+all_intervals[0][0]["sf"].plot()
+all_intervals[0][1]["sf"].plot()
+all_intervals[0][2]["sf"].plot()
+
+# Plot example intervals and corresponding SFs
+example_clean_int = pd.DataFrame(all_intervals[0])
+# Status colour-mapping
+status_colours = {
+    "original": "black",
+    "naive": "red",
+    "lint": "blue",
+}
+
+fig, ax = plt.subplots(
+    times_to_gap, 2, figsize=(6, times_to_gap * 1.5), sharex="col", sharey="col"
+)
+for version in range(times_to_gap):
+    subset = example_clean_int[example_clean_int["version"] == version]
+
+    for status in subset["gap_status"].unique():
+        subsubset = subset[subset["gap_status"] == status]
+        if status == "original":
+            lw = 2.5
+        else:
+            lw = 0.8
+        for i, row in subsubset.iterrows():
+            # Plot data
+            ax[version, 0].plot(
+                row["data"].iloc[:, 0],
+                label=status,
+                color=status_colours[status],
+                lw=lw,
+            )
+            # Plot SF
+            ax[version, 1].loglog(
+                row["lag"], row["sf"], label=status, color=status_colours[status], lw=lw
+            )
+
+    # Add annotation in the first panel of each row
+    ax[version, 0].annotate(
+        f"{subset['tgp'].values[1]*100:.2f}% missing",
+        xy=(0.4, 0.8),
+        xycoords="axes fraction",
+        ha="center",
+        fontsize=10,
+        color="black",
+    )
+
+# Place legend outside the panels
+handles, labels = ax[0, 0].get_legend_handles_labels()
+fig.legend(
+    handles,
+    labels,
+    loc="upper center",
+    bbox_to_anchor=(0.5, 1.05),
+    ncol=len(status_colours),
+)
+
+ax[-1, 0].tick_params(axis="x", rotation=45)  # Rotate x-axis tick labels
+plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust layout to make space for the legend
+
+# IF NO GAPPING:
+# for interval in clean_intervals:
+#     vector_stats = get_vector_stats(interval)
+#     interval.update(vector_stats)
+
 
 # Compute statistics derived from vector stats
-for interval in vector_stats_list:
-    # Compute derived stats from vector stats
-    interval["tce"] = compute_tce(interval["acf"])
-    interval["ttu"] = compute_ttc(interval["acf"])
-    interval["qi_sf"] = compute_slope(interval["sf"], fit_range)
-    interval["qi_psd"] = compute_qi(interval["psd"], fit_range)
+for interval_group in all_intervals:
+    for interval in interval_group:
+        tce = utils.compute_outer_scale_exp_trick(
+            interval["lag"],
+            interval["acf"],
+            plot=False,
+        )
+        ttu = utils.compute_taylor_chuychai(
+            interval["lag"],
+            interval["acf"],
+            tau_min=params.tau_min,
+            tau_max=params.tau_max,
+        )
+        qi_sf = compute_slope(interval["sf"], params.pwrl_range)
+        qi_psd = compute_slope(interval["psd"], fit_range)
 
+        # Update metadata with derived statistics
+        interval["tce"] = tce
+        interval["ttu"] = ttu
+        interval["qi_sf"] = qi_sf
+        interval["qi_psd"] = qi_psd
 
-vector_stats_df = pd.DataFrame(vector_stats_list)
+# Create a new version of each dictionary, with the vector values removed
+# and the scalar values retained
+all_scalar_stats = []
+for interval_group in all_intervals:
+    for interval in interval_group:
+        scalar_stats = {
+            "tce": interval["tce"],
+            "ttu": interval["ttu"],
+            "qi_sf": interval["qi_sf"],
+            "qi_psd": interval["qi_psd"],
+            "gap_status": interval["gap_status"],
+            "tgp": interval["tgp"],
+            "version": interval["version"],
+        }
+        all_scalar_stats.append(scalar_stats)
 
 ##################################################
 

@@ -63,35 +63,31 @@ def split_into_intervals(dataframe, interval_length, spacecraft):
 # Each interval in the list has the same structure as df_resampled
 
 
-def create_modified_intervals(interval_df, metadata, times_to_gap):
+def gap_fill_int(metadata, times_to_gap=5):
     """
     Create modified copies of an interval with different data removal patterns
 
     Parameters:
-    - interval_df: pandas DataFrame for one interval
-    - removal_patterns: list of dictionaries with parameters for data removal
-      e.g., [{'method': 'random', 'fraction': 0.2}, {'method': 'continuous', 'fraction': 0.1}]
-    - interpolate: whether to create interpolated versions
+    - metadata: Dictionary containing interval data and metadata
+    - times_to_gap: Number of gapped versions to create
 
     Returns:
-    - List of tuples (DataFrame, description)
+    - List of modified metadata dictionaries
     """
     modified_intervals = []
     minimum_missing_chunks = 0.7
 
     # Retain the original interval
-    metadata["gap_status"] = "original"
-
-    modified_intervals.append((interval_df.copy(), metadata))
+    original_metadata = metadata.copy()
+    original_metadata["gap_status"] = "original"
+    modified_intervals.append(original_metadata)
 
     for j in range(times_to_gap):
         # Create a copy of the interval
-        interval_df = interval_df.copy()
+        interval_df = metadata["data"].copy()
 
         total_removal = np.random.uniform(0, 0.95)
         ratio_removal = np.random.uniform(minimum_missing_chunks, 1)
-        # print("Nominal total removal: {0:.1f}%".format(total_removal * 100))
-        # print("Nominal ratio: {0:.1f}%".format(ratio_removal * 100))
         prop_remove_chunks = total_removal * ratio_removal
 
         data_gapped_chunks, data_gapped_ind_chunks, prop_removed_chunks = (
@@ -99,8 +95,8 @@ def create_modified_intervals(interval_df, metadata, times_to_gap):
                 interval_df, prop_remove_chunks, chunks=np.random.randint(1, 10)
             )
         )
-        # Now calculate amount to remove uniformly, given that
-        # amount removed in chunks will invariably differ from specified amount
+
+        # Calculate amount to remove uniformly
         prop_remove_unif = total_removal - prop_removed_chunks
 
         # Add the uniform gaps on top of chunks gaps
@@ -108,17 +104,24 @@ def create_modified_intervals(interval_df, metadata, times_to_gap):
             data_gapped_chunks, prop_remove_unif
         )
 
-        # Update metadata
-        metadata["version"] = j
-        metadata["gap_status"] = "gapped"
-        metadata["tgp"] = total_removal
+        # Create and update metadata for gapped version
+        gapped_metadata = metadata.copy()
+        gapped_metadata["version"] = j
+        gapped_metadata["gap_status"] = "gapped"
+        gapped_metadata["tgp"] = total_removal
+        gapped_metadata["data"] = data_gapped
+        modified_intervals.append(gapped_metadata)
 
-        modified_intervals.append((data_gapped, metadata))
-
+        # Create interpolated version
         data_lint = data_gapped.interpolate(method="linear").ffill().bfill()
-        # Update metadata for the linted version
-        metadata["gap_status"] = "lint"
-        modified_intervals.append((data_lint, metadata))
+
+        # Create and update metadata for the linted version
+        lint_metadata = metadata.copy()
+        lint_metadata["version"] = j
+        lint_metadata["gap_status"] = "lint"
+        lint_metadata["tgp"] = total_removal
+        lint_metadata["data"] = data_lint
+        modified_intervals.append(lint_metadata)
 
     return modified_intervals
 
@@ -200,7 +203,7 @@ df_raw = df_raw.loc[:, params.mag_vars_dict[spacecraft]]
 # timestamp (index) | Bx | By | Bz | Vx | Vy | Vz | density
 
 # Define target frequency (e.g., '1min', '5s')
-resample_freq = "1min"
+resample_freq = "1s"
 
 # Resample with mean aggregation
 df = df_raw.resample(resample_freq).mean()
@@ -210,16 +213,24 @@ df = df.interpolate(method="linear")
 
 # Split into intervals of chosen length
 interval_length = "1h"  # 1 hour intervals
-intervals = split_into_intervals(df, interval_length, spacecraft)
+clean_intervals = split_into_intervals(df, interval_length, spacecraft)
+# Outputs list of dictionaries, including metadata and data for each interval
+
+clean_intervals[0]["data"].plot()
 
 # Add gapped and linear interpolated versions of each interval
-all_modified_intervals = []
-for int_idx, interval in enumerate(intervals):
-    modified = create_modified_intervals(interval[0], interval[1], times_to_gap=5)
-    all_modified_intervals.append(modified)
+all_intervals = []
+for interval in clean_intervals:
+    gapped = gap_fill_int(metadata=interval, times_to_gap=5)
+    all_intervals.append(gapped)
+
+all_intervals[0][0]["data"].plot()
+all_intervals[0][1]["data"].plot()
+all_intervals[0][2]["data"].plot()
 
 # Compute vector statistics (e.g., SF, ACF, PSD) for each interval
-vector_stats_list = get_vector_stats(all_modified_intervals)
+# MAKE SURE WE CAN RUN THIS AND BELOW ON BOTH clean_intervals AND all_intervals
+vector_stats_list = get_vector_stats(all_intervals)
 
 # Compute statistics derived from vector stats
 for interval in vector_stats_list:

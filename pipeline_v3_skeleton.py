@@ -246,91 +246,106 @@ all_intervals[0][0]["sf"].plot()
 all_intervals[0][1]["sf"].plot()
 all_intervals[0][2]["sf"].plot()
 
-# Plot example intervals and corresponding SFs
-example_clean_int = pd.DataFrame(all_intervals[0])
-# Status colour-mapping
-status_colours = {
-    "original": "black",
-    "naive": "red",
-    "lint": "blue",
-}
-
-fig, ax = plt.subplots(
-    times_to_gap, 2, figsize=(6, times_to_gap * 1.5), sharex="col", sharey="col"
-)
-for version in range(times_to_gap):
-    subset = example_clean_int[example_clean_int["version"] == version]
-
-    for status in subset["gap_status"].unique():
-        subsubset = subset[subset["gap_status"] == status]
-        if status == "original":
-            lw = 2.5
-        else:
-            lw = 0.8
-        for i, row in subsubset.iterrows():
-            # Plot data
-            ax[version, 0].plot(
-                row["data"].iloc[:, 0],
-                label=status,
-                color=status_colours[status],
-                lw=lw,
-            )
-            # Plot SF
-            ax[version, 1].loglog(
-                row["lag"], row["sf"], label=status, color=status_colours[status], lw=lw
-            )
-
-    # Add annotation in the first panel of each row
-    ax[version, 0].annotate(
-        f"{subset['tgp'].values[1]*100:.2f}% missing",
-        xy=(0.4, 0.8),
-        xycoords="axes fraction",
-        ha="center",
-        fontsize=10,
-        color="black",
-    )
-
-# Place legend outside the panels
-handles, labels = ax[0, 0].get_legend_handles_labels()
-fig.legend(
-    handles,
-    labels,
-    loc="upper center",
-    bbox_to_anchor=(0.5, 1.05),
-    ncol=len(status_colours),
-)
-
-ax[-1, 0].tick_params(axis="x", rotation=45)  # Rotate x-axis tick labels
-plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust layout to make space for the legend
-
 # IF NO GAPPING:
 # for interval in clean_intervals:
 #     vector_stats = get_vector_stats(interval)
 #     interval.update(vector_stats)
 
 
-# Compute statistics derived from vector stats
+def plot_intervals_and_stats(index, stat_to_plot, all_intervals, times_to_gap):
+    """
+    Plot example intervals and corresponding statistics.
+
+    Parameters:
+    - index: Index of the interval group to plot (e.g., 0)
+    - stat_to_plot: Statistic to plot (e.g., 'acf', 'sf')
+    - all_intervals: List of interval groups with metadata and data
+    - times_to_gap: Number of gapped versions to plot
+    """
+    example_clean_int = pd.DataFrame(all_intervals[index])
+    # Status colour-mapping
+    status_colours = {
+        "original": "black",
+        "naive": "red",
+        "lint": "blue",
+    }
+
+    fig, ax = plt.subplots(
+        times_to_gap, 2, figsize=(6, times_to_gap * 1.5), sharex="col", sharey="col"
+    )
+    for version in range(times_to_gap):
+        subset = example_clean_int[example_clean_int["version"] == version]
+
+        for status in subset["gap_status"].unique():
+            subsubset = subset[subset["gap_status"] == status]
+            if status == "original":
+                lw = 2.5
+            else:
+                lw = 0.8
+            for i, row in subsubset.iterrows():
+                # Plot data
+                ax[version, 0].plot(
+                    row["data"].iloc[:, 0],
+                    label=status,
+                    color=status_colours[status],
+                    lw=lw,
+                )
+                # Plot the specified statistic
+                ax[version, 1].plot(
+                    row["lag"],
+                    row[stat_to_plot],
+                    label=status,
+                    color=status_colours[status],
+                    lw=lw,
+                )
+                if stat_to_plot == "sf":
+                    ax[version, 1].set_xscale("log")
+                    ax[version, 1].set_yscale("log")
+
+        # Add annotation in the first panel of each row
+        ax[version, 0].annotate(
+            f"{subset['tgp'].values[1]*100:.2f}% missing",
+            xy=(0.4, 0.8),
+            xycoords="axes fraction",
+            ha="center",
+            fontsize=10,
+            color="black",
+        )
+
+    # Place legend outside the panels
+    handles, labels = ax[0, 0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.05),
+        ncol=len(status_colours),
+    )
+
+    ax[-1, 0].tick_params(axis="x", rotation=45)  # Rotate x-axis tick labels
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust layout to make space for the legend
+
+
+plot_intervals_and_stats(0, "acf", all_intervals, times_to_gap)
+
+# Compute vector-derived scalar statistics (e.g., tce, ttu, sf_slope) for each interval
+# and add to metadata
+
 for interval_group in all_intervals:
     for interval in interval_group:
-        tce = utils.compute_outer_scale_exp_trick(
-            interval["lag"],
-            interval["acf"],
-            plot=False,
-        )
-        ttu = utils.compute_taylor_chuychai(
-            interval["lag"],
-            interval["acf"],
-            tau_min=params.tau_min,
-            tau_max=params.tau_max,
-        )
-        qi_sf = compute_slope(interval["sf"], params.pwrl_range)
-        qi_psd = compute_slope(interval["psd"], fit_range)
+        vector_stats = get_vector_derived_stats(interval)
+        interval.update(vector_stats)
 
-        # Update metadata with derived statistics
-        interval["tce"] = tce
-        interval["ttu"] = ttu
-        interval["qi_sf"] = qi_sf
-        interval["qi_psd"] = qi_psd
+
+# Compute means *of clean intervals, mostly* and add to metadata
+for interval in clean_intervals:
+    mean_stats = get_mean_stats(interval)
+    interval.update(mean_stats)
+
+# SAVE RESULTS:
+# - full
+# - just scalars
+
 
 # Create a new version of each dictionary, with the vector values removed
 # and the scalar values retained
@@ -348,17 +363,11 @@ for interval_group in all_intervals:
         }
         all_scalar_stats.append(scalar_stats)
 
-##################################################
-
-scalar_stats = compute_scalar_stats(vector_stats)
-all_scalar_stats.append(scalar_stats)
-
-# Compute means
-means = compute_means(["Vx", "Vy", "Vz", "density"])
-
 # Save results
 results.to_pickle("analysis_results.pkl")
 
+# PART 1 FINISHED
+##################################################
 
 ## PART 1A: CALCULATE ERRORS FOR VECTOR STATS, PER FILE
 # 3_bin_errors.py

@@ -222,6 +222,26 @@ def get_scalars_from_vec(interval):
     return scalar_results
 
 
+def get_mean_stats(interval):
+    """
+    Process all intervals and compile results
+
+    Parameters:
+    - modified_intervals_list: list of lists of (DataFrame, metadata) tuples
+
+    Returns:
+    - DataFrame with results
+    """
+
+    means = interval["data"].mean()
+
+    # Prepare row
+    scalar_results = {"tce": tce, "ttu": ttu, "qi_sf": qi_sf}
+
+    # Convert to DataFrame
+    return scalar_results
+
+
 ################################################
 
 ## PART 1: CALCULATE STATS FOR EACH INTERVAL, PER FILE
@@ -229,15 +249,18 @@ def get_scalars_from_vec(interval):
 # if __name__ == "__main__":
 
 # Read data
+data_path_prefix = ""
+spacecraft = "psp"
+file_index = 0
 
-data = TimeSeries(
-    "data/raw/psp/psp_fld_l2_mag_rtn_2018110200_v02.cdf",
-    concatenate=True,
+raw_file_list = sorted(
+    glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf")
 )
 
-df_raw = data.to_dataframe()
 
-spacecraft = "psp"
+data = TimeSeries(raw_file_list[file_index], concatenate=True)
+
+df_raw = data.to_dataframe()
 
 df_raw = df_raw.loc[:, params.mag_vars_dict[spacecraft]]
 
@@ -371,41 +394,59 @@ plot_intervals_and_stats(0, "sf", all_intervals, times_to_gap)
 # Compute vector-derived scalar statistics (e.g., tce, ttu, sf_slope) for each interval
 # and add to metadata
 
-
 for interval_group in all_intervals:
     for interval in interval_group:
         scalar_stats = get_scalars_from_vec(interval)
         interval.update(scalar_stats)
 
 
-# Compute means *of clean intervals, mostly* and add to metadata
-for interval in clean_intervals:
-    mean_stats = get_mean_stats(interval)
-    interval.update(mean_stats)
+# Compute means *of clean intervals, usually* and add to metadata
+for interval_group in all_intervals:
+    for interval in interval_group:
+        data = interval["data"]
+        means = {f"mean_{col}": data[col].mean() for col in data.columns}
+        interval.update(means)
 
 # SAVE RESULTS:
 # - full
 # - just scalars
 
 
-# Create a new version of each dictionary, with the vector values removed
-# and the scalar values retained
-all_scalar_stats = []
-for interval_group in all_intervals:
-    for interval in interval_group:
-        scalar_stats = {
-            "tce": interval["tce"],
-            "ttu": interval["ttu"],
-            "qi_sf": interval["qi_sf"],
-            "qi_psd": interval["qi_psd"],
-            "gap_status": interval["gap_status"],
-            "tgp": interval["tgp"],
-            "version": interval["version"],
-        }
-        all_scalar_stats.append(scalar_stats)
+def filter_scalar_values(d):
+    return {
+        k: v
+        for k, v in d.items()
+        if not isinstance(v, (np.ndarray, pd.DataFrame, pd.Series))
+    }
 
-# Save results
-results.to_pickle("analysis_results.pkl")
+
+def process_list_of_dicts(data_list):
+    """Apply filtering to each dictionary in the list and convert the result into a DataFrame."""
+    filtered_list = [filter_scalar_values(d) for d in data_list]
+    return pd.DataFrame(filtered_list)
+
+
+df_scalars = process_list_of_dicts(all_intervals[0])
+
+scalars_output_file_path = (
+    raw_file_list[file_index]
+    .replace("raw", "processed")
+    .replace(".cdf", "_scalar_stats.csv")
+)
+
+# Save results with appropriate filename
+# (JSON might be better for the big output)
+# (and test Parquet reading speed when merging scalar dfs later)
+df_scalars.to_csv(scalars_output_file_path, index=False)
+
+full_output_file_path = (
+    raw_file_list[file_index]
+    .replace("raw", "processed")
+    .replace(".cdf", "_all_stats.pkl")
+)
+
+pickle.dump(all_intervals, open(full_output_file_path, "wb"))
+
 
 # PART 1 FINISHED
 ##################################################

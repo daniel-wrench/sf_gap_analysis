@@ -1,7 +1,5 @@
 import glob
-import os
 import pickle
-import sys
 import warnings
 
 import matplotlib.dates as mdates
@@ -12,7 +10,6 @@ import seaborn as sns
 from sunpy.timeseries import TimeSeries
 from sunpy.util import SunpyUserWarning
 
-import src.data_import_funcs as dif
 import src.params as params
 import src.sf_funcs as sf_funcs
 import src.ts_dashboard_utils as ts
@@ -76,7 +73,7 @@ def split_into_intervals(dataframe, interval_length, spacecraft):
 # Each interval in the list has the same structure as df_resampled
 
 
-def gap_fill_int(metadata, times_to_gap=5):
+def gap_and_fill_interval(metadata, times_to_gap=5):
     """
     Create modified copies of an interval with different data removal patterns
 
@@ -143,7 +140,7 @@ def gap_fill_int(metadata, times_to_gap=5):
     return modified_intervals
 
 
-def get_vector_stats(interval):
+def get_curves(interval):
     """
     Process all intervals and compile results
 
@@ -189,7 +186,7 @@ def get_vector_stats(interval):
     return vector_results
 
 
-def get_scalars_from_vec(interval):
+def get_derived_stats(interval):
     """
     Process all intervals and compile results
 
@@ -239,7 +236,7 @@ def get_scalars_from_vec(interval):
     return scalar_results
 
 
-def plot_gapped_int_stats(results, stat, interval_id, version):
+def plot_gapped_curves(results, stat, interval_id, version):
     """
     Plot the specified statistic (e.g., SF) for a given interval and version.
 
@@ -349,11 +346,6 @@ def process_list_of_dicts(data_list):
     return pd.DataFrame(filtered_list)
 
 
-################################################
-
-## PART 1: CALCULATE STATS FOR EACH INTERVAL, PER FILE
-
-
 def run_pipeline(input_filepath, config):
     """
     Main function to run the pipeline.
@@ -385,7 +377,7 @@ def run_pipeline(input_filepath, config):
         gapped_intervals_nested = []
         print("Gapping intervals {} different ways...".format(config["times_to_gap"]))
         for interval in intervals:
-            gapped = gap_fill_int(
+            gapped = gap_and_fill_interval(
                 metadata=interval, times_to_gap=config["times_to_gap"]
             )
             gapped_intervals_nested.append(gapped)
@@ -396,19 +388,19 @@ def run_pipeline(input_filepath, config):
             f"After making {config['times_to_gap']} gapped versions and handling them in multiple ways, we have {len(intervals)} structure function estimates."
         )
 
-    intervals[0]["data"].plot()
-    intervals[1]["data"].plot()
-    intervals[2]["data"].plot()
-    plt.show()
+    # intervals[0]["data"].plot()
+    # intervals[1]["data"].plot()
+    # intervals[2]["data"].plot()
+    # plt.show()
 
     # Process each interval and compute statistics
     print("\nComputing statistics for each interval...")
     for interval in intervals:
         # Compute vector statistics (e.g., SF, ACF, PSD)
-        vector_stats = get_vector_stats(interval)
+        vector_stats = get_curves(interval)
         interval.update(vector_stats)
         # Compute vector-derived scalar statistics (e.g., tce, ttu, sf_slope)
-        scalar_stats = get_scalars_from_vec(interval)
+        scalar_stats = get_derived_stats(interval)
         interval.update(scalar_stats)
         # Compute means
         data = interval["data"]
@@ -424,85 +416,79 @@ def run_pipeline(input_filepath, config):
     return intervals, df_scalars
 
 
-# if __name__ == "__main__":
+################################################
 
-# Configuration
-config = {
-    "spacecraft": "wind",
-    "mag_vars": [
-        # "psp_fld_l2_mag_RTN_0",
-        # "psp_fld_l2_mag_RTN_1",
-        # "psp_fld_l2_mag_RTN_2",
-        "BGSE_0",
-        "BGSE_1",
-        "BGSE_2",
-    ],
-    "cadence": "10s",  # Resample frequency
-    "int_length": "1h",  # Interval length
-    "times_to_gap": 2,  # Number of gapped versions
-    "max_lag_prop": 0.2,  # Maximum lag proportion for SF
-    # "pwrl_fit_range": [1, 100],  # Range for power-law fit
-}
+## PART 1: CALCULATE STATS FOR EACH INTERVAL, PER FILE
 
+if __name__ == "__main__":
 
-# Read data
-data_path_prefix = ""
-spacecraft = config["spacecraft"]
+    # Configuration
+    config = {
+        "spacecraft": "psp",
+        "mag_vars": [
+            "psp_fld_l2_mag_RTN_0",
+            "psp_fld_l2_mag_RTN_1",
+            "psp_fld_l2_mag_RTN_2",
+            # "BGSE_0",
+            # "BGSE_1",
+            # "BGSE_2",
+        ],
+        "cadence": "10s",  # Resample frequency
+        "int_length": "1h",  # Interval length
+        "times_to_gap": 0,  # Number of gapped versions
+        "max_lag_prop": 0.2,  # Maximum lag proportion for SF
+        # "pwrl_fit_range": [1, 100],  # Range for power-law fit
+    }
 
-raw_file_list = sorted(
-    glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf")
-)
+    # Read data
+    data_path_prefix = ""
+    spacecraft = config["spacecraft"]
 
-file_index = 0  # Change this to process different files
+    raw_file_list = sorted(
+        glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf")
+    )
 
-# full_results, scalar_results_df = run_pipeline(raw_file_list[file_index], config)
+    file_index = 0  # Change this to process different files
 
-full_results, scalar_results_df = run_pipeline(raw_file_list[file_index], config)
+    # full_results, scalar_results_df = run_pipeline(raw_file_list[file_index], config)
 
-# Save results
-# (JSON might be better for the big output)
-# (and test Parquet reading speed when merging scalar dfs later)
+    full_results, scalar_results_df = run_pipeline(raw_file_list[file_index], config)
 
-scalars_output_file_path = (
-    raw_file_list[file_index]
-    .replace("raw", "processed")
-    .replace(".cdf", "_scalar_stats.csv")
-)
+    # Save results
+    # (JSON might be better for the big output)
+    # (and test Parquet reading speed when merging scalar dfs later)
 
-scalar_results_df.to_csv(scalars_output_file_path, index=False)
-print(f"\nScalar results saved to: {scalars_output_file_path}")
+    scalars_output_file_path = (
+        raw_file_list[file_index]
+        .replace("raw", "processed")
+        .replace(".cdf", "_scalar_stats.csv")
+    )
 
-full_output_file_path = (
-    raw_file_list[file_index]
-    .replace("raw", "processed")
-    .replace(".cdf", "_all_stats.pkl")
-)
-pickle.dump(full_results, open(full_output_file_path, "wb"))
-print(f"Full results saved to: {full_output_file_path}")
+    scalar_results_df.to_csv(scalars_output_file_path, index=False)
+    print(f"\nScalar results saved to: {scalars_output_file_path}")
 
-print("\nPipeline completed successfully!")
+    full_output_file_path = (
+        raw_file_list[file_index]
+        .replace("raw", "processed")
+        .replace(".cdf", "_all_stats.pkl")
+    )
+    pickle.dump(full_results, open(full_output_file_path, "wb"))
+    print(f"Full results saved to: {full_output_file_path}")
+
+    print("\nPipeline completed successfully!")
 
 #########################################
 
-########################
-
-# PLOT VECTOR STATS FOR DIFFERENT GAP HANDLING METHODS
-
+# Plot some quick examples of gapped SFs (or other curves!)
 if config["times_to_gap"] > 0:
-    plot_gapped_int_stats(full_results, "sf", 0, 0)
-    plt.savefig(
-        raw_file_list[file_index].replace("raw", "processed").replace(".cdf", "_sf.png")
-    )
-    plot_gapped_int_stats(full_results, "acf", 0, 0)
-    plt.savefig(
-        raw_file_list[file_index]
-        .replace("raw", "processed")
-        .replace(".cdf", "_acf.png")
-    )
-
-
-# TIDY THIS, INCLUDING SAVING
-# Then run with config file a la Claude
+    int_index = 0
+    for version in range(2):
+        plot_gapped_curves(full_results, "sf", int_index, version)
+        plt.savefig(
+            raw_file_list[file_index]
+            .replace("raw", "processed")
+            .replace(".cdf", f"_sf_{int_index}_{version}.png")
+        )
 
 
 # PART 1 FINISHED

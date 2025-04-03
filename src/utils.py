@@ -583,6 +583,98 @@ def compute_nd_acf(time_series, nlags, plot=False):
     return time_lags, acf
 
 
+def compute_corr_scale_exp_trick(
+    lags: np.ndarray,
+    acf: np.ndarray,
+    plot=False,
+):
+    """
+    Computes the correlation scale by finding where the autocorrelation function drops to a specified threshold (default: 1/e).
+
+    Parameters:
+    -----------
+    lags : np.ndarray
+        The x-values (time lags) of the autocorrelation function
+    acf : np.ndarray
+        The y-values (correlation coefficients) of the autocorrelation function
+    threshold : float, optional
+        The threshold value to find (default: 1/e ≈ 0.368)
+    plot : bool, optional
+        Whether to plot the result (default: False)
+
+    Returns:
+    --------
+    float
+        The estimated correlation scale
+    """
+    # Find the first point where autocorrelation drops below threshold
+    threshold = np.exp(-1)
+
+    below_threshold = acf <= threshold
+
+    # If no values are below threshold, return the maximum lag
+    if not np.any(below_threshold):
+        return lags[-1]
+
+    # Find the index of the first value below threshold
+    idx_2 = np.argmax(below_threshold)
+
+    # If it's the first point, we can't interpolate
+    if idx_2 == 0:
+        return lags[0]
+
+    # Get coordinates for linear interpolation
+    idx_1 = idx_2 - 1
+    x1, y1 = lags[idx_1], acf[idx_1]
+    x2, y2 = lags[idx_2], acf[idx_2]
+
+    # Linear interpolation to find the optimal x value where y = threshold
+    x_opt = x1 + ((y1 - threshold) / (y1 - y2)) * (x2 - x1)
+
+    tce = round(x_opt, 3)
+
+    # Optionally plot the result
+    if plot:
+        import matplotlib.pyplot as plt
+
+        fig, ax = plt.subplots(1, 1, figsize=(5, 2.5), constrained_layout=True)
+        # PREVIOUSLY WAS 3.3 WIDE - 2.5 TALL
+        # fig.subplots_adjust(left=0.2, top=0.8, bottom=0.8)
+
+        ax.plot(
+            lags / 1000,
+            acf,
+            c="black",
+            label="Autocorrelation",
+            lw=0.5,
+        )
+        ax.set_xlabel("$\\tau (10^3$ s)")
+        ax.set_ylabel("$R(\\tau)$")
+
+        def sec2km(x):
+            return x * 1000 * 400 / 1e6
+
+        def km2sec(x):
+            return x / 1000 / 400 * 1e6
+
+        # use of a float for the position:
+        secax_x2 = ax.secondary_xaxis("top", functions=(sec2km, km2sec))
+        secax_x2.set_xlabel("$r$ ($10^6$ km)")
+        secax_x2.tick_params(which="both", direction="in")
+        ax.axhline(
+            np.exp(-1),
+            color="black",
+            ls="--",
+            label="$1/e\\rightarrow\\lambda_C^{{1/e}}$={:.0f}s".format(tce),
+        )
+        ax.axvline(tce / 1000, color="black", ls="--")
+        ax.tick_params(which="both", direction="in")
+        # label="$1/e\\rightarrow \lambda_C^{1/e}=${:.0f}s".format(tce))
+        return tce, fig, ax
+
+    return tce
+
+
 def compute_outer_scale_exp_trick(
     autocorrelation_x: np.ndarray, autocorrelation_y: np.ndarray, plot=False
 ):
@@ -754,7 +846,9 @@ def compute_outer_scale_integral(time_lags, acf, fig=None, ax=None, plot=False):
         return integral
 
 
-def compute_taylor_scale(time_lags, acf, tau_fit, plot=False, show_intercept=False):
+def compute_taylor_scale(
+    time_lags, acf, tau_fit, plot=False, show_intercept=False, xlim=None, ylim=None
+):
     """Compute the Taylor microscale
 
     Args:
@@ -806,8 +900,14 @@ def compute_taylor_scale(time_lags, acf, tau_fit, plot=False, show_intercept=Fal
             alpha=0.6,
         )
 
-        ax[0].set_xlim(-1, 45)
-        ax[0].set_ylim(0.986, 1.001)
+        if xlim is not None:
+            ax[0].set_xlim(xlim[0], xlim[1])
+        else:
+            ax[0].set_xlim(-1, 45)
+        if ylim is not None:
+            ax[0].set_ylim(ylim[0], ylim[1])
+        else:
+            ax[0].set_ylim(0.986, 1.001)
 
         if show_intercept is True:
             ax[0].set_ylim(0, 1.05)

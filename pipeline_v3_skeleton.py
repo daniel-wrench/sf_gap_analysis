@@ -164,10 +164,10 @@ def get_vector_stats(interval):
 
     # Prepare row
     vector_results = {
-        "sf": sf["sf_2"],
+        "sf": sf["sf_2"].values,
         "lag": lags,
-        "lag_n": sf["n"],
-        "acf": acf_from_sf,
+        "lag_n": sf["n"].values,
+        "acf": acf_from_sf.values,
         # "acf_lags": acf_lags,
         # "acf_lags_n": sf_lags_n,
         # "psd": psd,
@@ -176,6 +176,50 @@ def get_vector_stats(interval):
 
     # Convert to DataFrame
     return vector_results
+
+
+def get_scalars_from_vec(interval):
+    """
+    Process all intervals and compile results
+
+    Parameters:
+    - modified_intervals_list: list of lists of (DataFrame, metadata) tuples
+
+    Returns:
+    - DataFrame with results
+    """
+
+    # Calculate correlation scale from ACF
+    tce = utils.compute_corr_scale_exp_trick(
+        interval["lag"],
+        interval["acf"],
+        plot=False,
+    )
+
+    # Calculate Taylor scale from ACF
+    ttu, taylor_scale_u_std = utils.compute_taylor_chuychai(
+        interval["lag"],
+        interval["acf"],
+        tau_min=params.tau_min,
+        tau_max=params.tau_max,
+    )
+
+    # Fit log-log slope to specific range of structure function
+    fit_idx = np.where(
+        (interval["lag"] >= params.pwrl_range[0])
+        & (interval["lag"] <= params.pwrl_range[1])
+    )[0]
+    qi_sf = np.polyfit(
+        np.log(interval["lag"][fit_idx]),
+        np.log(interval["sf"][fit_idx]),
+        1,
+    )[0]
+
+    # Prepare row
+    scalar_results = {"tce": tce, "ttu": ttu, "qi_sf": qi_sf}
+
+    # Convert to DataFrame
+    return scalar_results
 
 
 ################################################
@@ -216,8 +260,7 @@ clean_intervals = split_into_intervals(df, interval_length, spacecraft)
 print(len(clean_intervals))
 
 clean_intervals[0]["data"].plot()
-
-plt.plot(clean_intervals[0]["data"])
+plt.show()
 
 # Add gapped and linear interpolated versions of each interval
 times_to_gap = 3
@@ -233,6 +276,7 @@ print(len(all_intervals))
 all_intervals[0][0]["data"].plot()
 all_intervals[0][1]["data"].plot()
 all_intervals[0][2]["data"].plot()
+plt.show()
 
 # Compute vector statistics (e.g., SF, ACF, PSD) for each interval
 # and add to metadata
@@ -241,10 +285,6 @@ for interval_group in all_intervals:
     for interval in interval_group:
         vector_stats = get_vector_stats(interval)
         interval.update(vector_stats)
-
-all_intervals[0][0]["sf"].plot()
-all_intervals[0][1]["sf"].plot()
-all_intervals[0][2]["sf"].plot()
 
 # IF NO GAPPING:
 # for interval in clean_intervals:
@@ -326,15 +366,16 @@ def plot_intervals_and_stats(index, stat_to_plot, all_intervals, times_to_gap):
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust layout to make space for the legend
 
 
-plot_intervals_and_stats(0, "acf", all_intervals, times_to_gap)
+plot_intervals_and_stats(0, "sf", all_intervals, times_to_gap)
 
 # Compute vector-derived scalar statistics (e.g., tce, ttu, sf_slope) for each interval
 # and add to metadata
 
+
 for interval_group in all_intervals:
     for interval in interval_group:
-        vector_stats = get_vector_derived_stats(interval)
-        interval.update(vector_stats)
+        scalar_stats = get_scalars_from_vec(interval)
+        interval.update(scalar_stats)
 
 
 # Compute means *of clean intervals, mostly* and add to metadata

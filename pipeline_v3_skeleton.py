@@ -8,6 +8,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from sunpy.timeseries import TimeSeries
 from sunpy.util import SunpyUserWarning
 
@@ -58,7 +59,9 @@ def split_into_intervals(dataframe, interval_length, spacecraft):
         current_start = current_end
 
     # Print summary of intervals
-    print(f"Created {len(intervals)} intervals of length {interval_length}.")
+    print(
+        f"Split into {len(intervals)} intervals of length {interval_length}, each with {len(dataframe)} points at {dataframe.index.freqstr} resolution"
+    )
     return intervals
 
 
@@ -222,100 +225,7 @@ def get_scalars_from_vec(interval):
     return scalar_results
 
 
-def get_mean_stats(interval):
-    """
-    Process all intervals and compile results
-
-    Parameters:
-    - modified_intervals_list: list of lists of (DataFrame, metadata) tuples
-
-    Returns:
-    - DataFrame with results
-    """
-
-    means = interval["data"].mean()
-
-    # Prepare row
-    scalar_results = {"tce": tce, "ttu": ttu, "qi_sf": qi_sf}
-
-    # Convert to DataFrame
-    return scalar_results
-
-
-################################################
-
-## PART 1: CALCULATE STATS FOR EACH INTERVAL, PER FILE
-
-# if __name__ == "__main__":
-
-# Read data
-data_path_prefix = ""
-spacecraft = "psp"
-file_index = 0
-
-raw_file_list = sorted(
-    glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf")
-)
-
-
-data = TimeSeries(raw_file_list[file_index], concatenate=True)
-
-df_raw = data.to_dataframe()
-
-df_raw = df_raw.loc[:, params.mag_vars_dict[spacecraft]]
-
-# Expected input structure
-# timestamp (index) | Bx | By | Bz | Vx | Vy | Vz | density
-
-# Define target frequency (e.g., '1min', '5s')
-resample_freq = "10s"
-
-# Resample with mean aggregation
-df = df_raw.resample(resample_freq).mean()
-
-# Handle potential NaN values from resampling
-df = df.interpolate(method="linear")
-
-# Split into intervals of chosen length
-interval_length = "1h"  # 1 hour intervals
-clean_intervals = split_into_intervals(df, interval_length, spacecraft)
-# Outputs list of dictionaries, including metadata and data for each interval
-print(len(clean_intervals))
-
-clean_intervals[0]["data"].plot()
-plt.show()
-
-# Add gapped and linear interpolated versions of each interval
-times_to_gap = 3
-# times_to_gap = params.times_to_gap
-
-all_intervals = []
-for interval in clean_intervals:
-    gapped = gap_fill_int(metadata=interval, times_to_gap=times_to_gap)
-    all_intervals.append(gapped)
-
-print(len(all_intervals))
-
-all_intervals[0][0]["data"].plot()
-all_intervals[0][1]["data"].plot()
-all_intervals[0][2]["data"].plot()
-plt.show()
-
-# Compute vector statistics (e.g., SF, ACF, PSD) for each interval
-# and add to metadata
-
-for interval_group in all_intervals:
-    for interval in interval_group:
-        vector_stats = get_vector_stats(interval)
-        interval.update(vector_stats)
-
-# IF NO GAPPING:
-# for interval in clean_intervals:
-#     vector_stats = get_vector_stats(interval)
-#     interval.update(vector_stats)
-
-
-def plot_intervals_and_stats(index, stat_to_plot, all_intervals, times_to_gap):
+def plot_intervals_and_stats(index, stat_to_plot, gapped_intervals):
     """
     Plot example intervals and corresponding statistics.
 
@@ -323,9 +233,8 @@ def plot_intervals_and_stats(index, stat_to_plot, all_intervals, times_to_gap):
     - index: Index of the interval group to plot (e.g., 0)
     - stat_to_plot: Statistic to plot (e.g., 'acf', 'sf')
     - all_intervals: List of interval groups with metadata and data
-    - times_to_gap: Number of gapped versions to plot
     """
-    example_clean_int = pd.DataFrame(all_intervals[index])
+    int_group = pd.DataFrame(all_intervals[index])
     # Status colour-mapping
     status_colours = {
         "original": "black",
@@ -333,11 +242,13 @@ def plot_intervals_and_stats(index, stat_to_plot, all_intervals, times_to_gap):
         "lint": "blue",
     }
 
+    versions = int_group["version"].nunique()
+
     fig, ax = plt.subplots(
-        times_to_gap, 2, figsize=(6, times_to_gap * 1.5), sharex="col", sharey="col"
+        versions, 2, figsize=(6, versions * 1.5), sharex="col", sharey="col"
     )
-    for version in range(times_to_gap):
-        subset = example_clean_int[example_clean_int["version"] == version]
+    for version in range(versions):
+        subset = int_group[int_group["version"] == version]
 
         for status in subset["gap_status"].unique():
             subsubset = subset[subset["gap_status"] == status]
@@ -387,29 +298,7 @@ def plot_intervals_and_stats(index, stat_to_plot, all_intervals, times_to_gap):
 
     ax[-1, 0].tick_params(axis="x", rotation=45)  # Rotate x-axis tick labels
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust layout to make space for the legend
-
-
-plot_intervals_and_stats(0, "sf", all_intervals, times_to_gap)
-
-# Compute vector-derived scalar statistics (e.g., tce, ttu, sf_slope) for each interval
-# and add to metadata
-
-for interval_group in all_intervals:
-    for interval in interval_group:
-        scalar_stats = get_scalars_from_vec(interval)
-        interval.update(scalar_stats)
-
-
-# Compute means *of clean intervals, usually* and add to metadata
-for interval_group in all_intervals:
-    for interval in interval_group:
-        data = interval["data"]
-        means = {f"mean_{col}": data[col].mean() for col in data.columns}
-        interval.update(means)
-
-# SAVE RESULTS:
-# - full
-# - just scalars
+    plt.show()
 
 
 def filter_scalar_values(d):
@@ -426,7 +315,116 @@ def process_list_of_dicts(data_list):
     return pd.DataFrame(filtered_list)
 
 
-df_scalars = process_list_of_dicts(all_intervals[0])
+################################################
+
+## PART 1: CALCULATE STATS FOR EACH INTERVAL, PER FILE
+
+
+def run_pipeline(input_filepath, config):
+    """
+    Main function to run the pipeline.
+
+    Parameters:
+    - input_filepath: Path to the input CDF file
+    - output_dir: Directory to save the results
+    - config: dictionary with pipeline configuration
+    """
+
+    print(f"Processing file: {input_filepath}")
+
+    # Load data
+    data = TimeSeries(input_filepath, concatenate=True)
+    df_raw = data.to_dataframe()
+
+    # Extract variables of interest
+    df_raw = df_raw.loc[:, config["mag_vars"]]
+    print("Loaded data with shape:", df_raw.shape)
+
+    # Resample and handle NaN values
+    df = df_raw.resample(config["cadence"]).mean()
+    df = df.interpolate(method="linear")
+
+    # Split into intervals of chosen length
+    intervals = split_into_intervals(df, config["int_length"], config["spacecraft"])
+
+    if config["times_to_gap"] > 0:
+        gapped_intervals_nested = []
+        print("Gapping intervals {} different ways...".format(config["times_to_gap"]))
+        for interval in intervals:
+            gapped = gap_fill_int(
+                metadata=interval, times_to_gap=config["times_to_gap"]
+            )
+            gapped_intervals_nested.append(gapped)
+
+        # Convert this list of list of dictionaries into a list of dictionaries
+        intervals = [item for sublist in gapped_intervals_nested for item in sublist]
+        print(
+            f"After making {config['times_to_gap']} gapped versions and handling them in multiple ways, we have {len(intervals)} structure function estimates."
+        )
+
+    intervals[0]["data"].plot()
+    intervals[1]["data"].plot()
+    intervals[2]["data"].plot()
+    plt.show()
+
+    # Process each interval and compute statistics
+    print("\nComputing statistics for each interval...")
+    for interval in intervals:
+        # Compute vector statistics (e.g., SF, ACF, PSD)
+        vector_stats = get_vector_stats(interval)
+        interval.update(vector_stats)
+        # Compute vector-derived scalar statistics (e.g., tce, ttu, sf_slope)
+        scalar_stats = get_scalars_from_vec(interval)
+        interval.update(scalar_stats)
+        # Compute means
+        data = interval["data"]
+        means = {f"mean_{col}": data[col].mean() for col in data.columns}
+        interval.update(means)
+    print("Done computing statistics.")
+    # plot_intervals_and_stats(0, "sf", intervals)
+
+    df_scalars = process_list_of_dicts(intervals)
+    print("\nPeek at final dataframe of scalar statistics:\n")
+    print(df_scalars.head())
+
+    return intervals, df_scalars
+
+
+# if __name__ == "__main__":
+
+# Configuration
+config = {
+    "spacecraft": "psp",
+    "mag_vars": [
+        "psp_fld_l2_mag_RTN_0",
+        "psp_fld_l2_mag_RTN_1",
+        "psp_fld_l2_mag_RTN_2",
+    ],
+    "cadence": "10s",  # Resample frequency
+    "int_length": "1h",  # Interval length
+    "times_to_gap": 0,  # Number of gapped versions
+    "max_lag_prop": 0.2,  # Maximum lag proportion for SF
+    # "pwrl_fit_range": [1, 100],  # Range for power-law fit
+}
+
+
+# Read data
+data_path_prefix = ""
+spacecraft = config["spacecraft"]
+
+raw_file_list = sorted(
+    glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf")
+)
+
+file_index = 0  # Change this to process different files
+
+# full_results, scalar_results_df = run_pipeline(raw_file_list[file_index], config)
+
+full_results, scalar_results_df = run_pipeline(raw_file_list[file_index], config)
+
+# Save results
+# (JSON might be better for the big output)
+# (and test Parquet reading speed when merging scalar dfs later)
 
 scalars_output_file_path = (
     raw_file_list[file_index]
@@ -434,52 +432,97 @@ scalars_output_file_path = (
     .replace(".cdf", "_scalar_stats.csv")
 )
 
-# Save results with appropriate filename
-# (JSON might be better for the big output)
-# (and test Parquet reading speed when merging scalar dfs later)
-df_scalars.to_csv(scalars_output_file_path, index=False)
+scalar_results_df.to_csv(scalars_output_file_path, index=False)
+print(f"\nScalar results saved to: {scalars_output_file_path}")
 
 full_output_file_path = (
     raw_file_list[file_index]
     .replace("raw", "processed")
     .replace(".cdf", "_all_stats.pkl")
 )
+pickle.dump(full_results, open(full_output_file_path, "wb"))
+print(f"Full results saved to: {full_output_file_path}")
 
-pickle.dump(all_intervals, open(full_output_file_path, "wb"))
+print("\nPipeline completed successfully!")
+
+#########################################
+
+########################
+
+# PLOT VECTOR STATS FOR DIFFERENT GAP HANDLING METHODS
+
+# # Flatten into long-format DataFrame
+# full_results_long = []
+# for interval in full_results:
+#     for lag, sf_value in zip(interval["lag"], interval["sf"]):  # Unpack SF values
+#         full_results_long.append(
+#             {
+#                 "interval_id": interval["interval_id"],
+#                 "version": interval["version"],
+#                 "gap_status": interval["gap_status"],
+#                 "tgp": interval["tgp"],
+#                 "lag": lag,
+#                 "sf": sf_value,
+#             }
+#         )
+
+# full_results_long_df = pd.DataFrame(full_results_long)
+
+# # Plot the different SF estimates for a given interval and version
+
+# # Filter for a given interval and version
+# interval_id = 4
+# version = 1
+# df_filtered = full_results_long_df[
+#     (full_results_long_df["interval_id"] == interval_id)
+#     & (full_results_long_df["version"] == version)
+# ]
+
+# # Plot SFs for different gap-handling methods
+# plt.figure(figsize=(8, 5))
+# sns.lineplot(data=df_filtered, x="lag", y="sf", hue="gap_status")
+# plt.xlabel("Lag")
+# plt.ylabel("Structure Function (SF)")
+# plt.title(f"SF Estimations for Interval {interval_id}, Version {version}")
+# plt.legend(title="Gap Handling Method")
+# plt.show()
+
+# TIDY THIS, INCLUDING SAVING
+# Then run with config file a la Claude
 
 
 # PART 1 FINISHED
 ##################################################
 
-## PART 1A: CALCULATE ERRORS FOR VECTOR STATS, PER FILE
-# 3_bin_errors.py
-pe = bin_errors(results[sf_2, acf])
-pickle.dump(pe)
+# ## PART 1A: CALCULATE ERRORS FOR VECTOR STATS, PER FILE
+# # 3_bin_errors.py
+# pe = bin_errors(results[sf_2, acf])
+# pickle.dump(pe)
 
-## PART 1B: FINALISE CORRECTION, USING ERRORS FROM ALL FILES
-# 4a_finalise_correction.py
-plt.savefig(heatmap)
-pickle.dump(correction_lookup)
+# ## PART 1B: FINALISE CORRECTION, USING ERRORS FROM ALL FILES
+# # 4a_finalise_correction.py
+# plt.savefig(heatmap)
+# pickle.dump(correction_lookup)
 
-## PART 1C: APPLY CORRECTION TO ALL FILES
-# 5_correct_test_sfs.py
+# ## PART 1C: APPLY CORRECTION TO ALL FILES
+# # 5_correct_test_sfs.py
 
-## PART 2: COMBINE ALL STATS INTO ONE FILE, CALCULATE DERIVED SCALARS
-df["Re_lt"] = df["tce"] / df["ttc"]
+# ## PART 2: COMBINE ALL STATS INTO ONE FILE, CALCULATE DERIVED SCALARS
+# df["Re_lt"] = df["tce"] / df["ttc"]
 
-pickle.dump(scalar_and_vector_stats)
-pd.to_csv("scalar_stats.csv")
+# pickle.dump(scalar_and_vector_stats)
+# pd.to_csv("scalar_stats.csv")
 
-## PART 3: SUMMARISE AND PLOT SCALAR RESULTS
-df = pd.read_csv("your_data.csv", parse_dates=["timestamp"])
-df = df.set_index("timestamp")
+# ## PART 3: SUMMARISE AND PLOT SCALAR RESULTS
+# df = pd.read_csv("your_data.csv", parse_dates=["timestamp"])
+# df = df.set_index("timestamp")
 
-df.describe()
-pd.corr(df)
-sns.pairplot(df)
-plt.savefig("pairplot.png")
+# df.describe()
+# pd.corr(df)
+# sns.pairplot(df)
+# plt.savefig("pairplot.png")
 
-## PART 3A: SUMMARISE AND PLOT ERROR RESULTS
+# ## PART 3A: SUMMARISE AND PLOT ERROR RESULTS
 
-## PART 4: CREATE INTERACTIVE DASHBOARD TO EXPLORE VECTORS/TIME SERIES FROM SCALARS
-# At least have demo about downloading, reading, and plotting specific time series
+# ## PART 4: CREATE INTERACTIVE DASHBOARD TO EXPLORE VECTORS/TIME SERIES FROM SCALARS
+# # At least have demo about downloading, reading, and plotting specific time series

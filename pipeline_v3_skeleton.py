@@ -18,6 +18,14 @@ import src.sf_funcs as sf_funcs
 import src.ts_dashboard_utils as ts
 import src.utils as utils  # copied directly from Reynolds project, normalize() added
 
+# Set seed
+np.random.seed(42)
+
+# Suppress the specific SunpyUserWarning
+warnings.filterwarnings("ignore", category=SunpyUserWarning)
+# Suppress the pandas df.sum() warning
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
 
 def split_into_intervals(dataframe, interval_length, spacecraft):
     """
@@ -200,12 +208,18 @@ def get_scalars_from_vec(interval):
     )
 
     # Calculate Taylor scale from ACF
-    ttu, taylor_scale_u_std = utils.compute_taylor_chuychai(
-        interval["lag"],
-        interval["acf"],
-        tau_min=params.tau_min,
-        tau_max=params.tau_max,
-    )
+    try:
+        ttu, taylor_scale_u_std = utils.compute_taylor_chuychai(
+            interval["lag"],
+            interval["acf"],
+            tau_min=params.tau_min,
+            tau_max=params.tau_max,
+        )
+    except ValueError:
+        # Handle case where ttu cannot be calculated
+        print("Error calculating ttu, setting to NaN. Maybe missing values in ACF?")
+        ttu = np.nan
+        taylor_scale_u_std = np.nan
 
     # Fit log-log slope to specific range of structure function
     fit_idx = np.where(
@@ -225,80 +239,100 @@ def get_scalars_from_vec(interval):
     return scalar_results
 
 
-def plot_intervals_and_stats(index, stat_to_plot, gapped_intervals):
+def plot_gapped_int_stats(results, stat, interval_id, version):
     """
-    Plot example intervals and corresponding statistics.
+    Plot the specified statistic (e.g., SF) for a given interval and version.
 
     Parameters:
-    - index: Index of the interval group to plot (e.g., 0)
-    - stat_to_plot: Statistic to plot (e.g., 'acf', 'sf')
-    - all_intervals: List of interval groups with metadata and data
+    - results: List of dictionaries containing interval data and statistics
+    - stat: Statistic to plot (e.g., 'sf')
+    - interval_id: ID of the interval to filter
+    - version: Version of the interval to filter
     """
-    int_group = pd.DataFrame(all_intervals[index])
-    # Status colour-mapping
-    status_colours = {
-        "original": "black",
-        "naive": "red",
-        "lint": "blue",
-    }
+    # Extract relevant data
+    stat_records = []
+    time_series_records = []
+    for interval in results:
+        # Data in long format
+        gap_status = interval["gap_status"]
+        # Check if the interval matches the specified ID and version
+        if interval["interval_id"] == interval_id and interval["version"] == version:
+            for lag, stat_value in zip(
+                interval["lag"], interval[stat]
+            ):  # Unpack stat values
+                stat_records.append(
+                    {
+                        "spacecraft": interval["spacecraft"],
+                        "interval_id": interval["interval_id"],
+                        "version": interval["version"],
+                        "gap_status": interval["gap_status"],
+                        "tgp": interval["tgp"],
+                        "lag": lag,
+                        stat: stat_value,
+                    }
+                )
+            # Store time series
+            df_time_series = interval["data"].copy()
+            df_time_series["gap_status"] = gap_status  # Tag with gap method
+            time_series_records.append(df_time_series)
 
-    versions = int_group["version"].nunique()
+    results_long_df = pd.DataFrame(stat_records)
 
-    fig, ax = plt.subplots(
-        versions, 2, figsize=(6, versions * 1.5), sharex="col", sharey="col"
+    # Convert time series records to DataFrame (still long format)
+    df_time_series = pd.concat(
+        time_series_records
+    )  # Stack different gap-status time series
+
+    # Ensure gap_status order is "original", "lint", "naive"
+    gap_status_order = ["original", "lint", "naive"]
+    results_long_df["gap_status"] = pd.Categorical(
+        results_long_df["gap_status"], categories=gap_status_order, ordered=True
     )
-    for version in range(versions):
-        subset = int_group[int_group["version"] == version]
+    df_time_series["gap_status"] = pd.Categorical(
+        df_time_series["gap_status"], categories=gap_status_order, ordered=True
+    )
 
-        for status in subset["gap_status"].unique():
-            subsubset = subset[subset["gap_status"] == status]
-            if status == "original":
-                lw = 2.5
-            else:
-                lw = 0.8
-            for i, row in subsubset.iterrows():
-                # Plot data
-                ax[version, 0].plot(
-                    row["data"].iloc[:, 0],
-                    label=status,
-                    color=status_colours[status],
-                    lw=lw,
-                )
-                # Plot the specified statistic
-                ax[version, 1].plot(
-                    row["lag"],
-                    row[stat_to_plot],
-                    label=status,
-                    color=status_colours[status],
-                    lw=lw,
-                )
-                if stat_to_plot == "sf":
-                    ax[version, 1].set_xscale("log")
-                    ax[version, 1].set_yscale("log")
+    tgp = results_long_df["tgp"].unique()[1]
+    spacecraft = results_long_df["spacecraft"][0]
 
-        # Add annotation in the first panel of each row
-        ax[version, 0].annotate(
-            f"{subset['tgp'].values[1]*100:.2f}% missing",
-            xy=(0.4, 0.8),
-            xycoords="axes fraction",
-            ha="center",
-            fontsize=10,
-            color="black",
+    # === PLOTTING ===
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 3))
+    palette = {"original": "black", "lint": "blue", "naive": "red"}
+
+    # Time Series Plot
+    for gap_status, ts_data in df_time_series.groupby("gap_status", observed=False):
+        axes[0].plot(
+            ts_data.index,
+            ts_data[config["mag_vars"][0]],
+            label=f"{gap_status}",
+            color=palette[gap_status],
         )
 
-    # Place legend outside the panels
-    handles, labels = ax[0, 0].get_legend_handles_labels()
-    fig.legend(
-        handles,
-        labels,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.05),
-        ncol=len(status_colours),
-    )
+    axes[0].set_ylabel("Magnetic Field Component")
+    axes[0].set_xlabel("Time")
+    # axes[0].legend(title="Gap Handling")
+    # axes[0].set_title(f"Time Series for Interval {interval_id}, Version {version}")
 
-    ax[-1, 0].tick_params(axis="x", rotation=45)  # Rotate x-axis tick labels
-    plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust layout to make space for the legend
-    plt.show()
+    # Stat Plot
+    sns.lineplot(
+        data=results_long_df,
+        x="lag",
+        y=stat,
+        hue="gap_status",
+        ax=axes[1],
+        palette=palette,
+    )
+    axes[1].set_ylabel(stat.upper())
+    plt.suptitle(
+        f"{stat.upper()} Estimations for {spacecraft.upper()} Interval {interval_id}, Version {version}: {tgp*100:.1f}% removed"
+    )
+    axes[1].legend(title="Gap Handling Method")
+    if stat == "sf":
+        axes[1].set_xscale("log")
+        axes[1].set_yscale("log")
+    plt.tight_layout()
+    return fig, axes
 
 
 def filter_scalar_values(d):
@@ -342,7 +376,7 @@ def run_pipeline(input_filepath, config):
 
     # Resample and handle NaN values
     df = df_raw.resample(config["cadence"]).mean()
-    df = df.interpolate(method="linear")
+    df = df.interpolate(method="linear").ffill().bfill()
 
     # Split into intervals of chosen length
     intervals = split_into_intervals(df, config["int_length"], config["spacecraft"])
@@ -394,15 +428,18 @@ def run_pipeline(input_filepath, config):
 
 # Configuration
 config = {
-    "spacecraft": "psp",
+    "spacecraft": "wind",
     "mag_vars": [
-        "psp_fld_l2_mag_RTN_0",
-        "psp_fld_l2_mag_RTN_1",
-        "psp_fld_l2_mag_RTN_2",
+        # "psp_fld_l2_mag_RTN_0",
+        # "psp_fld_l2_mag_RTN_1",
+        # "psp_fld_l2_mag_RTN_2",
+        "BGSE_0",
+        "BGSE_1",
+        "BGSE_2",
     ],
     "cadence": "10s",  # Resample frequency
     "int_length": "1h",  # Interval length
-    "times_to_gap": 0,  # Number of gapped versions
+    "times_to_gap": 2,  # Number of gapped versions
     "max_lag_prop": 0.2,  # Maximum lag proportion for SF
     # "pwrl_fit_range": [1, 100],  # Range for power-law fit
 }
@@ -451,41 +488,18 @@ print("\nPipeline completed successfully!")
 
 # PLOT VECTOR STATS FOR DIFFERENT GAP HANDLING METHODS
 
-# # Flatten into long-format DataFrame
-# full_results_long = []
-# for interval in full_results:
-#     for lag, sf_value in zip(interval["lag"], interval["sf"]):  # Unpack SF values
-#         full_results_long.append(
-#             {
-#                 "interval_id": interval["interval_id"],
-#                 "version": interval["version"],
-#                 "gap_status": interval["gap_status"],
-#                 "tgp": interval["tgp"],
-#                 "lag": lag,
-#                 "sf": sf_value,
-#             }
-#         )
+if config["times_to_gap"] > 0:
+    plot_gapped_int_stats(full_results, "sf", 0, 0)
+    plt.savefig(
+        raw_file_list[file_index].replace("raw", "processed").replace(".cdf", "_sf.png")
+    )
+    plot_gapped_int_stats(full_results, "acf", 0, 0)
+    plt.savefig(
+        raw_file_list[file_index]
+        .replace("raw", "processed")
+        .replace(".cdf", "_acf.png")
+    )
 
-# full_results_long_df = pd.DataFrame(full_results_long)
-
-# # Plot the different SF estimates for a given interval and version
-
-# # Filter for a given interval and version
-# interval_id = 4
-# version = 1
-# df_filtered = full_results_long_df[
-#     (full_results_long_df["interval_id"] == interval_id)
-#     & (full_results_long_df["version"] == version)
-# ]
-
-# # Plot SFs for different gap-handling methods
-# plt.figure(figsize=(8, 5))
-# sns.lineplot(data=df_filtered, x="lag", y="sf", hue="gap_status")
-# plt.xlabel("Lag")
-# plt.ylabel("Structure Function (SF)")
-# plt.title(f"SF Estimations for Interval {interval_id}, Version {version}")
-# plt.legend(title="Gap Handling Method")
-# plt.show()
 
 # TIDY THIS, INCLUDING SAVING
 # Then run with config file a la Claude

@@ -165,10 +165,11 @@ def get_curves(interval):
 
     # acf, acf_lags, sf_lags_n = compute_acf(
     #     interval_df, ["Vx", "Vy", "Vz"]
-    # )  # OR, compute from sf
+    # )
     # psd, psd_freq = compute_psd(
     #     interval_df, ["Vx", "Vy", "Vz"]
-    # )  # OR, compute from sf
+    # )
+    # equiv_spectrum = "Mark's code"
 
     # Prepare row
     vector_results = {
@@ -230,7 +231,12 @@ def get_derived_stats(interval):
     )[0]
 
     # Prepare row
-    scalar_results = {"tce": tce, "ttu": ttu, "qi_sf": qi_sf}
+    scalar_results = {
+        "tce": tce,
+        "ttu": ttu,
+        "qi_sf": qi_sf,
+        # level_sf: level_sf, # e.g. 5min level from Burlaga
+    }
 
     # Convert to DataFrame
     return scalar_results
@@ -399,6 +405,9 @@ def run_pipeline(input_filepath, config):
         # Compute vector statistics (e.g., SF, ACF, PSD)
         vector_stats = get_curves(interval)
         interval.update(vector_stats)
+
+        # IN FUTURE: Correct LINT SFs here
+
         # Compute vector-derived scalar statistics (e.g., tce, ttu, sf_slope)
         scalar_stats = get_derived_stats(interval)
         interval.update(scalar_stats)
@@ -435,7 +444,7 @@ if __name__ == "__main__":
         ],
         "cadence": "10s",  # Resample frequency
         "int_length": "1h",  # Interval length
-        "times_to_gap": 0,  # Number of gapped versions
+        "times_to_gap": 5,  # Number of gapped versions
         "max_lag_prop": 0.2,  # Maximum lag proportion for SF
         # "pwrl_fit_range": [1, 100],  # Range for power-law fit
     }

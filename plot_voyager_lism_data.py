@@ -1,8 +1,9 @@
 ## Plot Voyager LISM data
 
 # TO-DO
+# - Fix annotations (maybe don't highlight intervals?)
+# - Get rid of un-used functions
 # - Reduce alpha of pre-heliopause data
-# - Add V2 time axis
 # - Add uncertainties
 
 # Takes 3min to read 15 Voyager files (1 year each)
@@ -14,6 +15,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.interpolate import interp1d
 from sunpy.timeseries import TimeSeries
 
 plt.rc("text", usetex=True)
@@ -21,9 +23,40 @@ plt.rc("font", family="serif", serif="Computer Modern", size=10)
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
-
 # So that I can read in the src files while working here in the notebooks/ folder
 # NB: does not affect working directory, so still need ../data e.g. for reading data
+
+
+# Get the start and end dates of the first and last non-missing rows
+def clean_empty_start_end(df, column_name):
+    """
+    Returns the index of the first and last non-missing value in a specified column.
+
+    Parameters:
+    df (pandas.DataFrame): The DataFrame to analyze
+    column_name (str): The name of the column to check
+
+    Returns:
+    tuple: (first_index, last_index) - indices of first and last non-missing values
+           Returns (None, None) if all values are missing
+    """
+    # Get boolean series of non-missing values
+    non_missing = df[column_name].notna()
+
+    # If all values are missing, return None for both
+    if not non_missing.any():
+        return None, None
+
+    # Get index of first non-missing value
+    first_index = non_missing.idxmax()
+
+    # Get index of last non-missing value
+    # We can reverse the series and find the first True value
+    last_index = non_missing[::-1].idxmax()
+
+    df_cleaned = df.loc[first_index:last_index]
+
+    return df_cleaned
 
 
 # Get list of all files in directory
@@ -50,22 +83,58 @@ v2_df_raw = v2.to_dataframe()[v2_start_year:]
 # Calculate the cadence of the time series
 
 
-modal_cadence = v1_df_raw.index.to_series().diff().mode()[0]
+modal_cadence = v2_df_raw.index.to_series().diff().mode()[0]
 modal_cadence
-
 
 preset_cadence = "24h"
 v1_df = v1_df_raw.resample(preset_cadence).mean()
 v2_df = v2_df_raw.resample(preset_cadence).mean()
 
-v1_df.info()
-
+v1_df = clean_empty_start_end(v1_df, "F1")
+v2_df = clean_empty_start_end(v2_df, "F1")
 
 v2_df.info()
 
+# Get missingness of each column
+print(f"V1 missingness since {v1_start_year} at {preset_cadence} cadence:")
+v1_df.isna().sum() / len(v1_df) * 100
 
-missing = v2_df.iloc[:, 0].isna().sum() / len(v2_df)
-missing
+print(f"V2 missingness since {v2_start_year} at {preset_cadence} cadence:")
+v2_df.isna().sum() / len(v2_df) * 100
+
+v1_df.reset_index(names="Date", inplace=True)
+v2_df.reset_index(names="Date", inplace=True)
+
+# Using the Radius and Datetime columns, create function to convert from datetime to radius
+
+# Convert datetime index to numeric values for the clean dataframe
+datetime_numeric_v2 = mdates.date2num(v2_df["Date"])
+
+# Create an interpolation function using only valid data points
+rad_interp_v2 = interp1d(
+    datetime_numeric_v2,
+    v2_df["Radius"],
+    bounds_error=False,
+    fill_value="extrapolate",
+)
+
+v2_hp_date = pd.to_datetime("2018-11-05")
+v2_hp_radius = rad_interp_v2(mdates.date2num(v2_hp_date))
+v2_hp_radius
+
+# Convert datetime index to numeric values for the clean dataframe
+datetime_numeric_v1 = mdates.date2num(v1_df["Date"])
+
+# Create an interpolation function using only valid data points
+rad_interp_v1 = interp1d(
+    datetime_numeric_v1,
+    v1_df["Radius"],
+    bounds_error=False,
+    fill_value="extrapolate",
+)
+
+v1_hp_date = pd.to_datetime("2012-08-25")
+v1_hp_radius = rad_interp_v1(mdates.date2num(v1_hp_date))
 
 
 # Functions for converting between timestamp, decimal year, and distance
@@ -276,10 +345,10 @@ ax1, ax2 = axes
 for component, color, lw in zip(
     ["F1", "BR", "BT", "BN"], ["black", "red", "green", "blue"], [0.9, 0.2, 0.2, 0.2]
 ):
-    ax1.plot(v1_df.index, v1_df[component], label=component, color=color, lw=lw)
-ax1.axvline(v1_hp_date, color="k", linestyle="--")
+    ax1.plot(v1_df.Radius, v1_df[component], label=component, color=color, lw=lw)
+v1_hp_radius = rad_interp_v1(mdates.date2num(v1_hp_date))
+ax1.axvline(v1_hp_radius, color="k", linestyle="--")
 ax1.set_ylabel("B (nT)")
-
 
 # Add bold capitalized annotation in the top right corner
 ax1.annotate(
@@ -296,8 +365,9 @@ ax1.annotate(
 for component, color, lw in zip(
     ["F1", "BR", "BT", "BN"], ["black", "red", "green", "blue"], [0.8, 0.3, 0.3, 0.3]
 ):
-    ax2.plot(v2_df.index, v2_df[component], label=component, color=color, lw=lw)
-ax2.axvline(v2_hp_date, color="k", linestyle="--")
+    ax2.plot(v2_df.Radius, v2_df[component], label=component, color=color, lw=lw)
+v2_hp_radius = rad_interp_v2(mdates.date2num(v2_hp_date))
+ax2.axvline(v2_hp_radius, color="k", linestyle="--")
 # Add bold capitalized annotation in the top right corner
 ax2.annotate(
     "VOYAGER 2",
@@ -309,61 +379,61 @@ ax2.annotate(
     va="bottom",
 )
 # Add annotations "HELIOSHEATH", "INTERSTELLAR MEDIUM" pre- and post- heliopause
-ax1.annotate(
-    "HELIOSHEATH",
-    xy=(v1_hp_date - pd.DateOffset(months=20), 0.02),
-    xycoords=("data", "axes fraction"),
-    fontsize=10,
-    fontweight="bold",
-    ha="left",
-    va="bottom",
-    alpha=0.5,
-)
-ax1.annotate(
-    "INTERSTELLAR MEDIUM",
-    xy=(v1_hp_date + pd.DateOffset(days=30), 0.02),
-    xycoords=("data", "axes fraction"),
-    fontsize=10,
-    fontweight="bold",
-    ha="left",
-    va="bottom",
-    alpha=0.5,
-)
+# ax1.annotate(
+#     "HELIOSHEATH",
+#     xy=(v1_hp_date - pd.DateOffset(months=20), 0.02),
+#     xycoords=("data", "axes fraction"),
+#     fontsize=10,
+#     fontweight="bold",
+#     ha="left",
+#     va="bottom",
+#     alpha=0.5,
+# )
+# ax1.annotate(
+#     "INTERSTELLAR MEDIUM",
+#     xy=(v1_hp_date + pd.DateOffset(days=30), 0.02),
+#     xycoords=("data", "axes fraction"),
+#     fontsize=10,
+#     fontweight="bold",
+#     ha="left",
+#     va="bottom",
+#     alpha=0.5,
+# )
 
-ax2.annotate(
-    "HELIOSHEATH",
-    xy=(v2_hp_date - pd.DateOffset(months=20), 0.02),
-    xycoords=("data", "axes fraction"),
-    fontsize=10,
-    fontweight="bold",
-    ha="left",
-    va="bottom",
-    alpha=0.5,
-)
-ax2.annotate(
-    "INTERSTELLAR MEDIUM",
-    xy=(v2_hp_date + pd.DateOffset(days=30), 0.02),
-    xycoords=("data", "axes fraction"),
-    fontsize=10,
-    fontweight="bold",
-    ha="left",
-    va="bottom",
-    alpha=0.5,
-)
+# ax2.annotate(
+#     "HELIOSHEATH",
+#     xy=(v2_hp_date - pd.DateOffset(months=20), 0.02),
+#     xycoords=("data", "axes fraction"),
+#     fontsize=10,
+#     fontweight="bold",
+#     ha="left",
+#     va="bottom",
+#     alpha=0.5,
+# )
+# ax2.annotate(
+#     "INTERSTELLAR MEDIUM",
+#     xy=(v2_hp_date + pd.DateOffset(days=30), 0.02),
+#     xycoords=("data", "axes fraction"),
+#     fontsize=10,
+#     fontweight="bold",
+#     ha="left",
+#     va="bottom",
+#     alpha=0.5,
+# )
 
 
 ax2.set_ylabel("B (nT)")
-ax2.set_xlabel("Date")
-ax1.set_xlabel("Date")
+ax2.set_xlabel("Radial distance from Sun (AU)")
+ax1.set_xlabel("Radial distance from Sun (AU)")
 ax1.legend(loc="upper left", fontsize=8)
 
 # Set the y-axis upper limit to make room for the annotation
 ax2.set_ylim(top=ax2.get_ylim()[1] * 1.2)
 
 
-# Align the x-axis for both plots
-ax1.set_xlim([v1_hp_date + pd.DateOffset(years=-2), v1_hp_date + v1_time_diff])
-ax2.set_xlim([v2_hp_date + pd.DateOffset(years=-2), v2_hp_date + v1_time_diff])
+# # Align the x-axis for both plots
+# ax1.set_xlim([v1_hp_date + pd.DateOffset(years=-2), v1_hp_date + v1_time_diff])
+# ax2.set_xlim([v2_hp_date + pd.DateOffset(years=-2), v2_hp_date + v1_time_diff])
 
 
 # Add highlight regions for Voyager 1
@@ -385,11 +455,50 @@ v1_highlight_regions = [
     (r"\textbf{W2", 32, 2021, 39, 2021, "green"),
     (r"\textbf{W1", 280, 2011, 287, 2011, "green"),
 ]
-# Add secondary x-axis in units of AU
-ax1_sec = add_distance_axis(ax1)
-# ax2_sec = add_distance_axis(ax2) # need to get v2 vals
 
-ylim = ax1.get_ylim()
+
+# Set up top x-axis (dates) as a secondary axis
+ax2_top = ax2.twiny()
+ax2_top.set_xlim(ax2.get_xlim())
+
+# Find indices where the date is Jan 1st of each year
+years = pd.to_datetime(v2_df["Date"])
+year_starts = years[years.dt.is_year_start]
+
+# Map those dates to radius positions
+radius_year_ticks = year_starts.index
+
+# Set those as ticks on the bottom axis
+ax2_top.set_xticks(radius_year_ticks)
+ax2_top.set_xticklabels([d.strftime("%Y") for d in year_starts])
+ax2_top.xaxis.set_ticks_position("top")
+ax2_top.xaxis.set_label_position("top")
+ax2_top.spines["top"].set_position(("outward", 0))
+ax2_top.set_xlabel("Date")
+
+# Do the same for the top axis of Voyager 1
+
+# Set up top x-axis (dates) as a secondary axis
+ax1_top = ax1.twiny()
+ax1_top.set_xlim(ax1.get_xlim())
+
+# Find indices where the date is Jan 1st of each year
+years = pd.to_datetime(v1_df["Date"])
+year_starts = years[years.dt.is_year_start]
+
+# Map those dates to radius positions
+radius_year_ticks = year_starts.index
+
+# Set those as ticks on the bottom axis
+ax1_top.set_xticks(radius_year_ticks)
+ax1_top.set_xticklabels([d.strftime("%Y") for d in year_starts])
+ax1_top.xaxis.set_ticks_position("top")
+ax1_top.xaxis.set_label_position("top")
+ax1_top.spines["top"].set_position(("outward", 0))
+ax1_top.set_xlabel("Date")
+
+
+# ylim = ax1.get_ylim()
 ax1.text(
     v1_hp_date - pd.DateOffset(days=90),
     ylim[1] * 0.85,

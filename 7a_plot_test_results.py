@@ -3,6 +3,7 @@ import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 
 import src.params as params
@@ -14,7 +15,7 @@ plt.rcParams["ytick.direction"] = "in"
 
 
 # Suppress the specific RankWarning from numpy - occurs with fitting slope sometimes
-warnings.filterwarnings("ignore", category=np.RankWarning)
+# warnings.filterwarnings("ignore", category=np.RankWarning)
 
 np.random.seed(123)  # For reproducibility
 
@@ -150,6 +151,12 @@ ylims = {
     "tce_ape": (0, 200),
     "ttu_ape": (0, 100),
 }
+error_metrics_formatted = {
+    "mape": "MAPE (\%)",
+    "slope_ape": "Slope APE (\%)",
+    "tce_ape": "TCE APE (\%)",
+    "ttu_ape": "TTU APE (\%)",
+}
 # Make scatterplot of mape vs. missing_percent, coloured by gap handling
 palette = dict(zip(custom_order, colors))
 
@@ -181,8 +188,8 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
             data=subset,
             x="missing_percent_overall",
             y=error_metric,
-            alpha=0.1,
-            s=10,
+            alpha=0.05,
+            s=5,
             color=palette[gap_handling_method],
             label=gap_handling_method,
             ax=ax[i],
@@ -227,13 +234,13 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
         )
 
         # Add annotation for the mean value
-        ax[-1].annotate(
-            f"MAPE: {subset[error_metric].mean():.1f}",
-            xy=(0.8, mean_y_coord[i]),
-            xycoords="axes fraction",
-            fontsize=8,
-            c=palette[gap_handling_method],
-        )
+        # ax[-1].annotate(
+        #     f"MAPE: {subset[error_metric].mean():.1f}",
+        #     xy=(0.8, mean_y_coord[i]),
+        #     xycoords="axes fraction",
+        #     fontsize=8,
+        #     c=palette[gap_handling_method],
+        # )
 
     # Move titles to inside top each plot
     for i, title in enumerate(
@@ -267,18 +274,19 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
         axis.grid(False)
         axis.set_xticks([0, 25, 50, 75, 100])
         axis.set_xlim(-15, 105)
-        axis.set(xlabel="", ylabel="")
+        axis.set(xlabel="", ylabel=error_metrics_formatted[error_metric])
         axis.spines["top"].set_visible(False)
         axis.spines["right"].set_visible(False)
 
         axis.set_ylim(ylims[error_metric])
-
-    plt.suptitle(f"{error_metric} vs. TGP for {spacecraft} test set")
+    ax[-1].set_ylabel("")
+    # plt.suptitle(f"{error_metric} vs. TGP for {spacecraft} test set")
     plt.savefig(
         f"results/{run_mode}/plots/test_{spacecraft}_scatterplots_{n_bins}_bins_{error_metric}.png",
         bbox_inches="tight",
         dpi=300,
     )
+    # DON'T MAKE THIS A PDF - IT'S TOO BIG
 
 # Error trendlines (REQUIRE FULL CORRECTED SFS, NOT CURRENTLY OUTPUT FROM HPC)
 
@@ -293,3 +301,72 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
 #         f"plots/results/test_{spacecraft}_error_trend_{gap_handling.upper()}_{n_bins}_bins.png",
 #         bbox_inches="tight",
 #     )
+
+
+# Plot average errors for each gap handling method
+error_stats = pd.read_csv(f"results/{run_mode}/test_wind_corrected_25_bins_stats.csv")
+
+# Clean and reshape the relevant MAPE data
+mape_columns = {
+    "mape": "mean",
+    "mape.1": "median",
+    "mape.2": "std",
+    "mape.3": "min",
+    "mape.4": "max",
+}
+
+# Extract the rows with actual data
+mape_data = error_stats.iloc[2:, :6].copy()
+mape_data.columns = ["method"] + list(mape_columns.values())
+
+# Convert data types
+for col in mape_columns.values():
+    mape_data[col] = pd.to_numeric(mape_data[col], errors="coerce")
+
+# Filter to only include mean and median statistics
+mean_median_data = mape_data[["method", "mean", "median", "std"]].melt(
+    id_vars="method", var_name="Statistic", value_name="MAPE"
+)
+methods_formatted = {
+    "naive": "Naive",
+    "lint": "LINT",
+    "corrected_3d": "Corrected",
+}
+
+stats_formatted = {
+    "mean": "Mean",
+    "median": "Median",
+    "std": "Std. Dev.",
+}
+
+
+# Map the formatted method names
+mean_median_data["method"] = mean_median_data["method"].map(methods_formatted)
+mean_median_data["Statistic"] = mean_median_data["Statistic"].map(stats_formatted)
+
+# Plot
+plt.figure(figsize=(3.5, 2.5))
+ax = sns.barplot(
+    data=mean_median_data,
+    x="Statistic",
+    y="MAPE",
+    hue="method",
+    errorbar="ci",
+    order=stats_formatted.values(),
+    hue_order=methods_formatted.values(),
+    palette=["indianred", "dimgrey", "#1b9e77"],
+)
+for container in ax.containers:
+    labels = [f"{v.get_height():.1f}" for v in container]
+    ax.bar_label(container, labels=labels, fontsize=10)
+
+plt.xlabel("")
+plt.ylabel("MAPE (\%)")
+plt.ylim(0, 28)
+plt.tight_layout()
+plt.legend()
+plt.grid(axis="y", linestyle="--", alpha=0.7)
+plt.savefig(
+    f"results/{run_mode}/plots/test_{spacecraft}_mape_barplot.pdf",
+    bbox_inches="tight",
+)

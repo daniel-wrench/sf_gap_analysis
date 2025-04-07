@@ -21,7 +21,7 @@ plt.rcParams.update(
         "ytick.labelsize": 10,  # Y-axis tick size
         "legend.fontsize": 10,  # Legend font size
         "figure.titlesize": 10,  # Figure title size
-        "figure.dpi": 300,  # Higher resolution figure output
+        # "figure.dpi": 300,  # Higher resolution figure output
     }
 )
 plt.rcParams["xtick.direction"] = "in"
@@ -51,15 +51,13 @@ print(f"Calculating stats for {spacecraft} data with {n_bins} bins")
 if spacecraft == "psp":
     input_file_list = sorted(
         glob.glob(
-            data_path_prefix
-            + f"data/corrections/{run_mode}/psp_*_corrected_{n_bins}_bins_with_sfs.pkl"
+            f"results/{run_mode}/test_sfs_corrected_subset/psp_*_corrected_{n_bins}_bins_with_sfs.pkl"
         )
     )
 elif spacecraft == "wind":
     input_file_list = sorted(
         glob.glob(
-            data_path_prefix
-            + f"data/corrections/{run_mode}/wi_*_corrected_{n_bins}_bins_with_sfs.pkl"
+            f"results/{run_mode}/test_sfs_corrected_subset/wi_*_corrected_{n_bins}_bins_with_sfs.pkl"
         )
     )
 else:
@@ -129,18 +127,29 @@ print(
 
 fig, ax = plt.subplots(3, 3, figsize=(7, 5), sharex="col")
 
+# file_version_pairs = [
+#     (5, 16, 0, 0),  # (file_index, version, local_int_index, int_index)
+#     (80, 13, 3, 1),
+#     (54, 10, 1, 0),  # previously 0, 6, 0
+# ]
+
+# See what file indices are actually there
+print("File indices in metadata:")
+print(files_metadata["file_index"].unique())
+
+
 file_version_pairs = [
-    (5, 16, 0, 0),  # (file_index, version, local_int_index, int_index)
-    (80, 13, 3, 1),
-    (54, 10, 1, 0),  # previously 0, 6, 0
+    (81, 17, 23, 0),  # (file_index, version, local_int_index, int_index)
+    (81, 23, 23, 0),
+    (81, 10, 23, 0),  # previously 0, 6, 0
 ]
 
-annotate_location = [(0.1, 0.1), (0.1, 0.85), (0.1, 0.1)]
-mape_location = [
-    [(0.05, 0.9), (0.05, 0.8)],
-    [(0.3, 0.2), (0.3, 0.1)],
-    [(0.05, 0.9), (0.05, 0.8)],
-]
+# annotate_location = [(0.1, 0.1), (0.1, 0.85), (0.1, 0.1)]
+# mape_location = [
+#     [(0.05, 0.9), (0.05, 0.8)],
+#     [(0.3, 0.2), (0.3, 0.1)],
+#     [(0.05, 0.9), (0.05, 0.8)],
+# ]
 
 # file_version_pairs = [
 #     (5, 16, 1),  # (file_index, version, local_int_index)
@@ -176,7 +185,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     # Put missing_percent_overall in an annotation
     ax[ax_index, 0].annotate(
         f"({ax_index+1}) TGP = {ints_gapped_metadata.loc[(ints_gapped_metadata['file_index']==file_index) & (ints_gapped_metadata['int_index']==int_index) & (ints_gapped_metadata['version']==version) & (ints_gapped_metadata['gap_handling']=='lint'), 'missing_percent_overall'].values[0]:.1f}\%",
-        xy=annotate_location[ax_index],
+        xy=(0.1, 0.1),
         xycoords="axes fraction",
         fontsize=8,
         bbox=dict(facecolor="white", alpha=0.8),
@@ -365,7 +374,7 @@ plt.subplots_adjust(wspace=0.5, hspace=0.15)
 # plt.show()
 
 plt.savefig(
-    f"plots/results/{run_mode}/test_{spacecraft}_case_study_gapping.pdf",
+    f"results/{run_mode}/plots/test_{spacecraft}_case_study_gapping_file_{file_index}.pdf",
     # bbox_inches="tight",
 )
 
@@ -446,60 +455,60 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             ].values[0]
         ),
     )
-    ax.plot(
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
-            "lag",
-        ],
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
-            "sf_2",
-        ],
-        color="blue",
-        lw=1,
-        label="Corrected (2D) ({:.1f})".format(
-            ints_gapped_metadata.loc[
-                (ints_gapped_metadata["file_index"] == file_index)
-                & (ints_gapped_metadata["int_index"] == int_index)
-                & (ints_gapped_metadata["version"] == version)
-                & (ints_gapped_metadata["gap_handling"] == "corrected_2d"),
-                "mape",
-            ].values[0]
-        ),
-    )
-    ax.plot(
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d_smoothed"),
-            "lag",
-        ],
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d_smoothed"),
-            "sf_2",
-        ],
-        color="purple",
-        lw=1,
-        label="Corrected (3D), smoothed ({:.1f})".format(
-            ints_gapped_metadata.loc[
-                (ints_gapped_metadata["file_index"] == file_index)
-                & (ints_gapped_metadata["int_index"] == int_index)
-                & (ints_gapped_metadata["version"] == version)
-                & (ints_gapped_metadata["gap_handling"] == "corrected_3d_smoothed"),
-                "mape",
-            ].values[0]
-        ),
-    )
+    # ax.plot(
+    #     sfs_gapped_corrected.loc[
+    #         (sfs_gapped_corrected["file_index"] == file_index)
+    #         & (sfs_gapped_corrected["int_index"] == int_index)
+    #         & (sfs_gapped_corrected["version"] == version)
+    #         & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
+    #         "lag",
+    #     ],
+    #     sfs_gapped_corrected.loc[
+    #         (sfs_gapped_corrected["file_index"] == file_index)
+    #         & (sfs_gapped_corrected["int_index"] == int_index)
+    #         & (sfs_gapped_corrected["version"] == version)
+    #         & (sfs_gapped_corrected["gap_handling"] == "corrected_2d"),
+    #         "sf_2",
+    #     ],
+    #     color="blue",
+    #     lw=1,
+    #     label="Corrected (2D) ({:.1f})".format(
+    #         ints_gapped_metadata.loc[
+    #             (ints_gapped_metadata["file_index"] == file_index)
+    #             & (ints_gapped_metadata["int_index"] == int_index)
+    #             & (ints_gapped_metadata["version"] == version)
+    #             & (ints_gapped_metadata["gap_handling"] == "corrected_2d"),
+    #             "mape",
+    #         ].values[0]
+    #     ),
+    # )
+    # ax.plot(
+    #     sfs_gapped_corrected.loc[
+    #         (sfs_gapped_corrected["file_index"] == file_index)
+    #         & (sfs_gapped_corrected["int_index"] == int_index)
+    #         & (sfs_gapped_corrected["version"] == version)
+    #         & (sfs_gapped_corrected["gap_handling"] == "corrected_3d_smoothed"),
+    #         "lag",
+    #     ],
+    #     sfs_gapped_corrected.loc[
+    #         (sfs_gapped_corrected["file_index"] == file_index)
+    #         & (sfs_gapped_corrected["int_index"] == int_index)
+    #         & (sfs_gapped_corrected["version"] == version)
+    #         & (sfs_gapped_corrected["gap_handling"] == "corrected_3d_smoothed"),
+    #         "sf_2",
+    #     ],
+    #     color="purple",
+    #     lw=1,
+    #     label="Corrected (3D), smoothed ({:.1f})".format(
+    #         ints_gapped_metadata.loc[
+    #             (ints_gapped_metadata["file_index"] == file_index)
+    #             & (ints_gapped_metadata["int_index"] == int_index)
+    #             & (ints_gapped_metadata["version"] == version)
+    #             & (ints_gapped_metadata["gap_handling"] == "corrected_3d_smoothed"),
+    #             "mape",
+    #         ].values[0]
+    #     ),
+    # )
     ax.plot(
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
@@ -667,6 +676,6 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     # )
 # plt.show()
 plt.savefig(
-    f"plots/results/{run_mode}/test_{spacecraft}_case_study_correcting_{n_bins}_bins.pdf",
+    f"results/{run_mode}/plots/test_{spacecraft}_case_study_correcting_{n_bins}_bins_file_{file_index}.pdf",
     # bbox_inches="tight",
 )

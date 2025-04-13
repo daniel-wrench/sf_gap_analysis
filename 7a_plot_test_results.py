@@ -86,7 +86,8 @@ custom_order = [
     "lint",
     "corrected_3d",
 ]
-colors = ["indianred", "dimgrey", "#1b9e77"]
+palette = params.gap_handling_palette
+colors = [palette[method] for method in custom_order]
 
 # Create boxplots for each column
 for col, ax in zip(columns, axes):
@@ -144,7 +145,6 @@ custom_order = [
     "lint",
     "corrected_3d",
 ]
-colors = ["indianred", "dimgrey", "#1b9e77"]
 ylims = {
     "mape": (0, 70),
     "slope_ape": (0, 50),
@@ -205,7 +205,8 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
             orient="v",
             whis=(0, 100),
             color=palette[gap_handling_method],
-            linecolor="black",
+            fill=False,
+            # linecolor="black",
             linewidth=1.2,
         )
 
@@ -247,7 +248,7 @@ for error_metric in ["mape", "slope_ape", "tce_ape", "ttu_ape"]:
         [
             "Naive",
             "LINT",
-            "Corrected 3D",
+            "Corrected",
             "Regression lines",
         ]
     ):
@@ -354,7 +355,7 @@ ax = sns.barplot(
     errorbar="ci",
     order=stats_formatted.values(),
     hue_order=methods_formatted.values(),
-    palette=["indianred", "dimgrey", "#1b9e77"],
+    palette=colors,
 )
 for container in ax.containers:
     labels = [f"{v.get_height():.1f}" for v in container]

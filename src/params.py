@@ -8,7 +8,7 @@
 # https://buildmedia.readthedocs.org/media/pdf/heliopy/0.6.0/heliopy.pdf
 
 times_to_gap = 25
-data_path_prefix = "/nesi/nobackup/vuw04187/"
+data_path_prefix = ""  # "/nesi/nobackup/vuw04187/"
 run_mode = "full"  # "mini" (local) or "full" (hpc)
 pwrl_range = [50, 500]
 minimum_missing_chunks = 0.7
@@ -75,8 +75,8 @@ nlags_lr = 2000
 dt_hr = "0.092s"
 dt_protons = "3s"
 nlags_hr = 100
-tau_min = 1
-tau_max = 5
+tau_min = 5
+tau_max = 20
 
 # Frequency bounds are taken from Wang et al. (2018, JGR)
 f_min_inertial = None  # 0.005
@@ -84,5 +84,9 @@ f_max_inertial = None  # 0.2
 f_min_kinetic = None  # 0.5
 f_max_kinetic = None  # 1.4
 
-tau_min = 5
-tau_max = 10
+gap_handling_palette = {
+    "true": "grey",
+    "naive": "indianred",
+    "lint": "#7570b3",
+    "corrected_3d": "black",
+}

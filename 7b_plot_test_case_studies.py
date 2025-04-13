@@ -39,6 +39,7 @@ n_bins = 25
 data_path_prefix = params.data_path_prefix
 run_mode = params.run_mode
 pwrl_range = params.pwrl_range
+palette = params.gap_handling_palette
 
 index = 0
 # 2  # For now, just getting first corrected file
@@ -166,7 +167,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     #     )  # Just plotting one component for simplicity
     # else:
     ax[ax_index, 0].plot(
-        ints[local_int_index]["Bx"].values, c="grey", lw=0.8
+        ints[local_int_index]["Bx"].values, c=palette["true"], lw=0.8, alpha=0.8
     )  # Just plotting one component for simplicity
     # Not currently plotting due to indexing issue: need to be able to index
     # on both file_index and int_index
@@ -178,7 +179,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             & (ints_gapped["gap_handling"] == "lint"),
             "Bx",  # Just plotting one component for simplicity
         ].values,
-        c="black",
+        c=palette["lint"],
         lw=0.8,
     )
 
@@ -202,8 +203,9 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             "sf_2",
         ],
         c="grey",
+        alpha=0.8,
         label="True",
-        lw=3,
+        lw=2.5,
     )
 
     ax[ax_index, 1].plot(
@@ -221,7 +223,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             & (sfs_gapped_corrected["gap_handling"] == "naive"),
             "sf_2",
         ],
-        c="indianred",
+        c=palette["naive"],
         label="Naive ({:.1f})".format(
             ints_gapped_metadata.loc[
                 (ints_gapped_metadata["file_index"] == file_index)
@@ -249,7 +251,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             & (sfs_gapped_corrected["gap_handling"] == "lint"),
             "sf_2",
         ],
-        c="black",
+        c=palette["lint"],
         label="LINT ({:.1f})".format(
             ints_gapped_metadata.loc[
                 (ints_gapped_metadata["file_index"] == file_index)
@@ -278,7 +280,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             & (sfs_gapped_corrected["gap_handling"] == "lint"),
             "sf_2_pe",
         ],
-        c="black",
+        c=palette["lint"],
         lw=1,
     )
     ax[ax_index, 2].plot(
@@ -296,7 +298,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             & (sfs_gapped_corrected["gap_handling"] == "naive"),
             "sf_2_pe",
         ],
-        c="indianred",
+        c=palette["naive"],
         lw=1,
     )
 
@@ -397,9 +399,10 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
         sfs[(sfs["file_index"] == file_index) & (sfs["int_index"] == int_index)][
             "sf_2"
         ],
-        color="grey",
+        color=palette["true"],
         label="True",
-        lw=3,
+        alpha=0.8,
+        lw=2.5,
     )
     ax.plot(
         sfs_gapped_corrected.loc[
@@ -416,7 +419,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             & (sfs_gapped_corrected["gap_handling"] == "naive"),
             "sf_2",
         ],
-        color="indianred",
+        color=palette["naive"],
         lw=1,
         label="Naive ({:.1f})".format(
             ints_gapped_metadata.loc[
@@ -443,7 +446,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             & (sfs_gapped_corrected["gap_handling"] == "lint"),
             "sf_2",
         ],
-        color="black",
+        color=palette["lint"],
         lw=1,
         label="LINT ({:.1f})".format(
             ints_gapped_metadata.loc[
@@ -524,7 +527,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "sf_2",
         ],
-        color="#1b9e77",
+        color=palette["corrected_3d"],
         lw=1,
         label="Corrected ({:.1f})".format(
             ints_gapped_metadata.loc[
@@ -536,7 +539,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             ].values[0]
         ),
     )
-    ax.fill_between(
+    ax.plot(
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
@@ -551,6 +554,20 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "sf_2_lower",
         ],
+        color=palette["corrected_3d"],
+        # linestyle=":",
+        linewidth=0.5,
+        alpha=0.5,
+        # label="Lower Bound",
+    )
+    ax.plot(
+        sfs_gapped_corrected.loc[
+            (sfs_gapped_corrected["file_index"] == file_index)
+            & (sfs_gapped_corrected["int_index"] == int_index)
+            & (sfs_gapped_corrected["version"] == version)
+            & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
+            "lag",
+        ],
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
             & (sfs_gapped_corrected["int_index"] == int_index)
@@ -558,8 +575,11 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             & (sfs_gapped_corrected["gap_handling"] == "corrected_3d"),
             "sf_2_upper",
         ],
-        color="#1b9e77",
-        alpha=0.2,
+        color=palette["corrected_3d"],
+        # linestyle=":",
+        linewidth=0.5,
+        alpha=0.5,
+        # label="Lower Bound",
     )
 
     missing = ints_gapped_metadata.loc[
@@ -630,7 +650,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     #     slope_corrected,
     #     lw=1,
     #     ls="--",
-    #     color="#1b9e77",
+    #     color=palette["corrected_3d"],
     #     label=f"Log-log slope: {slope_corrected:.3f}",
     #     ax=ax,
     # )

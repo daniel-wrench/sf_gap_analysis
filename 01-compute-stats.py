@@ -52,6 +52,7 @@ def split_into_intervals(dataframe, interval_length, spacecraft):
             "start_time": current_start,
             "end_time": current_end,
             "duration": interval_length,
+            "cadence": interval_data.index.freqstr,
             "n_points_complete": len(interval_data),
         }
 
@@ -66,7 +67,7 @@ def split_into_intervals(dataframe, interval_length, spacecraft):
 
     # Print summary of intervals
     print(
-        f"Split into {len(intervals)} intervals of length {interval_length}, each with {len(dataframe)} points at {dataframe.index.freqstr} resolution"
+        f"Split into {len(intervals)} intervals of length {interval_length}, each with {len(interval_data)} points at {dataframe.index.freqstr} resolution"
     )
     return intervals
 
@@ -90,13 +91,13 @@ def gap_and_fill_interval(metadata, times_to_gap=5):
 
     for j in range(times_to_gap):
 
-        # Retain the original interval
-        original_metadata = metadata.copy()
-        original_metadata["version"] = j
-        original_metadata["gap_status"] = "original"
-        original_metadata["tgp"] = np.nan
-        original_metadata["data"] = metadata["data"]
-        modified_intervals.append(original_metadata)
+        # Retain the true interval
+        true_metadata = metadata.copy()
+        true_metadata["version"] = j
+        true_metadata["gap_status"] = "true"
+        true_metadata["tgp"] = np.nan
+        true_metadata["data"] = metadata["data"]
+        modified_intervals.append(true_metadata)
 
         # Create a copy of the interval
         interval_df = metadata["data"].copy()
@@ -275,6 +276,8 @@ def plot_gapped_curves(results, stat, interval_id, version):
                         "version": interval["version"],
                         "gap_status": interval["gap_status"],
                         "tgp": interval["tgp"],
+                        "tce": interval["tce"],
+                        "ttu": interval["ttu"],
                         "lag": lag,
                         stat: stat_value,
                     }
@@ -291,8 +294,8 @@ def plot_gapped_curves(results, stat, interval_id, version):
         time_series_records
     )  # Stack different gap-status time series
 
-    # Ensure gap_status order is "original", "lint", "naive"
-    gap_status_order = ["original", "lint", "naive"]
+    # Ensure gap_status order is "true", "lint", "naive"
+    gap_status_order = ["true", "lint", "naive"]
     results_long_df["gap_status"] = pd.Categorical(
         results_long_df["gap_status"], categories=gap_status_order, ordered=True
     )
@@ -302,27 +305,41 @@ def plot_gapped_curves(results, stat, interval_id, version):
 
     tgp = results_long_df["tgp"].unique()[1]
     spacecraft = results_long_df["spacecraft"][0]
+    # Get unique combinations of gap_status and tce
+    tce = (
+        results_long_df[["gap_status", "tce"]]
+        .drop_duplicates()
+        .set_index("gap_status")["tce"]
+        .to_dict()
+    )
+    ttu = (
+        results_long_df[["gap_status", "ttu"]]
+        .drop_duplicates()
+        .set_index("gap_status")["ttu"]
+        .to_dict()
+    )
 
     # === PLOTTING ===
 
-    fig, axes = plt.subplots(1, 2, figsize=(10, 3))
-    palette = {"original": "black", "lint": "blue", "naive": "red"}
+    fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+    palette = params.gap_handling_palette
+    var_to_plot = "Bx"
 
-    # Time Series Plot
+    # === Time Series Plot ===
     for gap_status, ts_data in df_time_series.groupby("gap_status", observed=False):
-        axes[0].plot(
-            ts_data.index,
-            ts_data["Bx"],
-            label=f"{gap_status}",
+        ts_data.plot(
+            y=var_to_plot,
+            ax=axes[0],
+            label=gap_status,
             color=palette[gap_status],
+            legend=False,
         )
 
-    axes[0].set_ylabel("Magnetic Field Component")
+    axes[0].set_ylabel(var_to_plot)
     axes[0].set_xlabel("Time")
-    # axes[0].legend(title="Gap Handling")
-    # axes[0].set_title(f"Time Series for Interval {interval_id}, Version {version}")
+    axes[0].set_title("")
 
-    # Stat Plot
+    # === Structure Function Plot ===
     sns.lineplot(
         data=results_long_df,
         x="lag",
@@ -330,15 +347,51 @@ def plot_gapped_curves(results, stat, interval_id, version):
         hue="gap_status",
         ax=axes[1],
         palette=palette,
+        legend=False,
     )
+
     axes[1].set_ylabel(stat.upper())
-    plt.suptitle(
-        f"{stat.upper()} Estimations for {spacecraft.upper()} Interval {interval_id}, Version {version}: {tgp*100:.1f}% removed"
-    )
-    axes[1].legend(title="Gap Handling Method")
+    axes[1].set_xlabel("lag")
+
     if stat == "sf":
         axes[1].set_xscale("log")
         axes[1].set_yscale("log")
+
+    # Add vertical lines for tce and ttu
+    for gap_status in gap_status_order:
+        axes[1].axvline(
+            x=tce[gap_status], color=palette[gap_status], linestyle="--", linewidth=1
+        )
+        axes[1].axvline(
+            x=ttu[gap_status], color=palette[gap_status], linestyle=":", linewidth=1
+        )
+
+    # Add a simplified legend for tce and ttu line styles
+    from matplotlib.lines import Line2D
+
+    line_legend_elements = [
+        Line2D([0], [0], color="black", linestyle="--", label="$\lambda_C$"),
+        Line2D([0], [0], color="black", linestyle=":", label="$\lambda_T$"),
+    ]
+    axes[1].legend(handles=line_legend_elements, title="Scales")
+
+    # Create a shared legend for gap handling methods above both plots
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        title="Gap Handling",
+        loc="upper center",
+        ncol=len(labels),
+        bbox_to_anchor=(0.5, 1.05),
+    )
+
+    # Super title
+    fig.suptitle(
+        f"{stat.upper()} Estimations for {spacecraft.upper()} Interval {interval_id}, Version {version}: {tgp*100:.1f}% removed",
+        y=1.12,
+    )
+
     plt.tight_layout()
     return fig, axes
 
@@ -377,8 +430,20 @@ def run_pipeline(input_filepath, config):
     df_raw = df_raw.loc[:, config["mag_vars"]]
     print("Loaded data with shape:", df_raw.shape)
 
-    # Rename the "mag_vars" columns to Bx, By, Bz
-    df_raw.columns = ["Bx", "By", "Bz"]
+    # Rename the "mag_vars" columns
+
+    df_raw = df_raw.rename(
+        columns={
+            config["mag_vars"][0]: "Bx",
+            config["mag_vars"][1]: "By",
+            config["mag_vars"][2]: "Bz",
+        }
+    )
+
+    # Calculate modal cadence
+    modal_cadence = df_raw.index.to_series().diff().dt.total_seconds().mode()[0]
+    print("This dataset has a (modal) cadence of ", modal_cadence, " seconds")
+    print(f"Resampling to {config['cadence']} cadence...")
 
     # Resample and handle NaN values
     df = df_raw.resample(config["cadence"]).mean()
@@ -466,7 +531,7 @@ if __name__ == "__main__":
         ],
         "cadence": "10s",  # Resample frequency
         "int_length": "1h",  # Interval length
-        "times_to_gap": 5,  # Number of gapped versions
+        "times_to_gap": 2,  # Number of gapped versions
         "max_lag_prop": 0.2,  # Maximum lag proportion for SF
         # "pwrl_fit_range": [1, 100],  # Range for power-law fit
     }
@@ -520,7 +585,8 @@ if config["times_to_gap"] > 0:
         plt.savefig(
             raw_file_list[file_index]
             .replace("raw", "processed")
-            .replace(".cdf", f"_sf_{int_index}_{version}.png")
+            .replace(".cdf", f"_sf_{int_index}_{version}.png"),
+            bbox_inches="tight",
         )
 
 # PART 1 FINISHED

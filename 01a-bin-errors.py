@@ -73,7 +73,7 @@ sf_versions_long = pd.DataFrame(records)
 #     & (sf_versions_long["version"] == 0)
 # ]
 
-# for gap_status in ["original", "lint", "naive"]:
+# for gap_status in ["true", "lint", "naive"]:
 #     sf = sf_test[sf_test["gap_status"] == gap_status]
 #     plt.plot(
 #         sf["lag"], sf[stat], label=f"{gap_status}", linestyle="-"
@@ -82,13 +82,13 @@ sf_versions_long = pd.DataFrame(records)
 # plt.xscale("log")
 # plt.yscale("log")
 
-# Extract rows where gap_status is not "original"
-sfs_orig = sf_versions_long[sf_versions_long["gap_status"] == "original"].drop(
+# Extract rows where gap_status is not "true"
+sfs_orig = sf_versions_long[sf_versions_long["gap_status"] == "true"].drop(
     ["gap_status", "tgp"], axis=1
 )
-sfs_gapped = sf_versions_long[sf_versions_long["gap_status"] != "original"]
+sfs_gapped = sf_versions_long[sf_versions_long["gap_status"] != "true"]
 
-# Merge original and gapped dataframes
+# Merge true and gapped dataframes
 sfs_wide = pd.merge(
     sfs_orig,
     sfs_gapped,
@@ -107,7 +107,7 @@ naive_lag_n = sfs_wide[sfs_wide["gap_status"] == "naive"][
 ]
 naive_lag_n = naive_lag_n.rename(columns={"lag_n": "naive_lag_n"})
 
-# Merge the naive lag_n values onto the original dataframe
+# Merge the naive lag_n values onto the true dataframe
 sfs_wide = sfs_wide.merge(
     naive_lag_n,
     on=["spacecraft", "start_time", "interval_id", "version", "lag"],

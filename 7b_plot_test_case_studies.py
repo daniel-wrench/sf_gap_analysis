@@ -167,7 +167,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     #     )  # Just plotting one component for simplicity
     # else:
     ax[ax_index, 0].plot(
-        ints[local_int_index]["Bx"].values, c=palette["true"], lw=0.8, alpha=0.8
+        ints[local_int_index]["Bx"].values, c=palette["true"], lw=0.5, alpha=0.5
     )  # Just plotting one component for simplicity
     # Not currently plotting due to indexing issue: need to be able to index
     # on both file_index and int_index
@@ -180,7 +180,7 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             "Bx",  # Just plotting one component for simplicity
         ].values,
         c=palette["lint"],
-        lw=0.8,
+        lw=0.5,
     )
 
     # Put missing_percent_overall in an annotation
@@ -202,10 +202,10 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             (sfs["file_index"] == file_index) & (sfs["int_index"] == int_index),
             "sf_2",
         ],
-        c="grey",
-        alpha=0.8,
+        c=palette["true"],
+        alpha=0.7,
         label="True",
-        lw=2.5,
+        lw=2,
     )
 
     ax[ax_index, 1].plot(
@@ -264,25 +264,9 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
         lw=1,
     )
 
-    # Plot the sf_2_pe
-    ax[ax_index, 2].plot(
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "lint"),
-            "lag",
-        ],
-        sfs_gapped_corrected.loc[
-            (sfs_gapped_corrected["file_index"] == file_index)
-            & (sfs_gapped_corrected["int_index"] == int_index)
-            & (sfs_gapped_corrected["version"] == version)
-            & (sfs_gapped_corrected["gap_handling"] == "lint"),
-            "sf_2_pe",
-        ],
-        c=palette["lint"],
-        lw=1,
-    )
+    # Plot the sf_2_pe, with reference line at 0
+    ax[ax_index, 2].axhline(0, c="grey", linestyle="--")
+
     ax[ax_index, 2].plot(
         sfs_gapped_corrected.loc[
             (sfs_gapped_corrected["file_index"] == file_index)
@@ -301,7 +285,24 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
         c=palette["naive"],
         lw=1,
     )
-
+    ax[ax_index, 2].plot(
+        sfs_gapped_corrected.loc[
+            (sfs_gapped_corrected["file_index"] == file_index)
+            & (sfs_gapped_corrected["int_index"] == int_index)
+            & (sfs_gapped_corrected["version"] == version)
+            & (sfs_gapped_corrected["gap_handling"] == "lint"),
+            "lag",
+        ],
+        sfs_gapped_corrected.loc[
+            (sfs_gapped_corrected["file_index"] == file_index)
+            & (sfs_gapped_corrected["int_index"] == int_index)
+            & (sfs_gapped_corrected["version"] == version)
+            & (sfs_gapped_corrected["gap_handling"] == "lint"),
+            "sf_2_pe",
+        ],
+        c=palette["lint"],
+        lw=1,
+    )
     # # plot sample size n on right axis
     # ax2 = ax[ax_index, 2].twinx()
     # ax2.plot(
@@ -335,7 +336,6 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
     # ax2.tick_params(axis="y", colors="grey")
     # ax2.set_ylim(0, 100)
 
-    ax[ax_index, 2].axhline(0, c="grey", linestyle="--")
     ax[ax_index, 2].set_ylim(-100, 100)
 
     ax[ax_index, 1].set_xscale("log")
@@ -401,8 +401,8 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
         ],
         color=palette["true"],
         label="True",
-        alpha=0.8,
-        lw=2.5,
+        alpha=0.7,
+        lw=2,
     )
     ax.plot(
         sfs_gapped_corrected.loc[
@@ -555,8 +555,8 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             "sf_2_lower",
         ],
         color=palette["corrected_3d"],
-        # linestyle=":",
-        linewidth=0.5,
+        linestyle=":",
+        linewidth=0.7,
         alpha=0.5,
         # label="Lower Bound",
     )
@@ -576,8 +576,8 @@ for ax_index, (file_index, version, local_int_index, int_index) in enumerate(
             "sf_2_upper",
         ],
         color=palette["corrected_3d"],
-        # linestyle=":",
-        linewidth=0.5,
+        linestyle=":",
+        linewidth=0.7,
         alpha=0.5,
         # label="Lower Bound",
     )

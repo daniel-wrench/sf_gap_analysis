@@ -415,6 +415,7 @@ def run_pipeline(input_filepath, config):
         data = interval["data"]
         means = {f"mean_{col}": data[col].mean() for col in data.columns}
         interval.update(means)
+
     print("Done computing statistics.")
     # plot_intervals_and_stats(0, "sf", intervals)
 

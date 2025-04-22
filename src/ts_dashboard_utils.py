@@ -85,7 +85,7 @@ def remove_data(array, proportion, chunks=None):
     else:
         array_bad[remove_idx] = np.nan
 
-    prop_removed = np.sum(np.isnan(array_bad)) / len(array)
+    prop_removed = np.sum(np.isnan(array_bad), axis=0) / len(array)
     # Will be somewhat different from value specified if removed in chunks
 
     # Below are needed if interpolating a numpy array, rather than a dataframe

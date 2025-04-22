@@ -127,7 +127,7 @@ def gap_and_fill_interval(metadata, times_to_gap=5):
         gapped_metadata["data"] = data_gapped
         modified_intervals.append(gapped_metadata)
 
-        # Create interpolated version
+        # Create linear interpolated version
         data_lint = data_gapped.interpolate(method="linear").ffill().bfill()
 
         # Create and update metadata for the linted version
@@ -137,6 +137,8 @@ def gap_and_fill_interval(metadata, times_to_gap=5):
         lint_metadata["tgp"] = total_removal
         lint_metadata["data"] = data_lint
         modified_intervals.append(lint_metadata)
+
+        # Create stochastic interpolated version
 
     return modified_intervals
 
@@ -171,6 +173,8 @@ def get_curves(interval):
     #     interval_df, ["Vx", "Vy", "Vz"]
     # )
     # equiv_spectrum = "Mark's code"
+
+    # haar_sf = compute_haar()
 
     # Prepare row
     vector_results = {
@@ -536,6 +540,7 @@ if config["times_to_gap"] > 0:
 # # 5_correct_test_sfs.py
 
 # ## PART 2: COMBINE ALL STATS INTO ONE FILE, CALCULATE DERIVED SCALARS
+# 02-create-full-dataset.py
 
 # ## PART 3: SUMMARISE AND PLOT SCALAR RESULTS
 

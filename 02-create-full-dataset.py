@@ -18,6 +18,9 @@ print(
     f"Combined dataframe is {duration} long, from {df.start_time[0]} to {df.end_time[0]}"
 )
 
+# Limit to original intervals
+df = df[df.gap_status == "original"]
+
 # Compute derived scalars (see reynolds script: process_data.py)
 
 df["dboB0_mean"] = df["db_mean"] / df["B0_mean"]
@@ -32,10 +35,10 @@ df["dboB0_mean"] = df["db_mean"] / df["B0_mean"]
 # df = df.set_index("timestamp")
 
 # Remove metadata columns for statistical analysis
-df_study = df.iloc[:200, 8:]
+df_study = df.iloc[:, 9:]
 df_study.describe()
 df_study.corr()
 
-sns.pairplot(df_study.iloc[:, 4:], diag_kind="kde", plot_kws={"alpha": 0.2})
+sns.pairplot(df_study.iloc[:500, :4], diag_kind="kde", plot_kws={"alpha": 0.2})
 
 # plt.savefig("pairplot.png")

@@ -1,5 +1,6 @@
 import glob
 import pickle
+import sys
 import warnings
 
 import matplotlib.dates as mdates
@@ -51,7 +52,7 @@ def split_into_intervals(dataframe, interval_length, spacecraft):
             "start_time": current_start,
             "end_time": current_end,
             "duration": interval_length,
-            "n": len(interval_data),
+            "n_points_complete": len(interval_data),
         }
 
         # Only include intervals with sufficient data
@@ -307,7 +308,7 @@ def plot_gapped_curves(results, stat, interval_id, version):
     for gap_status, ts_data in df_time_series.groupby("gap_status", observed=False):
         axes[0].plot(
             ts_data.index,
-            ts_data[config["mag_vars"][0]],
+            ts_data["Bx"],
             label=f"{gap_status}",
             color=palette[gap_status],
         )
@@ -372,6 +373,9 @@ def run_pipeline(input_filepath, config):
     df_raw = df_raw.loc[:, config["mag_vars"]]
     print("Loaded data with shape:", df_raw.shape)
 
+    # Rename the "mag_vars" columns to Bx, By, Bz
+    df_raw.columns = ["Bx", "By", "Bz"]
+
     # Resample and handle NaN values
     df = df_raw.resample(config["cadence"]).mean()
     df = df.interpolate(method="linear").ffill().bfill()
@@ -411,10 +415,23 @@ def run_pipeline(input_filepath, config):
         # Compute vector-derived scalar statistics (e.g., tce, ttu, sf_slope)
         scalar_stats = get_derived_stats(interval)
         interval.update(scalar_stats)
-        # Compute means
+
+        # Compute means of each column in the data
         data = interval["data"]
-        means = {f"mean_{col}": data[col].mean() for col in data.columns}
-        interval.update(means)
+        means = data.mean()
+        interval.update({f"{col}_mean": val for col, val in means.items()})
+
+        # Compute B0 (mean magnetic field magnitude)
+        B0 = np.linalg.norm(means[["Bx", "By", "Bz"]])
+        interval["B0_mean"] = B0
+
+        # Compute RMS fluctuation around the mean magnetic field
+        db = np.sqrt(
+            ((data[["Bx", "By", "Bz"]] - means[["Bx", "By", "Bz"]]) ** 2)
+            .sum(axis=1, skipna=False)
+            .mean()
+        )
+        interval["db_mean"] = db
 
     print("Done computing statistics.")
     # plot_intervals_and_stats(0, "sf", intervals)
@@ -458,7 +475,9 @@ if __name__ == "__main__":
         glob.iglob(f"{data_path_prefix}data/raw/{spacecraft}/" + "/*.cdf")
     )
 
-    file_index = 0  # Change this to process different files
+    file_index = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+    # Bash code:
+    # for file_index in $(seq 1 5); do python 01-compute-stats.py $file_index; done
 
     # full_results, scalar_results_df = run_pipeline(raw_file_list[file_index], config)
 
@@ -485,7 +504,7 @@ if __name__ == "__main__":
     pickle.dump(full_results, open(full_output_file_path, "wb"))
     print(f"Full results saved to: {full_output_file_path}")
 
-    print("\nPipeline completed successfully!")
+    print("\nPipeline completed successfully!\n\n")
 
 #########################################
 
@@ -499,7 +518,6 @@ if config["times_to_gap"] > 0:
             .replace("raw", "processed")
             .replace(".cdf", f"_sf_{int_index}_{version}.png")
         )
-
 
 # PART 1 FINISHED
 ##################################################
@@ -518,19 +536,8 @@ if config["times_to_gap"] > 0:
 # # 5_correct_test_sfs.py
 
 # ## PART 2: COMBINE ALL STATS INTO ONE FILE, CALCULATE DERIVED SCALARS
-# df["Re_lt"] = df["tce"] / df["ttc"]
-
-# pickle.dump(scalar_and_vector_stats)
-# pd.to_csv("scalar_stats.csv")
 
 # ## PART 3: SUMMARISE AND PLOT SCALAR RESULTS
-# df = pd.read_csv("your_data.csv", parse_dates=["timestamp"])
-# df = df.set_index("timestamp")
-
-# df.describe()
-# pd.corr(df)
-# sns.pairplot(df)
-# plt.savefig("pairplot.png")
 
 # ## PART 3A: SUMMARISE AND PLOT ERROR RESULTS
 

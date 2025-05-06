@@ -1,11 +1,14 @@
+import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
 # Set matplotlib styling
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=10)
+# plt.rc("text", usetex=True)
+# plt.rc("font", family="serif", serif="Computer Modern", size=10)
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = ["Arial"]
 plt.rcParams.update({"xtick.direction": "in", "ytick.direction": "in"})
 
 # Read and process data
@@ -28,14 +31,23 @@ fraternale_data = pd.DataFrame(
     }
 )
 
+########
+
 # Create figure
-fig, axes = plt.subplots(1, 3, figsize=(8, 2.5), sharey=True)
+fig, axes = plt.subplots(1, 3, figsize=(5, 2), sharey=True)
 axes = axes.flatten()
 
 # Variables to plot
 vars_to_plot = ["slope", "tce_days", "ttu_hours"]
-# colors = {"current work": "#7fc97f", "Frat2021": "#beaed4"}
-# colors = {"naive":"red",  "lint":"black", "corrected_3d":"#1b9e77"}
+labels = [r"$\beta$", r"$\lambda_C$ (days)", r"$\lambda_T$ (hours)"]
+
+# Define explicit bin edges for each variable to ensure consistent visual width
+bin_edges = {
+    "slope": np.linspace(0.1, 0.9, 10),  # 8 bins of width 0.1
+    "tce_days": np.linspace(0, 70, 10),  # 7 bins of width 10
+    "ttu_hours": np.linspace(0, 0.7, 10),  # 7 bins of width 0.1
+}
+
 # Plot histograms and marks
 for i, var in enumerate(vars_to_plot):
     # Plot histogram for current work data only
@@ -46,77 +58,83 @@ for i, var in enumerate(vars_to_plot):
             x=var,
             color="red",
             ax=axes[i],
-            # bins=10,
+            bins=bin_edges[var],
+            alpha=0.9,
+            element="bars",
         )
     else:
         current_data = df[df["gap_handling"] == "corrected_3d"]
         sns.histplot(
             current_data,
             x=var,
-            color="#1b9e77",
+            color="black",
             ax=axes[i],
-            # bins=10,
+            bins=bin_edges[var],
+            alpha=0.5,
+            element="bars",
         )
 
-    # Add Fraternale data as crosses on x-axis if the variable exists in fraternale_data
+    # Add Fraternale data as stars on x-axis if the variable exists in fraternale_data
     if var in fraternale_data.columns:
         frat_values = fraternale_data[var].dropna()
         if len(frat_values) > 0:
             y_pos = np.zeros_like(frat_values)
             axes[i].scatter(
                 frat_values,
-                y_pos + 0.3,
+                y_pos + 0.8,
                 marker="*",
-                # Add thin black outline
                 edgecolors="black",
                 linewidths=0.5,
-                s=80,
-                color="#beaed4",
+                s=100,
+                color="skyblue",
                 label="Frat2021",
                 zorder=5,
             )
 
+    # Set x-axis limits to match the bin edges
+    axes[i].set_xlim(bin_edges[var][0], bin_edges[var][-1])
+
     # Styling
-    # Format axis labels with proper units
-    if var == "tce_days":
-        axes[i].set_xlabel(r"$\lambda_C$ (days)", labelpad=-15, fontsize=12)
-        # axes[i].axvline(17, color="black", linestyle="--", label=r"Assumed $\lambda_C$")
-        # axes[i].text(17 + 0.01, 5, r"Ostensible $\lambda_C$", fontsize=10)
-    elif var == "ttu_hours":
-        axes[i].set_xlabel(r"$\lambda_T$ (hours)", labelpad=-15, fontsize=12)
-        # Add a curved arrow with annotation
-        axes[i].text(
-            0.95,
-            0.8,
-            "(Derived from Naive SF,\ninstead of corrected)",
-            transform=axes[i].transAxes,
-            fontsize=8,
-            verticalalignment="top",
-            horizontalalignment="right",
-            bbox=dict(facecolor="white", alpha=0.8, edgecolor="none"),
-            color="red",
-        )
-    else:
-        axes[i].set_xlabel("Inertial range slope", labelpad=-15, fontsize=12)
-        axes[i].axvline(2 / 3, color="black", linestyle="dotted", label="Kolmogorov")
-        # Add annotation next to this line
-        axes[i].text(2 / 3 + 0.01, 3, r"\textit{K41}", fontsize=10)
-    axes[i].xaxis.set_label_position("top")
-    axes[i].set_ylabel("")
+    axes[i].set_xlabel(labels[i], fontsize=10)
+    # axes[i].xaxis.set_label_position("top")
+
+    # Additional elements based on variable
+    if var == "slope":
+        axes[i].axvline(2 / 3, color="black", linestyle="dotted")
+        axes[i].text(2 / 3 + 0.01, 3, "K41", fontsize=10, alpha=0.6)
+
+    # elif var == "ttu_hours":
+    # axes[i].text(
+    #     0.95,
+    #     0.8,
+    #     "(Derived from Naive SF,\ninstead of corrected)",
+    #     transform=axes[i].transAxes,
+    #     fontsize=8,
+    #     verticalalignment="top",
+    #     horizontalalignment="right",
+    #     bbox=dict(facecolor="white", alpha=0.8, edgecolor="none"),
+    #     color="red",
+    # )
+
+# Set common y-label and y-limit
+axes[0].set_ylabel("Count", fontsize=10)
+max_y_val = max([ax.get_ylim()[1] for ax in axes])
+for ax in axes:
+    ax.set_ylim(0, max_y_val)
 
 # Finalize layout
 plt.tight_layout()
-plt.suptitle(
-    "SF-Derived Statistics from Voyager 1 Intervals of the Interstellar Medium",
-    fontsize=16,
-)
-import matplotlib.lines as mlines
+# plt.suptitle(
+#     "SF-Derived Statistics from Voyager 1 Intervals of the Interstellar Medium",
+#     fontsize=14,
+#     y=0.98,
+# )
 
 # Create a legend entry matching the plotted stars
 frat_legend = mlines.Line2D(
     [],
     [],
-    color="#beaed4",
+    color="skyblue",
     marker="*",
     linestyle="None",
     markersize=10,
@@ -129,14 +147,13 @@ frat_legend = mlines.Line2D(
 fig.legend(
     handles=[frat_legend],
     loc="upper center",
-    bbox_to_anchor=(0.5, 0.92),
-    fontsize=10,
+    bbox_to_anchor=(0.5, 0.95),
+    fontsize=8,
     frameon=False,
 )
 
-plt.subplots_adjust(top=0.8)  # Make room for the title
+plt.subplots_adjust(top=0.8, wspace=0.1)  # Make room for the title and adjust spacing
 
-# Save and display
 plt.savefig(
     "results/full/plots/voyager/voyager_corrected_stats.png",
     dpi=300,

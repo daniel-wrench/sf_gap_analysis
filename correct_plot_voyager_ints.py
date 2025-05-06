@@ -11,6 +11,7 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy import stats
+from scipy.interpolate import interp1d
 
 # Fit a power law to the corrected SF
 from scipy.optimize import curve_fit
@@ -19,12 +20,36 @@ import src.params as params
 import src.sf_funcs as sf
 import src.utils as utils
 
-# Set matplotlib font size
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=10)
+# Set sans-serif font
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = ["Arial"]
 
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
+
+
+# Smoothing function
+def smooth_scaling(x, y, num_bins=20):
+    bin_edges = np.logspace(np.log10(x.min()), np.log10(x.max()), num_bins)
+    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+    y_binned = np.array(
+        [
+            y[(x >= bin_edges[i]) & (x < bin_edges[i + 1])].mean()
+            for i in range(len(bin_edges) - 1)
+        ]
+    )
+
+    # Preserve the first and last values to prevent edge distortions
+    # during extrapolation
+    full_bins = np.insert(bin_centers, 0, bin_edges[0])
+    full_bins = np.append(full_bins, bin_edges[-1])
+    full_y_binned = np.insert(y_binned, 0, y.iloc[0])
+    full_y_binned = np.append(full_y_binned, y.iloc[-1])
+
+    interp_func = interp1d(
+        full_bins, full_y_binned, kind="cubic", fill_value="extrapolate"
+    )
+    return interp_func(x)
 
 
 # Read in cleaned Voyager 1 data
@@ -151,31 +176,6 @@ for int_index in range(n_ints):
     sfs_lint_corrected_3d = sf.compute_scaling(
         sfs_gapped, 3, correction_lookup_3d, n_bins
     )
-
-    from scipy.interpolate import interp1d
-
-    # Smoothing function
-    def smooth_scaling(x, y, num_bins=20):
-        bin_edges = np.logspace(np.log10(x.min()), np.log10(x.max()), num_bins)
-        bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-        y_binned = np.array(
-            [
-                y[(x >= bin_edges[i]) & (x < bin_edges[i + 1])].mean()
-                for i in range(len(bin_edges) - 1)
-            ]
-        )
-
-        # Preserve the first and last values to prevent edge distortions
-        # during extrapolation
-        full_bins = np.insert(bin_centers, 0, bin_edges[0])
-        full_bins = np.append(full_bins, bin_edges[-1])
-        full_y_binned = np.insert(y_binned, 0, y.iloc[0])
-        full_y_binned = np.append(full_y_binned, y.iloc[-1])
-
-        interp_func = interp1d(
-            full_bins, full_y_binned, kind="cubic", fill_value="extrapolate"
-        )
-        return interp_func(x)
 
     single_sf = sfs_lint_corrected_3d[(sfs_lint_corrected_3d["int_index"] == int_index)]
 
@@ -350,23 +350,53 @@ for int_index in range(n_ints):
 
     print("Plotting...")
 
-    fig = plt.figure(figsize=(11, 5))
+    fig = plt.figure(figsize=(5, 5))
     gs = gridspec.GridSpec(
-        2, 3, height_ratios=[1, 1]
-    )  # Now 3 columns in the second row
-    gs.update(hspace=0.6, wspace=0.3)
+        2, 2, height_ratios=[1, 1], width_ratios=[1, 1]
+    )  # Adjusted to 2 columns with different widths
+    gs.update(hspace=0.45, wspace=0.3)
 
-    # First row, spanning all three columns
+    # First row, spanning both columns
     ax1 = fig.add_subplot(gs[0, :])
-    # Second row, three separate columns
+    # Second row, two separate columns
     ax2 = fig.add_subplot(gs[1, 0])
-    ax3 = fig.add_subplot(gs[1, 1])
-    ax4 = fig.add_subplot(gs[1, 2])  # New third panel
+    ax3 = fig.add_subplot(gs[1, 1])  # Adjusted to be the second panel
+
+    # Calculate moving average of all bad_input columns
+    bad_input_daily = bad_input.resample("1d").mean()
 
     # Panel 1: Magnetic field plot
-    ax1.plot(bad_input.index, bad_input["BR"], color="black", lw=0.3, label="Raw")
+    ax1.plot(bad_input.index, bad_input["BR"], lw=0.3, c="red", alpha=0.3)
+    ax1.plot(bad_input.index, bad_input["BT"], lw=0.3, c="green", alpha=0.3)
+    ax1.plot(bad_input.index, bad_input["BN"], lw=0.3, c="blue", alpha=0.3)
+    ax1.plot(
+        bad_input_daily.index,
+        bad_input_daily["BR"],
+        lw=1,
+        label=r"$B_R$",
+        c="red",
+        alpha=0.8,
+    )
+    ax1.plot(
+        bad_input_daily.index,
+        bad_input_daily["BT"],
+        lw=1,
+        label=r"$B_T$",
+        c="green",
+        alpha=0.8,
+    )
+    ax1.plot(
+        bad_input_daily.index,
+        bad_input_daily["BN"],
+        lw=1,
+        label=r"$B_N$",
+        c="blue",
+        alpha=0.8,
+    )
+
+    ax1.legend(ncol=3, fontsize=10, frameon=True)
     ax1.set_xlabel("Date")
-    ax1.set_ylabel(r"$B_R$ (normalized)")
+    ax1.set_ylabel(r"$B$ (normalized)")
     ax1.xaxis.set_major_formatter(
         mdates.ConciseDateFormatter(ax1.xaxis.get_major_locator())
     )
@@ -376,7 +406,7 @@ for int_index in range(n_ints):
     ax2.set_ylabel("SF")
     for handling, color, label in zip(
         ["naive", "lint", "corrected_3d"],
-        ["red", "black", "#1b9e77"],
+        ["indianred", "#7570b3", "black"],
         ["Naive", "LINT", "Corrected"],
     ):
         mask = (
@@ -406,78 +436,64 @@ for int_index in range(n_ints):
     ax2.plot(
         sf_lag_fit * new_cadence,
         sf_fit * 1.5,  # to raise above SF
-        label="Slope = {:.2f}".format(slope),
+        # label="Slope = {:.2f}".format(slope),
         ls="dotted",
         lw=1,
-        color="#1b9e77",
-    )
-    ax2.axvline(
-        tce * new_cadence,
         color="black",
-        alpha=0.4,
-        ls="dotted",
-        label="TCE (see ACF)",
+        alpha=0.5,
     )
-    ax2.legend(loc="lower right", fontsize=8, frameon=False)
+    # Add annotation for slope value
+    ax2.annotate(
+        f"$\\beta$ = {slope:.2f}",
+        xy=(sf_lag_fit[1] * new_cadence, sf_fit[1] * 2.5),
+        # xytext=(10, 10),
+        # textcoords="offset points",
+        fontsize=8,
+        alpha=0.6,
+        color="black",
+        # arrowprops=dict(arrowstyle="->", color="black", lw=0.5),
+    )
+    # ax2.axvline(
+    #     tce * new_cadence,
+    #     color="black",
+    #     alpha=0.4,
+    #     ls="dotted",
+    #     label="TCE (see ACF)",
+    # )
+    ax2.legend(fontsize=8, frameon=True)
     ax2.semilogx()
     ax2.semilogy()
 
-    # Panel 3: Equivalent spectrum
+    # Panel 3: ACF from SF
     ax3.plot(
-        current_int["inverse_lag"] / new_cadence,  # Dividing coz inverse lag
-        current_int["sf_corrected_es"],
-        c="#1b9e77",
-    )
-    # ax3.plot(
-    #     sf_lag_fit * new_cadence,
-    #     sf_fit * 10,  # to raise above SF
-    #     label="Slope = {:.2f}".format(slope),
-    #     ls="dotted",
-    #     lw=2.5,
-    #     color="#1b9e77",
-    # )
-    ax3.semilogx()
-    ax3.semilogy()
-    ax3.legend(loc="lower left", frameon=False)
-    ax3.set_xlabel("1/Lag ($s^{-1}$)")
-    ax3.set_ylabel(r"$\frac{1}{6} \tau$ SF")
-
-    # Panel 4: ACF from SF
-    ax4.plot(
         current_int["lag"] * new_cadence,
         current_int["acf_from_sf"],
-        color="#1b9e77",
+        color="black",
         lw=1,
     )
-    ax4.set_xlabel("Lag (s)")
-    ax4.axhline(1 / np.e, color="black", ls="dotted")
-    ax4.axvline(
+    ax3.set_xlabel("Lag (s)")
+    ax3.axhline(1 / np.e, color="black", ls="dotted", alpha=0.6)
+    ax3.axvline(
         tce * new_cadence,
         color="black",
+        alpha=0.6,
         ls="dotted",
-        label=f"TCE = {tce*new_cadence/3600/24:.1f} days",
+        label=f"$\lambda_C$ = {tce*new_cadence/3600/24:.1f} days",
     )
-    # Create an inset to ax4 that highlights the range of params.tau_min and params.tau_max
+    ax3.text(
+        tce * new_cadence * 1.05,
+        0.08,
+        f"$\lambda_C$ = {tce*new_cadence/3600/24:.1f} days",
+        fontsize=8,
+        alpha=0.6,
+    )
+    # Create an inset to ax3 that highlights the range of params.tau_min and params.tau_max
 
-    # CURRENTLY ONLY STORING CORRECTED ACF, SO CAN'T PLOT NAIVE VERSION HERE YET
-    # current_int_naive = sfs_gapped_corrected.loc[
-    #     (sfs_gapped_corrected["file_index"] == file_index)
-    #     & (sfs_gapped_corrected["int_index"] == int_index)
-    #     & (sfs_gapped_corrected["gap_handling"] == "naive"),
-    #     :,
-    # ]
-
-    axins = inset_axes(ax4, width="30%", height="30%", loc="upper right")
-    # axins.plot(
-    #     current_int_naive["lag"] * new_cadence,
-    #     current_int_naive["acf_from_sf"],
-    #     color="red",
-    #     lw=1,
-    # )
+    axins = inset_axes(ax3, width="30%", height="30%", loc="upper right")
     axins.plot(
         current_int["lag"] * new_cadence,
         current_int["acf_from_sf"],
-        color="#1b9e77",
+        color="black",
         lw=1,
     )
     axins.scatter(
@@ -485,57 +501,46 @@ for int_index in range(n_ints):
         current_int.loc[params.tau_min : params.tau_max, "acf_from_sf"],
         color="black",
         marker="x",
-        # REDUCE SIZE
         s=3,
-        # BRING TO FRONT
         zorder=10,
-        label=r"$\lambda_T$ max lag range",
+        # label=r"$\lambda_T$ max lag range",
     )
     axins.set_xlim(0, (params.tau_max + 3) * new_cadence)
     axins.set_ylim(0.9, 1)
     axins.legend(bbox_to_anchor=(0.95, -0.3), fontsize=6, frameon=False)
-    # Reduce font size of ticklabels
     for tick in axins.get_xticklabels():
         tick.set_fontsize(6)
     for tick in axins.get_yticklabels():
         tick.set_fontsize(6)
-    # axins.set_xticklabels([])
-    # axins.set_yticklabels([])
 
-    ax4.legend(loc="lower left", fontsize=8, frameon=False)
+    # ax3.legend(loc="lower left", fontsize=8, frameon=False)
+    ax3.set_ylabel("ACF")
 
-    fig.suptitle(
-        f"Voyager 1 LISM, interval {int_index}: {new_cadence/60:.1f}min resolution, {missing*100:.1f}\% missing",
-        y=0.95,
-        fontsize=20,
-    )
+    # fig.suptitle(
+    #     f"Voyager 1 LISM, interval {int_index}: {new_cadence/60:.1f}min resolution, {missing*100:.1f}\% missing",
+    #     y=0.95,
+    #     fontsize=20,
+    # )
 
-    # Add a shared title above the 3rd and 4th panels
-    fig.text(0.65, 0.47, "SF-DERIVED CURVES", ha="center", fontsize=15)
-    fig.text(0.24, 0.47, "SF CORRECTION", ha="center", fontsize=15)
+    # fig.text(0.5, 0.47, "SF-DERIVED CURVES", ha="center", fontsize=15)
+    # fig.text(0.24, 0.47, "SF CORRECTION", ha="center", fontsize=15)
     axins.text(
         0.5,
-        0.85,
+        -0.5,
         f"$\lambda_T$={ttu*new_cadence/3600:.1f} hours",
         ha="center",
         va="center",
         transform=axins.transAxes,
-        fontsize=6,
+        fontsize=8,
+        alpha=0.6,
     )
 
-    ax2.set_title("SF")
-    ax3.set_title("Equivalent Spectrum")
-    ax4.set_title("ACF")
-
-    ax1.set_ylim(-3, 3)
     ax2.set_ylim(1e-1, 1e1)
-    ax3.set_ylim(1e-2, 1e4)
-    ax4.set_ylim(0, 1)
+    ax3.set_ylim(0, 1)
     plt.savefig(f"results/full/plots/voyager/v1_corrected_{int_index}.png", dpi=300)
     plt.close(fig)
 
-
 # Save metadata
-output_file_path = "results/full/voyager1_corrected_metadata_NEW.csv"
+output_file_path = "results/full/voyager1_corrected_metadata.csv"
 ints_gapped_metadata.to_csv(output_file_path, index=False)
 print(f"Stats saved to {output_file_path}")

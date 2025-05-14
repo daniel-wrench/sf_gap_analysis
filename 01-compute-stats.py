@@ -3,7 +3,6 @@ import pickle
 import sys
 import warnings
 
-import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -42,7 +41,7 @@ def split_into_intervals(dataframe, interval_length, spacecraft):
 
     current_start = start_time
     int_idx = 0
-    while current_start < end_time:
+    while current_start < end_time - pd.Timedelta(interval_length):
         current_end = current_start + pd.Timedelta(interval_length)
         interval_data = dataframe.loc[current_start:current_end].copy()
 
@@ -204,37 +203,45 @@ def get_derived_stats(interval):
     - DataFrame with results
     """
 
-    # Calculate correlation scale from ACF
-    tce = utils.compute_corr_scale_exp_trick(
-        interval["lag"],
-        interval["acf"],
-        plot=False,
-    )
+    # Initialize default values
+    tce = np.nan
+    ttu = np.nan
+    qi_sf = np.nan
 
-    # Calculate Taylor scale from ACF
     try:
+        # Calculate correlation scale from ACF
+        tce = utils.compute_corr_scale_exp_trick(
+            interval["lag"],
+            interval["acf"],
+            plot=False,
+        )
+    except Exception as e:
+        print(f"Error computing tce: {e}")
+
+    try:
+        # Calculate Taylor scale from ACF
         ttu, taylor_scale_u_std = utils.compute_taylor_chuychai(
             interval["lag"],
             interval["acf"],
             tau_min=params.tau_min,
             tau_max=params.tau_max,
         )
-    except ValueError:
-        # Handle case where ttu cannot be calculated
-        print("Error calculating ttu, setting to NaN. Maybe missing values in ACF?")
-        ttu = np.nan
-        taylor_scale_u_std = np.nan
+    except Exception as e:
+        print(f"Error computing ttu: {e}")
 
-    # Fit log-log slope to specific range of structure function
-    fit_idx = np.where(
-        (interval["lag"] >= params.pwrl_range[0])
-        & (interval["lag"] <= params.pwrl_range[1])
-    )[0]
-    qi_sf = np.polyfit(
-        np.log(interval["lag"][fit_idx]),
-        np.log(interval["sf"][fit_idx]),
-        1,
-    )[0]
+    try:
+        # Fit log-log slope to specific range of structure function
+        fit_idx = np.where(
+            (interval["lag"] >= params.pwrl_range[0])
+            & (interval["lag"] <= params.pwrl_range[1])
+        )[0]
+        qi_sf = np.polyfit(
+            np.log(interval["lag"][fit_idx]),
+            np.log(interval["sf"][fit_idx]),
+            1,
+        )[0]
+    except Exception as e:
+        print(f"Error computing qi_sf: {e}")
 
     # Prepare row
     scalar_results = {
@@ -405,7 +412,8 @@ def filter_scalar_values(d):
 
 
 def process_list_of_dicts(data_list):
-    """Apply filtering to each dictionary in the list and convert the result into a DataFrame."""
+    """Apply filtering to each dictionary in the list \
+        and convert the result into a DataFrame."""
     filtered_list = [filter_scalar_values(d) for d in data_list]
     return pd.DataFrame(filtered_list)
 
@@ -420,15 +428,25 @@ def run_pipeline(input_filepath, config):
     - config: dictionary with pipeline configuration
     """
 
-    print(f"Processing file: {input_filepath}")
+    print(f"\n\nREADING FILE {input_filepath}")
+
+    # FOR TESTING ONLY
+    # input_filepath = raw_file_list[0]
+    # config = config
 
     # Load data
     data = TimeSeries(input_filepath, concatenate=True)
     df_raw = data.to_dataframe()
 
+    del data
+
     # Extract variables of interest
     df_raw = df_raw.loc[:, config["mag_vars"]]
-    print("Loaded data with shape:", df_raw.shape)
+
+    # Print number of rows and time range
+    print(
+        f"Loaded {len(df_raw)} rows of data, from {df_raw.index[0]} to {df_raw.index[-1]}"
+    )
 
     # Rename the "mag_vars" columns
 
@@ -441,13 +459,57 @@ def run_pipeline(input_filepath, config):
     )
 
     # Calculate modal cadence
-    modal_cadence = df_raw.index.to_series().diff().dt.total_seconds().mode()[0]
-    print("This dataset has a (modal) cadence of ", modal_cadence, " seconds")
-    print(f"Resampling to {config['cadence']} cadence...")
+    # Calculate time differences in seconds
+    time_diffs = df_raw.index.to_series().diff().dt.total_seconds().dropna()
+
+    # Find modal cadence and its frequency
+    diff_counts = time_diffs.value_counts()
+    modal_cadence = diff_counts.idxmax()
+
+    # Count points within 1% of modal cadence
+    lower_bound = modal_cadence * 0.95
+    upper_bound = modal_cadence * 1.05
+    within_range_count = diff_counts[
+        (diff_counts.index >= lower_bound) & (diff_counts.index <= upper_bound)
+    ].sum()
+
+    # Calculate proportion and missing points
+    total_points = len(time_diffs)
+    proportion_within_1_percent = within_range_count / total_points
+    print(
+        f"Modal cadence = {modal_cadence:.5f}s ~ {1/modal_cadence:.2f} samples/s ({proportion_within_1_percent*100:.1f}% of data are within 5% of this cadence)"
+    )
+    # Resample to modal cadence, to get more accurate missing %
+    df_raw_res = df_raw.resample(str(modal_cadence) + "s").mean()
+    if df_raw_res.isna().sum().sum() > 0:
+        print(
+            "Percentage of points missing for each RAW variable, assuming this cadence:"
+        )
+        if proportion_within_1_percent < 0.9:
+            print(
+                "(NB: Inconsistent cadence means this may not be an appropriate measure)"
+            )
+        print((df_raw_res.isna().sum() / len(df_raw_res) * 100).round(4).to_string())
+    else:
+        print("No missing values in the raw data.")
+
+    del df_raw_res
 
     # Resample and handle NaN values
+    print(f"Resampling to {config['cadence']} cadence...")
     df = df_raw.resample(config["cadence"]).mean()
-    df = df.interpolate(method="linear").ffill().bfill()
+
+    del df_raw
+
+    if df.isna().sum().sum() > 0:
+        print("Updated missing percentages:")
+        print((df.isna().sum() / len(df) * 100).round(4).to_string())
+        print("These remaining missing rows are now filled with linear interpolation")
+        df = df.interpolate(method="linear").ffill().bfill()
+        if df.isna().sum().sum() > 0:
+            print("WARNING: Still NaN values after resampling and interpolation.")
+    else:
+        print("No missing after resampling, no interpolation needed.")
 
     # Split into intervals of chosen length
     intervals = split_into_intervals(df, config["int_length"], config["spacecraft"])
@@ -463,9 +525,10 @@ def run_pipeline(input_filepath, config):
 
         # Convert this list of list of dictionaries into a list of dictionaries
         intervals = [item for sublist in gapped_intervals_nested for item in sublist]
-        print(
-            f"After making {config['times_to_gap']} gapped versions and handling them in multiple ways, we have {len(intervals)} structure function estimates."
-        )
+        # print(
+        #     f"After making {config['times_to_gap']} gapped versions and handling them
+        # in multiple ways, we have {len(intervals)} structure function estimates."
+        # )
 
     # intervals[0]["data"].plot()
     # intervals[1]["data"].plot()
@@ -514,24 +577,27 @@ def run_pipeline(input_filepath, config):
 
 ################################################
 
-## PART 1: CALCULATE STATS FOR EACH INTERVAL, PER FILE
+# PART 1: CALCULATE STATS FOR EACH INTERVAL, PER FILE
 
 if __name__ == "__main__":
 
     # Configuration
     config = {
-        "spacecraft": "psp",
+        "spacecraft": "voyager",
         "mag_vars": [
-            "psp_fld_l2_mag_RTN_0",
-            "psp_fld_l2_mag_RTN_1",
-            "psp_fld_l2_mag_RTN_2",
+            # "psp_fld_l2_mag_RTN_0",
+            # "psp_fld_l2_mag_RTN_1",
+            # "psp_fld_l2_mag_RTN_2",
             # "BGSE_0",
             # "BGSE_1",
             # "BGSE_2",
+            "BR",
+            "BT",
+            "BN",
         ],
-        "cadence": "10s",  # Resample frequency
-        "int_length": "1h",  # Interval length
-        "times_to_gap": 2,  # Number of gapped versions
+        "cadence": "1d",  # Resample frequency
+        "int_length": "170d",  # Interval length
+        "times_to_gap": 0,  # Number of gapped versions (0 = no gapping)
         "max_lag_prop": 0.2,  # Maximum lag proportion for SF
         # "pwrl_fit_range": [1, 100],  # Range for power-law fit
     }
@@ -545,8 +611,6 @@ if __name__ == "__main__":
     )
 
     file_index = int(sys.argv[1]) if len(sys.argv) > 1 else 0
-    # Bash code:
-    # for file_index in $(seq 1 5); do python 01-compute-stats.py $file_index; done
 
     # full_results, scalar_results_df = run_pipeline(raw_file_list[file_index], config)
 
@@ -573,23 +637,31 @@ if __name__ == "__main__":
     pickle.dump(full_results, open(full_output_file_path, "wb"))
     print(f"Full results saved to: {full_output_file_path}")
 
-    print("\nPipeline completed successfully!\n\n")
+    print("\nPipeline completed successfully!\n")
 
 #########################################
 
 # Plot some quick examples of gapped SFs (or other curves!)
+# using first interval of each file
 if config["times_to_gap"] > 0:
     int_index = 0
     for version in range(2):
         plot_gapped_curves(full_results, "sf", int_index, version)
-        plt.savefig(
+        output_path = (
             raw_file_list[file_index]
             .replace("raw", "processed")
-            .replace(".cdf", f"_sf_{int_index}_{version}.png"),
+            .replace(".cdf", f"_sf_{int_index}_{version}.png")
+        )
+        plt.savefig(
+            output_path,
             bbox_inches="tight",
         )
+    print(f"Gapped SF plots saved to: {output_path}")
 
 # PART 1 FINISHED
+# Bash code:
+# for file_index in $(seq 0 3); do python 01-compute-stats.py $file_index; done
+
 ##################################################
 
 # ## PART 1A: CALCULATE ERRORS FOR VECTOR STATS, PER FILE

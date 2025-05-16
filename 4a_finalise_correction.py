@@ -135,6 +135,9 @@ for gap_handling in ["lint", "naive"]:
                     bbox_inches="tight",
                 )
                 plt.close()
+                print(
+                    f"Saved 2D heatmap {n_bins} bins {gap_handling} to {run_mode}/plots"
+                )
 
             elif (dim == 3) and (gap_handling == "lint"):  # has zedges too
                 pe_mean = np.full((n_bins, n_bins, n_bins), fill_value=np.nan)

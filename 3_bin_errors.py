@@ -1,14 +1,14 @@
 # Read in just the "sfs_gapped" key value from a pickle file
 # and print it to stdout
 
-import pickle
 import glob
-import numpy as np
-import pandas as pd
+import pickle
 import sys
 
-import src.params as params
+import numpy as np
+import pandas as pd
 
+import src.params as params
 
 data_path_prefix = params.data_path_prefix
 
@@ -110,7 +110,7 @@ for gap_handling in ["lint", "naive"]:
                 output_file_path = (
                     input_file_list[file_index_test]
                     .replace("train", "train/errors")
-                    .replace(".pkl", f"_pe_{dim}d_{n_bins}_bins_{gap_handling}.pkl")
+                    .replace(".pkl", f"_pe_{dim}d_{n_bins}_bins_{gap_handling}_NEW.pkl")
                 )
 
                 with open(

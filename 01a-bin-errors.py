@@ -17,23 +17,22 @@ data_path_prefix = params.data_path_prefix
 
 spacecraft = "psp"
 
-file_index_test = int(sys.argv[1])
+# file_index = int(sys.argv[1])
+file_index = 0
 n_bins_list = [25]
 
 input_file_list = [
     sorted(
         glob.glob(
-            f"{data_path_prefix}data/processed/{spacecraft}/{spacecraft}_*_all_stats.pkl"
+            f"{data_path_prefix}data/processed/{spacecraft}/train/{spacecraft}_*_all_stats.pkl"
         )
     )
 ][0]
 
 try:
-    with open(input_file_list[file_index_test], "rb") as file:
+    with open(input_file_list[file_index], "rb") as file:
         intervals = pickle.load(file)
-        print(
-            f"Loaded {len(intervals)} intervals from {input_file_list[file_index_test]}"
-        )
+        print(f"Loaded {len(intervals)} intervals from {input_file_list[file_index]}")
 except pickle.UnpicklingError:
     print(f"UnpicklingError encountered in file: {file}. Skipping this file.")
 except EOFError:
@@ -125,6 +124,38 @@ sfs_wide = sfs_wide.drop(columns=["naive_lag_n"])
 # Get the missing percentage for each lag
 sfs_wide["gp"] = sfs_wide["lag_n"] / sfs_wide["lag_n_orig"]
 
+# Check by plotting the SFs for a given interval
+# df_time_series = sfs_wide[
+#     (sfs_wide["start_time"] == "2018-11-02 00:00:00")
+#     & (sfs_wide["interval_id"] == 0)
+#     & (sfs_wide["version"] == 0)
+# ]
+
+# palette = params.gap_handling_palette
+# var_to_plot = "sf"
+# import matplotlib.pyplot as plt
+
+# # === Time Series Plot ===
+# fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+# for gap_status, ts_data in df_time_series.groupby("gap_status", observed=False):
+#     ts_data.plot(
+#         y=var_to_plot,
+#         ax=axes[0],
+#         label=gap_status,
+#         color=palette[gap_status],
+#         legend=False,
+#     )
+#     ts_data.plot(
+#         y="gp",
+#         ax=axes[1],
+#         label=gap_status,
+#         color=palette[gap_status],
+#         linestyle="--",
+#         legend=False,
+#     )
+
+
+# DO THE BINNING
 
 for gap_status in ["lint", "naive"]:
     inputs = sfs_wide[sfs_wide["gap_status"] == gap_status]
@@ -136,7 +167,7 @@ for gap_status in ["lint", "naive"]:
     for dim in [2, 3]:
         for n_bins in n_bins_list:
             print(
-                f"Grouping sf errors using {gap_status.upper()} into {dim}x{n_bins} bins for {input_file_list[file_index_test]}"
+                f"Grouping sf errors using {gap_status.upper()} into {dim}x{n_bins} bins for {input_file_list[file_index]}"
             )
 
             # Can use np.histogram2d to get the linear bin edges for 2D
@@ -180,7 +211,7 @@ for gap_status in ["lint", "naive"]:
                 pass
             else:
                 output_file_path = (
-                    input_file_list[file_index_test]
+                    input_file_list[file_index]
                     .replace("train", "train/errors")
                     .replace(".pkl", f"_pe_{dim}d_{n_bins}_bins_{gap_status}_NEW.pkl")
                 )

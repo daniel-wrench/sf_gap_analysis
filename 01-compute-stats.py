@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from scipy.interpolate import interp1d
 from sunpy.timeseries import TimeSeries
 from sunpy.util import SunpyUserWarning
 
@@ -74,7 +75,7 @@ def split_into_intervals(dataframe, interval_length, spacecraft):
 # Each interval in the list has the same structure as df_resampled
 
 
-def gap_and_fill_interval(metadata, times_to_gap=5):
+def gap_and_fill_interval(metadata, times_to_gap=5, correcting=False):
     """
     Create modified copies of an interval with different data removal patterns
 
@@ -137,6 +138,15 @@ def gap_and_fill_interval(metadata, times_to_gap=5):
         lint_metadata["tgp"] = total_removal
         lint_metadata["data"] = data_lint
         modified_intervals.append(lint_metadata)
+
+        if correcting:
+            # Create and update metadata for the (future) corrected version
+            corr_metadata = metadata.copy()
+            corr_metadata["version"] = j
+            corr_metadata["gap_status"] = "corrected"
+            corr_metadata["tgp"] = total_removal
+            corr_metadata["data"] = data_lint
+            modified_intervals.append(corr_metadata)
 
         # Create stochastic interpolated version
 
@@ -418,6 +428,59 @@ def process_list_of_dicts(data_list):
     return pd.DataFrame(filtered_list)
 
 
+# Smoothing function
+def smooth_scaling(x, y, num_bins=20):
+    bin_edges = np.logspace(np.log10(x.min()), np.log10(x.max()), num_bins)
+    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+    y_binned = np.array(
+        [
+            y[(x >= bin_edges[i]) & (x < bin_edges[i + 1])].mean()
+            for i in range(len(bin_edges) - 1)
+        ]
+    )
+
+    # Preserve the first and last values to prevent edge distortions
+    # during extrapolation
+    full_bins = np.insert(bin_centers, 0, bin_edges[0])
+    full_bins = np.append(full_bins, bin_edges[-1])
+    full_y_binned = np.insert(y_binned, 0, y.iloc[0])
+    full_y_binned = np.append(full_y_binned, y.iloc[-1])
+
+    interp_func = interp1d(
+        full_bins, full_y_binned, kind="cubic", fill_value="extrapolate"
+    )
+    return interp_func(x)
+
+
+def correct_sf(sf, correction_lookup):
+    """
+    Correct the structure function using the correction lookup table.
+    Also smooth the scaling function prior to applying the correction.
+    This is done to avoid discontinuities in the correction factor.
+
+    Parameters:
+    - sf: DataFrame containing the structure function data
+    - correction_lookup: DataFrame containing the correction factors
+
+    Returns:
+    - Corrected structure function
+    """
+    # Merge the SF with the correction lookup table
+    sf = sf_funcs.compute_scaling(
+        sf,
+        # 3,
+        correction_lookup,
+        # n_bins,
+    )
+
+    scaling_smooth = smooth_scaling(sf.lag, sf.scaling)
+
+    # Apply the correction factor to the SF
+    corrected_sf = sf * scaling_smooth
+
+    return corrected_sf
+
+
 def run_pipeline(input_filepath, config):
     """
     Main function to run the pipeline.
@@ -517,9 +580,19 @@ def run_pipeline(input_filepath, config):
     if config["times_to_gap"] > 0:
         gapped_intervals_nested = []
         print("Gapping intervals {} different ways...".format(config["times_to_gap"]))
+
+        # Determine whether we need to set-up a corrected version of the LINT interval
+        # to prepare for correction later after computing the SF
+        if config["correction_lookup"] is not None:
+            correcting = True
+        else:
+            correcting = False
+
         for interval in intervals:
             gapped = gap_and_fill_interval(
-                metadata=interval, times_to_gap=config["times_to_gap"]
+                metadata=interval,
+                times_to_gap=config["times_to_gap"],
+                correcting=correcting,
             )
             gapped_intervals_nested.append(gapped)
 
@@ -542,7 +615,15 @@ def run_pipeline(input_filepath, config):
         vector_stats = get_curves(interval)
         interval.update(vector_stats)
 
-        # IN FUTURE: Correct LINT SFs here
+        # If the gap_status of the interval is 'lint', create a copy of the interval
+        # with the same data but with the gap_status set to corrected.
+        # Then, correct the SF values using the correction lookup table.
+        if interval["gap_status"] == "corrected":
+
+            interval["sf"] = correct_sf(
+                interval["sf"],
+                config.correction_lookup,
+            )
 
         # Compute vector-derived scalar statistics (e.g., tce, ttu, sf_slope)
         scalar_stats = get_derived_stats(interval)
@@ -583,21 +664,22 @@ if __name__ == "__main__":
 
     # Configuration
     config = {
-        "spacecraft": "voyager",
+        "spacecraft": "psp",
         "mag_vars": [
-            # "psp_fld_l2_mag_RTN_0",
-            # "psp_fld_l2_mag_RTN_1",
-            # "psp_fld_l2_mag_RTN_2",
+            "psp_fld_l2_mag_RTN_0",
+            "psp_fld_l2_mag_RTN_1",
+            "psp_fld_l2_mag_RTN_2",
             # "BGSE_0",
             # "BGSE_1",
             # "BGSE_2",
-            "BR",
-            "BT",
-            "BN",
+            # "BR",
+            # "BT",
+            # "BN",
         ],
-        "cadence": "1d",  # Resample frequency
-        "int_length": "170d",  # Interval length
-        "times_to_gap": 0,  # Number of gapped versions (0 = no gapping)
+        "cadence": "10s",  # Resample frequency
+        "int_length": "1h",  # Interval length
+        "times_to_gap": 2,  # Number of gapped versions (0 = no gapping)
+        "correction_lookup": None,  # Correction lookup table
         "max_lag_prop": 0.2,  # Maximum lag proportion for SF
         # "pwrl_fit_range": [1, 100],  # Range for power-law fit
     }

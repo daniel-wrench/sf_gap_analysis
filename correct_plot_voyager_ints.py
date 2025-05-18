@@ -13,9 +13,6 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy import stats
 from scipy.interpolate import interp1d
 
-# Fit a power law to the corrected SF
-from scipy.optimize import curve_fit
-
 import src.params as params
 import src.sf_funcs as sf
 import src.utils as utils
@@ -507,7 +504,7 @@ for int_index in range(n_ints):
     )
     axins.set_xlim(0, (params.tau_max + 3) * new_cadence)
     axins.set_ylim(0.9, 1)
-    axins.legend(bbox_to_anchor=(0.95, -0.3), fontsize=6, frameon=False)
+    # axins.legend(bbox_to_anchor=(0.95, -0.3), fontsize=6, frameon=False)
     for tick in axins.get_xticklabels():
         tick.set_fontsize(6)
     for tick in axins.get_yticklabels():

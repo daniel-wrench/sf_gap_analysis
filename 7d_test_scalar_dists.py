@@ -17,12 +17,14 @@ run_mode = "full"
 spacecraft = "wind"
 n_bins = 25
 
-# Set matplotlib font size
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=10)
-
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = ["Arial"]
+# Set font size
+plt.rcParams["font.size"] = 8
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
+
+palette = params.gap_handling_palette
 
 
 # Function to calculate effect sizes
@@ -101,8 +103,8 @@ def psd_to_sf(x):
     return -(x - 1)
 
 
-ints["es_slope"] = ints["slope"].apply(sf_to_psd)
-ints["es_slope_orig"] = ints["slope_orig"].apply(sf_to_psd)
+# ints["es_slope"] = ints["slope"].apply(sf_to_psd)
+# ints["es_slope_orig"] = ints["slope_orig"].apply(sf_to_psd)
 
 
 print("Plotting and testing distributions of SF-derived stats\n")
@@ -115,7 +117,7 @@ print(
 )
 
 # Define the variables to plot
-variables = ["es_slope", "tce", "ttu", "Re_lt"]
+variables = ["slope", "tce", "ttu", "Re_lt"]
 
 # Create column "tgp_bins" to store the bins of the TGP
 bin_labels = ["0-25", "25-50", "50-75", "75-100"]
@@ -225,7 +227,7 @@ print(df_results_full)
 df_to_plot = df_results_full[df_results_full["bin"] != "all_data"]
 
 
-var_names = [r"$\beta$", r"$\lambda_C$", r"$\lambda_T$"]
+var_names = [r"$\beta$", r"$\lambda_C$", r"$\lambda_T$", r"$Re$"]
 
 # Get count of numeric vars in df_to_plot
 print(df_to_plot.head())
@@ -240,7 +242,7 @@ metrics = [
     "Fligner",
     "Anderson-Darling",
 ]
-variables = ["es_slope", "tce", "ttu"]
+variables = ["slope", "tce", "ttu", "Re_lt"]
 num_metrics = len(metrics)
 num_vars = len(variables)
 
@@ -250,10 +252,10 @@ p_value_indices = [num_metrics - 3, num_metrics - 2, num_metrics - 1]
 fig, ax = plt.subplots(
     num_metrics,
     num_vars,
-    figsize=(6, 5),
+    figsize=(5, 3.5),
     sharex=True,
     sharey="row",
-    gridspec_kw={"hspace": 0.15, "wspace": 0.1},
+    gridspec_kw={"hspace": 0.15, "wspace": 0.15},
 )
 
 # Ensure p-value rows share their y-axes
@@ -268,25 +270,26 @@ for i, metric in enumerate(metrics):
             x="bin",
             y=metric,
             hue="method",
-            palette=["indianred", "#1b9e77", "black"],
+            palette=[palette["naive"], palette["corrected_3d"], palette["lint"]],
             markers=True,
             style="method",
             dashes=False,
             ax=ax[i, j],
         )
         if i == 0:
-            ax[i, j].set_title(var_names[j], fontsize=14)
+            ax[i, j].set_title(var_names[j])
         if j == 0:
             ax[i, j].set_ylabel(metric)
         else:
             ax[i, j].set_ylabel("")
-
         # if i < 4:
         #    ax[i, j].axhline(0, color="black", linestyle="--", alpha=0.5)
         # else:
         ax[i, j].set_ylim(0, 1)
+        if metric == "Anderson-Darling":  # since floors at 1e-3
+            ax[i, j].set_ylim(1e-3, 1e0)
         ax[i, j].set_xlabel("")
-        ax[i, j].grid(True)
+        ax[i, j].grid(True, alpha=0.5)
         # Log y-axis for i > 3
         # if i > 2:
         #    ax[i, j].set_yscale("symlog", linthresh=1e-3)
@@ -294,14 +297,13 @@ for i, metric in enumerate(metrics):
 # Create a shared legend
 handles, labels = ax[0, 0].get_legend_handles_labels()
 fig.legend(
-    handles,
-    labels,
+    [handles[1], handles[0], handles[2]],
+    ["Corrected", "Naive", "LINT"],
     loc="upper center",
     ncol=len(labels),
-    bbox_to_anchor=(0.5, 1.015),
-    fontsize=12,
+    bbox_to_anchor=(0.5, 1.02),
 )
-ax[-1, 1].set_xlabel("Missing data bin (\%)")
+fig.text(0.5, -0.02, "Missing data bin (%)", ha="center", va="center")
 
 # Remove individual legends
 for i in range(len(metrics)):
@@ -322,11 +324,11 @@ for i in range(len(metrics)):
 for ax in ax[-1, :]:
     ax.tick_params(axis="x", rotation=45)
 
-plt.suptitle(
-    "Statistical Change in PDFs of SF-Derived Stats With Increasing Missing Data",
-    fontsize=12,
-    y=1.05,
-)
+# plt.suptitle(
+#     "Statistical Change in PDFs of SF-Derived Stats With Increasing Missing Data",
+#     fontsize=12,
+#     y=1.05,
+# )
 # plt.tight_layout() # not compatible
 # plt.show()
 plt.savefig(
@@ -342,10 +344,6 @@ print("FINISHED")
 # what I want: to test new tests with slopes,
 # add p-values to the histograms,
 # and then extend to other variables above
-
-
-# Switch the rows and columns
-df_results.T
 
 
 # Naive has marginally better center

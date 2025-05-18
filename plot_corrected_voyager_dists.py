@@ -14,12 +14,14 @@ plt.rcParams.update({"xtick.direction": "in", "ytick.direction": "in"})
 # Read and process data
 df = pd.read_csv("results/full/voyager1_corrected_metadata_NEW.csv")
 
+# Read in high-res stats
+high_res_stats = pd.read_csv("results/full/voyager1_lism_ttu_hr.csv")
+
 # Calculate time columns
 df["tce_s"] = df["tce"] * df["cadence"]
 df["ttu_s"] = df["ttu"] * df["cadence"]
 df["tce_days"] = df["tce_s"] / (24 * 3600)
 df["ttu_hours"] = df["ttu_s"] / 3600
-# df["source"] = "current work"
 
 # Add Fraternale 2021 data
 fraternale_data = pd.DataFrame(
@@ -27,7 +29,6 @@ fraternale_data = pd.DataFrame(
         "tce_days": [63.5, 19, 76, 19, 60, np.nan, np.nan, np.nan],  # days
         "ttu_hours": [0.048, 0.06, 0.07, 0.054, 0.063, np.nan, np.nan, np.nan],
         "slope": [0.36, 0.28, 0.27, 0.29, 0.67, 0.48, 0.37, 0.72],  # mins  # maxs
-        "source": ["Frat2021"] * 8,
     }
 )
 
@@ -45,18 +46,18 @@ labels = [r"$\beta$", r"$\lambda_C$ (days)", r"$\lambda_T$ (hours)"]
 bin_edges = {
     "slope": np.linspace(0.1, 0.9, 10),  # 8 bins of width 0.1
     "tce_days": np.linspace(0, 70, 10),  # 7 bins of width 10
-    "ttu_hours": np.linspace(0, 0.7, 10),  # 7 bins of width 0.1
+    "ttu_hours": np.linspace(0, 0.1, 10),  # 7 bins of width 0.1
 }
 
 # Plot histograms and marks
 for i, var in enumerate(vars_to_plot):
     # Plot histogram for current work data only
     if var == "ttu_hours":
-        current_data = df[df["gap_handling"] == "naive"]
+        current_data = high_res_stats
         sns.histplot(
             current_data,
             x=var,
-            color="red",
+            color="indianred",
             ax=axes[i],
             bins=bin_edges[var],
             alpha=0.9,
@@ -85,6 +86,7 @@ for i, var in enumerate(vars_to_plot):
                 marker="*",
                 edgecolors="black",
                 linewidths=0.5,
+                alpha=0.7,
                 s=100,
                 color="skyblue",
                 label="Frat2021",
@@ -100,8 +102,13 @@ for i, var in enumerate(vars_to_plot):
 
     # Additional elements based on variable
     if var == "slope":
-        axes[i].axvline(2 / 3, color="black", linestyle="dotted")
-        axes[i].text(2 / 3 + 0.01, 3, "K41", fontsize=10, alpha=0.6)
+        axes[i].axvline(2 / 3, color="black", linestyle="dotted", alpha=0.6)
+        axes[i].text(2 / 3 + 0.01, 6, "K41", fontsize=10, alpha=0.6)
+
+    # Print the 95% confidence interval
+    print(
+        f"95% CI for {var}: {current_data[var].quantile(0.025):.2f}, {current_data[var].quantile(0.975):.2f}, median: {current_data[var].median():.2f}"
+    )
 
     # elif var == "ttu_hours":
     # axes[i].text(
@@ -155,7 +162,7 @@ fig.legend(
 plt.subplots_adjust(top=0.8, wspace=0.1)  # Make room for the title and adjust spacing
 
 plt.savefig(
-    "results/full/plots/voyager/voyager_corrected_stats.png",
+    "results/full/plots/voyager/voyager_corrected_stats_NEW_TTU.png",
     dpi=300,
     bbox_inches="tight",
 )

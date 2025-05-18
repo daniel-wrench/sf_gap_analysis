@@ -12,12 +12,15 @@ import seaborn as sns
 
 import src.params as params
 
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif", serif="Computer Modern", size=10)
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = ["Arial"]
+# Set font size
+plt.rcParams["font.size"] = 8
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
-run_mode = params.run_mode
+run_mode = "full"
+palette = params.gap_handling_palette
 
 # Load data
 ints = pd.read_csv(
@@ -63,14 +66,14 @@ print(
 )
 
 # Define the variables to plot
-variables = ["es_slope", "tce", "ttu", "Re_lt"]
+variables = ["slope", "tce", "ttu", "Re_lt"]
 
 # Create list of x-labels with usual Latex symbols
 xlabels = [
     r"$\beta$",
     r"$\lambda_C$ (lags)",
     r"$\lambda_T$ (lags)",
-    r"$Re_{\lambda_T}$",
+    r"$Re$",
 ]
 
 # Create column "tgp_bins" to store the bins of the TGP
@@ -82,8 +85,8 @@ ints["tgp_bin"] = pd.cut(
 )
 
 # Loop over each bin of missing data, including the full dataset
-for bin in bin_labels + ["all_data"]:
-
+# for bin in bin_labels + ["all_data"]:
+for bin in ["all_data"]:
     if bin == "all_data":
         # Condition data for the full dataset
         data_naive = ints[ints.gap_handling == "naive"]
@@ -100,7 +103,7 @@ for bin in bin_labels + ["all_data"]:
         data_true = ints[(ints.gap_handling == "naive") & (ints.tgp_bin == bin)]
 
     # Create a 2x2 multipanel plot
-    fig, axes = plt.subplots(1, 4, figsize=(6, 1.5))
+    fig, axes = plt.subplots(1, 4, figsize=(4, 1.5), sharey=True)
 
     for i, variable in enumerate(variables):
         variable_to_plot = variable
@@ -118,15 +121,16 @@ for bin in bin_labels + ["all_data"]:
         # Create the KDE plot for each distribution
         sns.kdeplot(
             data_true[f"{variable_to_plot}_orig"],
-            label=r"\textbf{True}",
-            color="lightgrey",
-            lw=2,
+            label=r"True",
+            color=palette["true"],
+            lw=1.5,
+            alpha=0.8,
             ax=ax,
         )
         sns.kdeplot(
             data_corrected[variable_to_plot],
             label="Corrected",
-            color="#1b9e77",
+            color=palette["corrected_3d"],
             linestyle="dotted",
             lw=0.8,
             ax=ax,
@@ -134,7 +138,7 @@ for bin in bin_labels + ["all_data"]:
         sns.kdeplot(
             data_naive[variable_to_plot],
             label="Naive",
-            color="indianred",
+            color=palette["naive"],
             linestyle="dashed",
             ax=ax,
             lw=0.8,
@@ -142,7 +146,7 @@ for bin in bin_labels + ["all_data"]:
         sns.kdeplot(
             data_lint[variable_to_plot],
             label="LINT",
-            color="black",
+            color=palette["lint"],
             linestyle="dashdot",
             ax=ax,
             lw=0.8,
@@ -151,24 +155,23 @@ for bin in bin_labels + ["all_data"]:
         # Add labels and title specific to the variable
         ax.set_xlabel(xlabels[i])
         ax.set_ylim(0, 3.7)
-        ax.set_yticks([])
-        # if i % 2 == 0:
-        #     ax.set_ylabel("Density")
-        # else:
-        ax.set_ylabel("")
+        ax.set_ylabel("Density")
+        if i != 0:
+            ax.set_ylabel("")
+            ax.set_yticks([])
 
         x_annotat = 0.05
 
-        if variable != "es_slope":
+        if variable != "slope":
 
             if variable == "tce":
-                xmin, xmax = 1.3, 3.6
+                xmin, xmax = 1.6, 3.6
 
             elif variable == "ttu":
-                xmin, xmax = 0, 2.3
+                xmin, xmax = 0.5, 2
 
             elif variable == "Re_lt":
-                xmin, xmax = 2.2, 6.7
+                xmin, xmax = 3.2, 6.5
 
             ax.set_xlim(xmin, xmax)
             ticks = np.arange(
@@ -178,66 +181,82 @@ for bin in bin_labels + ["all_data"]:
             ax.set_xticklabels([f"$10^{{{int(x)}}}$" for x in ax.get_xticks()])
 
         # Add annotations of the median of each distribution
-        ax.annotate(
-            r"\textbf{" + f"{data_true[variable + '_orig'].median():.3g}" + "}",
-            xy=(x_annotat, 0.85),
-            xycoords="axes fraction",
-            fontsize=7,
-            color="darkgrey",
-            ha="left",
-        )
-        ax.annotate(
-            f"{data_corrected[variable].median():.3g}",
-            xy=(x_annotat, 0.7),
-            xycoords="axes fraction",
-            fontsize=7,
-            color="#1b9e77",
-            ha="left",
-        )
-        ax.annotate(
-            f"{data_naive[variable].median():.3g}",
-            xy=(x_annotat, 0.55),
-            xycoords="axes fraction",
-            fontsize=7,
-            color="indianred",
-            ha="left",
-        )
-        ax.annotate(
-            f"{data_lint[variable].median():.3g}",
-            xy=(x_annotat, 0.4),
-            xycoords="axes fraction",
-            fontsize=7,
-            color="black",
-            ha="left",
-        )
+        # ax.annotate(
+        #     rf"{data_true[variable + '_orig'].median():.3g}",
+        #     xy=(x_annotat, 0.85),
+        #     xycoords="axes fraction",
+        #     fontsize=7,
+        #     color=palette["true"],
+        #     ha="left",
+        # )
+        # ax.annotate(
+        #     f"{data_corrected[variable].median():.3g}",
+        #     xy=(x_annotat, 0.7),
+        #     xycoords="axes fraction",
+        #     fontsize=7,
+        #     color=palette["corrected_3d"],
+        #     ha="left",
+        # )
+        # ax.annotate(
+        #     f"{data_naive[variable].median():.3g}",
+        #     xy=(x_annotat, 0.55),
+        #     xycoords="axes fraction",
+        #     fontsize=7,
+        #     color=palette["naive"],
+        #     ha="left",
+        # )
+        # ax.annotate(
+        #     f"{data_lint[variable].median():.3g}",
+        #     xy=(x_annotat, 0.4),
+        #     xycoords="axes fraction",
+        #     fontsize=7,
+        #     color=palette["lint"],
+        #     ha="left",
+        # )
 
-        if variable == "es_slope":
-            # Add vertical line and annotation for K41 prediction
-            ax.axvline(-5 / 3, color="mediumblue", linestyle="solid", alpha=0.3, lw=0.5)
-            ax.text(
-                -5 / 3 - 0.4,
-                2.8,
-                r"\textit{K41}",
-                va="center",
-                ha="left",
-                fontsize=7,
-                color="mediumblue",
-                alpha=0.5,
-            )
+        if variable == "slope":
+            #     # Add vertical line and annotation for K41 prediction
+            #     ax.axvline(2 / 3, color="mediumblue", linestyle="solid", alpha=0.3, lw=0.5)
+            #     ax.text(
+            #         2 / 3 - 0.4,
+            #         2.8,
+            #         r"K41",
+            #         va="center",
+            #         ha="left",
+            #         fontsize=7,
+            #         # color="mediumblue",
+            #         alpha=0.5,
+            #     )
 
-            ax.set_xlim(-2.8, -0.8)
+            ax.set_xlim(0, 1)
 
-    if bin == "all_data":
-        plt.suptitle("Full dataset", x=-0.001, y=0.7, ha="right")
-    else:
-        plt.suptitle(f"{bin}\% missing", x=-0.001, y=0.7, ha="right")
+    # if bin == "all_data":
+    #     plt.suptitle("Full dataset", x=-0.001, y=0.7, ha="right")
+    # else:
+    #     plt.suptitle(f"{bin}\% missing", x=-0.001, y=0.7, ha="right")
 
     # Tighten layout and adjust spacing
     plt.tight_layout()
     plt.subplots_adjust(
-        hspace=0, wspace=0.1, top=0.77
+        hspace=0, wspace=0.1, top=0.7
     )  # Adjust `top` to make space for the legend
-    # plt.show()
+    #    plt.show()
+    # Put legend outside the plot
+    plt.legend(
+        loc="upper center",
+        bbox_to_anchor=(-1.2, 1.6),
+        # fancybox=True,
+        # shadow=True,
+        ncol=4,
+        fontsize=7,
+        # handlelength=1.5,
+        # handletextpad=0.5,
+        # columnspacing=1,
+        # borderpad=0.5,
+        # borderaxespad=0.5,
+        # markerscale=1,
+        # title="Gap handling method",
+    )
     plt.savefig(
         f"results/{run_mode}/plots/densities_{bin}.png",
         bbox_inches="tight",

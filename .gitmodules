@@ -1,0 +1,3 @@
+[submodule "external/Equivalent_Spectrum"]
+	path = external/Equivalent_Spectrum
+	url = https://github.com/mab68/Equivalent_Spectrum.git

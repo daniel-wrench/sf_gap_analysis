@@ -8,9 +8,18 @@ from scipy import signal, stats
 np.random.seed(42)
 
 # TO-DO (see existing apps)
+# - Take uniform gaps (switch to Lomb-Scargle for PSD)
+# - Investigate current gap-handling capacity
+# - Separate out adding periodicity
+# - Retain lines for original/underlying data
+# - Overlay ACF from SF on ACF
+# - Add ACF at origin (Taylor scale)
+# - Add kurtosis
 
-# - gaps (random or periodic, in which case switch to Lomb-Scargle for PSD)
-# (in each case, retain original/underlying data for comparison)
+# - Give to ChatGPT, ask to
+#       - make interactive
+#       - only re-compute when parameters change (i.e. don't compute original stats)
+# - Publish online
 
 
 def simulate_turbulence(
@@ -79,7 +88,7 @@ def compute_power_spectrum(data, sampling_freq=1.0):
     - psd: Power spectral density
     """
     # Use Welch's method to estimate PSD
-    freqs, psd = signal.welch(data, fs=sampling_freq)
+    freqs, psd = signal.periodogram(data, fs=sampling_freq)
     return freqs, psd
 
 
@@ -134,39 +143,61 @@ def compute_scaling_slope(x, y, range_start, range_end):
 
 
 # Simulation parameters
-seasonality_period = None
+seasonality_period = None  # Set None for no seasonality
 season_amplitude = 10
 n_points = 10000  # 24 hours of data at 1 Hz
 sampling_freq = 1.0  # Hz
 linear_trend = False
 linear_trend_amplitude = 100
-white_noise = True
-white_noise_std = 0.8
+white_noise = False
+white_noise_sigma = 5
+standardize = False
+subtract_mean = False
+remove_fraction_random = 0
 
-# Generate the simulated data
-t, data = simulate_turbulence(
-    n_points, sampling_freq, seasonality_period, season_amplitude
-)
+data = "turbulence"  # Could be "white noise", "periodic", or "random walk"
+
+
+# Generate the chosen data
+if data == "turbulence":
+    # Simulate turbulent flow data
+    t, data = simulate_turbulence(
+        n_points, sampling_freq, seasonality_period, season_amplitude
+    )
+    title = "Simulated Turbulent Flow (-5/3 Power Law)"
+elif data == "white noise":
+    # Generate white noise data
+    t = np.arange(n_points) / sampling_freq
+    data = np.random.normal(0, white_noise_sigma, n_points)
+    title = "White Noise"
+elif data == "periodic":
+    # Generate periodic data
+    t = np.arange(n_points) / sampling_freq
+    frequency = 1 / seasonality_period if seasonality_period else 1
+    data = season_amplitude * np.sin(2 * np.pi * frequency * t)
+    title = (
+        f"Periodic Data (Period: {seasonality_period}, Amplitude: {season_amplitude})"
+    )
+elif data == "random walk":
+    # Generate random walk data
+    t = np.arange(n_points) / sampling_freq
+    data = np.cumsum(np.random.normal(0, 1, n_points))
+    title = "Random Walk"
+
+
+# Setup the title for the plot
+
+if seasonality_period:
+    title += f"\n + Seasonality (Period: {seasonality_period}, Amplitude: {season_amplitude})"
 
 if linear_trend:
     # Add a linear trend
     data += np.linspace(0, 1, n_points) * linear_trend_amplitude
+    title += "\n + Linear Trend"
 
 if white_noise:
-    # Add white noise
-    data += np.random.normal(0, white_noise_std, n_points)
-
-# Compute power spectrum
-freqs, psd = signal.periodogram(data, fs=sampling_freq)
-freqs = freqs[1:]  # Exclude the zero frequency
-psd = psd[1:]  # Exclude the zero frequency
-# Convert frequency to period (hours) for easier interpretation
-
-
-# Compute the noise stats, if applicable
-if white_noise:
-    # Generate white noise
-    white_noise_data = np.random.normal(0, white_noise_std, n_points)
+    # Generate white noise and calculate stats, add to data
+    white_noise_data = np.random.normal(0, white_noise_sigma, n_points)
 
     freqs_n, psd_n = signal.periodogram(white_noise_data, fs=sampling_freq)
     freqs_n = freqs_n[1:]  # Exclude the zero frequency
@@ -175,6 +206,33 @@ if white_noise:
     lags_n, sf2_n = compute_structure_function(white_noise_data, max_lag=n_points)
 
     acf_n = ts.acf(white_noise_data, nlags=n_points)
+
+    data += white_noise_data
+    title += f"\n + White Noise ($\sigma_n$: {white_noise_sigma})"
+
+if standardize:
+    # Normalize the data to have zero mean and unit variance
+    data = (data - np.mean(data)) / np.std(data)
+    title += "\n + Standardized"
+
+if subtract_mean:
+    # Subtract the mean from the data
+    data -= np.mean(data)
+    title += "\n + Mean Subtracted"
+
+if remove_fraction_random > 0:
+    # Remove random points from the data
+    indices = np.random.choice(
+        n_points, size=int(n_points * remove_fraction_random), replace=False
+    )
+    data[indices] = np.nan  # Set to NaN to simulate missing data
+    title += f"\n + {remove_fraction_random*100:.1f}% Random Points Removed"
+
+# Compute power spectrum
+freqs, psd = signal.periodogram(data, fs=sampling_freq)
+freqs = freqs[1:]  # Exclude the zero frequency
+psd = psd[1:]  # Exclude the zero frequency
+# Convert frequency to period (hours) for easier interpretation
 
 # Compute structure function
 lags, sf2 = compute_structure_function(data, max_lag=n_points)
@@ -189,13 +247,13 @@ correlation_length = None
 # )  # Find the lag where ACF drops below 1/e
 
 
-pwrl_min_freq = 0.01
-pwrl_max_freq = 0.1
+pwrl_min_freq = 0.001
+pwrl_max_freq = 0.01
 
 
 # Create a nice figure with both analyses
 
-fig, ax = plt.subplots(2, 2, figsize=(8, 6))
+fig, ax = plt.subplots(2, 2, figsize=(10, 7))
 
 ax = ax.flatten()
 
@@ -211,17 +269,6 @@ plt.rc("font", family="Arial")
 ax[0].plot(t, data, linewidth=1, color="darkblue", alpha=0.8)
 ax[0].set_xlabel("Time (s)")
 ax[0].set_ylabel("")
-
-title = "Simulated Turbulent Flow"
-
-if seasonality_period:
-    title += f"\n + Seasonality (Period: {seasonality_period}, Amplitude: {season_amplitude})"
-
-if linear_trend:
-    title += "\n + Linear Trend"
-
-if white_noise:
-    title += f"\n + White Noise ($\sigma^2_n$: {white_noise_std})"
 
 ax[0].set_title(title, fontweight="bold")
 
@@ -240,7 +287,12 @@ if slope is not None:
     x_fit = np.linspace(pwrl_min_freq, pwrl_max_freq, 100)
     y_fit = np.exp(np.log(freqs[-1]) + slope * np.log(x_fit / freqs[-1]))
     ax[1].loglog(
-        x_fit, y_fit, color="purple", linestyle="--", label=f"Fitted Slope: {slope:.2f}"
+        x_fit,
+        y_fit,
+        color="black",
+        linestyle="--",
+        label=f"Fitted Slope: {slope:.2f}",
+        lw=2,
     )
 
 
@@ -262,7 +314,12 @@ if slope is not None:
     x_fit = np.linspace(1 / pwrl_min_freq, 1 / pwrl_max_freq, 100)
     y_fit = np.exp(np.log(sf2[0]) + slope * np.log(x_fit / lags[0]))
     ax[3].loglog(
-        x_fit, y_fit, color="purple", linestyle="--", label=f"Fitted Slope: {slope:.2f}"
+        x_fit,
+        y_fit,
+        color="black",
+        linestyle="--",
+        label=f"Fitted Slope: {slope:.2f}",
+        lw=2,
     )
 
 ax[3].set_xlabel("Lag (s)")
@@ -272,6 +329,7 @@ ax[3].axhline(y=2 * np.var(data), color="purple", linestyle=":", label="$2\sigma
 
 # Plot the autocovariance function
 ax[2].plot(acf, linewidth=1.5, color="darkorange", alpha=0.8)
+ax[2].axhline(y=0, color="black", linestyle="--", alpha=0.5)
 ax[2].set_xlabel("Lag (s)")
 ax[2].set_ylabel("$R$")
 ax[2].set_title("Autocorrelation Function", fontweight="bold")

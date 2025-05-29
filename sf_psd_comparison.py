@@ -14,9 +14,10 @@ import external.Equivalent_Spectrum.equiv_spectrum as equiv_spectrum
 np.random.seed(42)
 
 # TO-DO (see existing apps)
-# - Keep original PSD, and Mark's SF/PSD: make sure the latter align as before
-# - Ask him about conversion
+# - Don't compute un-needed periodogram, just get frequencies
+# - Add Blackman-Tukey from Kiea: should work with data gaps, and robust to noise?
 # - Retain lines for original/underlying data (colour grey): save simulated data and corresponding stats, comment out, read in
+# - Add periodic gaps
 # - Add sample size curves when missing data
 
 # - Give to ChatGPT, ask to
@@ -42,6 +43,7 @@ def compute_es(data):
     # Mark's code uses the following:
     # vell, sf2 = mpi_sf.mpi_sf(f1)
     # ell = vell[:,0]*dx
+
     # Bin and interpolate the second order structure function
     ell_b, sf2_b, _ = equiv_spectrum.bin_data(
         ell,
@@ -66,16 +68,15 @@ def compute_es(data):
     # Calculate the Uncorrected estimate, and the Debiased estimate
     ke, BfekS, fekS = equiv_spectrum.equiv_spectrum(ell_b, sf2_b, D, 1.0)
 
-    return ko, feko, ke, BfekS, fekS
+    return ko, feko, ke, BfekS, fekS, ell_b, sf2_b
 
 
 def simulate_turbulence(n_points=86400, sampling_freq=1.0):
     """
-    Simulate a time series representing turbulent atmospheric data with a daily seasonality.
+    Simulate turbulence.
 
     Parameters:
     - n_points: Number of data points (default: 86400, representing 24 hours of 1 Hz data)
-    - sampling_freq: Sampling frequency in Hz (default: 1 Hz)
 
     Returns:
     - t: Time array in hours
@@ -107,23 +108,6 @@ def simulate_turbulence(n_points=86400, sampling_freq=1.0):
     turbulence = turbulence / np.std(turbulence) * 10
 
     return t, turbulence
-
-
-def compute_power_spectrum(data, sampling_freq=1.0):
-    """
-    Compute the power spectral density of a time series.
-
-    Parameters:
-    - data: Input time series
-    - sampling_freq: Sampling frequency in Hz
-
-    Returns:
-    - freqs: Frequency array
-    - psd: Power spectral density
-    """
-    # Use Welch's method to estimate PSD
-    freqs, psd = signal.periodogram(data, fs=sampling_freq)
-    return freqs, psd
 
 
 def compute_structure_function(data, lags=None, max_lag=None):
@@ -190,18 +174,22 @@ def make_tsa_plot(
     subtract_mean=False,
     remove_fraction_random=0.0,
     remove_fraction_periodic=0.1,  # Not yet implemented
-    pwrl_min_freq=0.003,
-    pwrl_max_freq=0.03,
+    pwrl_min_freq=0.005,
+    pwrl_max_freq=0.05,
 ):
+
     data = data  # Could be "white noise", "periodic", or "random walk"
 
     title = "TIME SERIES\n"
 
     # Generate the chosen data
     if data == "turbulence":
-        # Simulate turbulent flow data
         t, data = simulate_turbulence(n_points, sampling_freq)
         title += "Simulated Turbulent Flow (-5/3 Power Law)"
+    elif data == "fbm":
+        data = np.load("external/Equivalent_Spectrum/example_data/example_fbm_1d.npy")
+        t = np.arange(len(data)) / sampling_freq  # Create time array
+        title += "Fractional Brownian Motion"
     elif data == "white noise":
         # Generate white noise data
         t = np.arange(n_points) / sampling_freq
@@ -234,9 +222,8 @@ def make_tsa_plot(
         # Generate white noise and calculate stats, add to data
         white_noise_data = np.random.normal(0, white_noise_sigma, n_points)
 
-        freqs_n, psd_n = signal.periodogram(white_noise_data, fs=sampling_freq)
-        freqs_n = freqs_n[1:]  # Exclude the zero frequency
-        psd_n = psd_n[1:]  # Exclude the zero frequency
+        _, psd_n = signal.periodogram(white_noise_data, fs=sampling_freq)
+        psd_n = psd_n[1:] / (2 * np.pi)  # Exclude the zero frequency
 
         lags_n, sf2_n = compute_structure_function(
             white_noise_data, max_lag=n_points // 2
@@ -273,7 +260,7 @@ def make_tsa_plot(
         _, psd_gaps = signal.periodogram(
             gap_signal, fs=sampling_freq, scaling="density"
         )
-        psd_gaps = psd_gaps[1:]  # Exclude the zero frequency
+        psd_gaps = psd_gaps[1:] / (2 * np.pi)  # Exclude the zero frequency
 
         # Compute the autocovariance function of the gaps
         acf_gaps = ts.acf(gap_signal, nlags=n_points // 2, missing="conservative")
@@ -285,17 +272,18 @@ def make_tsa_plot(
     data_var = np.nanvar(data)
 
     # Compute power spectrum with classical method - now just keeping freqs
-    freqs, _ = signal.periodogram(data, fs=sampling_freq, scaling="density")
+    freqs, _ = signal.periodogram(data, fs=sampling_freq)
 
+    freqs = 2 * np.pi * freqs  # Convert to angular frequency
     # Remove NaN values but keep time information
     mask = ~np.isnan(data)
     clean_data = data[mask]
     clean_t = t[mask]
 
     # Compute the Lomb-Scargle periodogram, allowing for unevenly spaced data
-    psd = (
-        signal.lombscargle(clean_t, clean_data, 2 * np.pi * freqs, normalize=False) * 2
-    )
+    psd = signal.lombscargle(clean_t, clean_data, freqs, normalize=False) / np.pi
+    # this is equivalent to the following:
+    # signal.periodogram(data, fs=sampling_freq) / (2 * np.pi)
 
     # Add the fitted slope line
     try:
@@ -345,7 +333,7 @@ def make_tsa_plot(
     # )  # Find the lag where ACF drops below 1/e
 
     # Compute the power spectrum from the structure function
-    psd_k, psd_k_new, es_k, es_biased, es = compute_es(data)
+    psd_k, psd_k_new, es_k, es_biased, es, lags_binned, sf2_binned = compute_es(data)
 
     # Create a nice figure with both analyses
 
@@ -371,54 +359,18 @@ def make_tsa_plot(
 
     ax[0].set_title(title, fontweight="bold")
 
-    # Plot the power spectrum (Lomb-Scargle periodogram)
-    ax[3].loglog(freqs, psd, color=palette["psd"], alpha=0.8)
-    # ax[3].loglog(
-    #     psd_k / (2 * np.pi),
-    #     psd_k_new * 2 * np.pi,
-    #     color="blue",
-    #     label="Mark's PSD",
-    #     alpha=0.5,
-    # )
-    ax[3].loglog(
-        es_k / 2,
-        es,
-        color=palette["sf"],
-        alpha=1,
-        lw=1.5,
-        ls=":",
-        label="Equivalent Spectrum (from SF)",
-        # linewidth=0.8,
-    )
-
-    # plt.loglog(freqs * 2, psd, color="orange", label="Lomb-Scargle PSD")
-    # plt.loglog(psd_k / np.pi, psd_k_new * 2 * np.pi, color="blue", label="Mark's PSD")
-    # plt.loglog(es_k, es, label="ES")
-    # plt.legend()
-
-    if psd_fit is not None:
-
-        slope = psd_fit.slope
-        intercept = psd_fit.intercept
-
-        x_fit = np.linspace(pwrl_min_freq, pwrl_max_freq, 100)
-        y_fit = np.exp(slope * np.log(x_fit) + intercept)
-        ax[3].loglog(
-            x_fit,
-            y_fit * 10,
-            color=palette["psd"],
-            label=f"Fitted Slope: {slope:.2f}",
-            lw=2.5,
-        )
-
-    ax[3].set_xlabel("Frequency (Hz)")
-    ax[3].set_ylabel("$E$")
-    ax[3].set_title("POWER SPECTRUM", fontweight="bold", color=palette["psd"])
-
     # Plot the structure function
     # 1. Log-log plot showing scaling regions
-    ax[1].axhline(y=2 * data_var, label="$2\sigma^2$", alpha=0.5, lw=0.5, color="black")
-    ax[1].loglog(lags, sf2, linewidth=2, color=palette["sf"], alpha=0.6)
+    ax[1].axhline(y=2 * data_var, label="$2\sigma^2$", alpha=0.5, lw=0.3, color="black")
+    ax[1].loglog(lags, sf2, linewidth=2, color=palette["sf"], alpha=0.3)
+    ax[1].loglog(
+        lags_binned,
+        sf2_binned,
+        linewidth=0.8,
+        color=palette["sf"],
+        marker="o",
+        markersize=2,
+    )
 
     if sf_fit is not None:
 
@@ -436,13 +388,18 @@ def make_tsa_plot(
 
     ax[1].set_xlabel("Lag (s)")
     ax[1].set_ylabel("$S_2$")
-    ax[1].set_title("STRUCTURE FUNCTION", fontweight="bold", color=palette["sf"])
+    ax[1].set_title(
+        "STRUCTURE FUNCTION (binned)", fontweight="bold", color=palette["sf"]
+    )
     #
     # Plot the autocovariance function
-    ax[2].axhline(y=0, color="black", alpha=0.5, lw=0.5)
+    ax[2].axhline(y=0, color="black", alpha=0.3, lw=0.5)
     ax[2].plot(acf, linewidth=2, color=palette["acf"], alpha=1)
     ax[2].plot(
-        acf_from_sf, color=palette["sf"], label="ACF from SF", linewidth=1.5, ls=":"
+        acf_from_sf,
+        color=palette["sf"],
+        label="ACF from SF",
+        linewidth=0.8,
     )
     ax[2].set_xlabel("Lag (s)")
     ax[2].set_ylabel("$R$")
@@ -459,17 +416,50 @@ def make_tsa_plot(
     axins.set_xlim(inset_xmin, inset_xmax)
     axins.set_ylim(inset_ymin, inset_ymax)
 
-    # import matplotlib.patches as patches
-
-    # rect = patches.Rectangle(
-    #     (inset_xmin, inset_ymin),
-    #     inset_xmax - inset_xmin,
-    #     inset_ymax - inset_ymin,
-    #     fill=False,
-    #     edgecolor="black",
-    #     linewidth=1,
+    # Plot the power spectrum (Lomb-Scargle periodogram)
+    ax[3].loglog(
+        freqs / (2 * np.pi),  # Convert frequency to Hz
+        psd,
+        color=palette["psd"],
+        alpha=0.8,  # freqs * (2 * np.pi), psd / (2 * np.pi)
+    )
+    # ax[3].loglog(
+    #     psd_k / (2 * np.pi),  # Convert frequency to Hz,
+    #     psd_k_new,
+    #     color="blue",
+    #     label="Mark's PSD",
+    #     alpha=0.5,
     # )
-    # ax[2].add_patch(rect)
+    ax[3].loglog(
+        es_k / (2 * np.pi),
+        es,
+        marker="o",
+        markersize=2,
+        color=palette["sf"],
+        alpha=0.8,
+        lw=1,
+        label="Equivalent Spectrum (from binned SF)",
+        # linewidth=0.8,
+    )
+
+    if psd_fit is not None:
+
+        slope = psd_fit.slope
+        intercept = psd_fit.intercept
+
+        x_fit = np.linspace(pwrl_min_freq, pwrl_max_freq, 100)
+        y_fit = np.exp(slope * np.log(x_fit) + intercept)
+        ax[3].loglog(
+            x_fit,
+            y_fit * 5,
+            color=palette["psd"],
+            label=f"Fitted Slope: {slope:.2f}",
+            lw=2.5,
+        )
+
+    ax[3].set_xlabel("Frequency (Hz)")
+    ax[3].set_ylabel("$E$")
+    ax[3].set_title("POWER SPECTRUM", fontweight="bold", color=palette["psd"])
 
     if seasonality_period is not None:
         # Add vertical lines at the seasonality period/frequency
@@ -497,7 +487,7 @@ def make_tsa_plot(
 
     if white_noise:
         ax[3].loglog(
-            freqs_n,
+            freqs / (2 * np.pi),
             psd_n,
             linewidth=1.5,
             color="gray",
@@ -524,7 +514,7 @@ def make_tsa_plot(
         # Plot the power spectrum of the gaps
         # 1. Log-log plot showing the power law behavior
         ax[3].loglog(
-            freqs,
+            freqs / (2 * np.pi),
             psd_gaps,
             linewidth=1,
             color="purple",
@@ -549,34 +539,34 @@ def make_tsa_plot(
         )
 
     ax[1].legend()
-    ax[2].legend(loc="lower left")
+    ax[2].legend(loc="center right")
     ax[3].legend()
 
     plt.tight_layout()
-    # plt.suptitle(
-    #     "Comparison of Power Spectrum and Structure Function Analysis",
-    #     fontsize=16,
-    #     fontweight="bold",
-    #     y=1.02,
-    # )
-    # plt.show()
 
 
 if __name__ == "__main__":
     make_tsa_plot(
         # Simulation parameters
-        data="turbulence",  # Options: "turbulence", "white noise", "periodic", "random walk"
-        seasonality_period=1000,  # Set None for no seasonality
-        season_amplitude=10,
+        data="fbm",  # Options: "turbulence", "white noise", "periodic", "random walk"
+        seasonality_period=None,  # Set None for no seasonality
+        season_amplitude=1,
         n_points=10000,
         sampling_freq=1.0,  # Hz
         linear_trend=False,
         linear_trend_amplitude=50,
-        white_noise=False,
-        white_noise_sigma=2,
+        white_noise=True,
+        white_noise_sigma=0.3,
         standardize=False,
         subtract_mean=False,
-        remove_fraction_random=0,
+        remove_fraction_random=0.4,
         remove_fraction_periodic=0.1,  # Not yet implemented
     )
-    plt.savefig("turbulence_w_periodicity.png", dpi=300, bbox_inches="tight")
+    plt.show()
+    # plt.savefig("cool_figs/fbm_w_periodic_1000.png", dpi=300, bbox_inches="tight")
+
+
+# NOTES:
+# SF does not line up with PSD exactly due to inverse procedure
+# You will get some extra points at large scales because SF gives you k=0,
+# which is not necessarily well-defined for some time series

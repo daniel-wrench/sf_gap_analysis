@@ -36,39 +36,39 @@ def split_into_intervals(dataframe, interval_length, spacecraft):
     Returns:
     - List of DataFrames, each containing an interval
     """
-    intervals = []
-    start_time = dataframe.index[0]
-    end_time = dataframe.index[-1]
 
-    current_start = start_time
+    intervals = []
     int_idx = 0
-    while current_start < end_time - pd.Timedelta(interval_length):
-        current_end = current_start + pd.Timedelta(interval_length)
-        interval_data = dataframe.loc[current_start:current_end].copy()
+
+    # Use resample to group data into intervals
+    for start_time, group in dataframe.resample(
+        interval_length, label="left", closed="left"
+    ):
+        end_time = start_time + pd.Timedelta(interval_length)
 
         metadata = {
             "spacecraft": spacecraft,
             "interval_id": int_idx,
-            "start_time": current_start,
-            "end_time": current_end,
+            "start_time": start_time,
+            "end_time": end_time,
             "duration": interval_length,
-            "cadence": interval_data.index.freqstr,
-            "n_points_complete": len(interval_data),
+            "cadence": group.index.freqstr,
+            "n_points_complete": len(group),
+            "data": group.copy(),
         }
 
-        # Only include intervals with sufficient data
-        if len(interval_data) > 10:  # Minimum threshold
-            # Add metadata to the interval
-            metadata["data"] = interval_data
-            intervals.append(metadata)
-            int_idx += 1
-
-        current_start = current_end
+        intervals.append(metadata)
+        int_idx += 1
 
     # Print summary of intervals
-    print(
-        f"Split into {len(intervals)} intervals of length {interval_length}, each with {len(interval_data)} points at {dataframe.index.freqstr} resolution"
-    )
+    if intervals:
+        avg_points = sum(interval["n_points_complete"] for interval in intervals) / len(
+            intervals
+        )
+        print(
+            f"Split into {len(intervals)} intervals of length {interval_length}, each with ~{avg_points:.0f} points at {dataframe.index.freqstr} resolution"
+        )
+
     return intervals
 
 
@@ -405,7 +405,7 @@ def plot_gapped_curves(results, stat, interval_id, version):
 
     # Super title
     fig.suptitle(
-        f"{stat.upper()} Estimations for {spacecraft.upper()} Interval {interval_id}, Version {version}: {tgp*100:.1f}% removed",
+        f"{stat.upper()} Estimations for {spacecraft.upper()} Interval, Version {version}: {tgp*100:.1f}% removed",
         y=1.12,
     )
 

@@ -17,8 +17,7 @@ data_path_prefix = params.data_path_prefix
 
 spacecraft = "psp"
 
-# file_index = int(sys.argv[1])
-file_index = 0
+file_index = int(sys.argv[1]) if len(sys.argv) > 1 else 0
 n_bins_list = [25]
 
 input_file_list = [
@@ -66,9 +65,9 @@ sf_versions_long = pd.DataFrame(records)
 
 # Verifying SFs by plotting each version for a given interval
 
+# import matplotlib.pyplot as plt
 # sf_test = sf_versions_long[
-#     (sf_versions_long["start_time"] == "2018-11-02 00:00:00")
-#     & (sf_versions_long["interval_id"] == 0)
+#     (sf_versions_long["interval_id"] == 0)
 #     & (sf_versions_long["version"] == 0)
 # ]
 
@@ -121,22 +120,29 @@ sfs_wide.loc[sfs_wide["gap_status"] == "lint", "lag_n"] = sfs_wide.loc[
 # Drop the temporary column
 sfs_wide = sfs_wide.drop(columns=["naive_lag_n"])
 
-# Get the missing percentage for each lag
-sfs_wide["gp"] = sfs_wide["lag_n"] / sfs_wide["lag_n_orig"]
+# Get the missing *percentage* for each lag
+sfs_wide["gp"] = sfs_wide["lag_n"] / sfs_wide["lag_n_orig"] * 100
 
+
+#####################
 # Check by plotting the SFs for a given interval
-# df_time_series = sfs_wide[
-#     (sfs_wide["start_time"] == "2018-11-02 00:00:00")
-#     & (sfs_wide["interval_id"] == 0)
-#     & (sfs_wide["version"] == 0)
-# ]
 
+# df_time_series = sfs_wide[(sfs_wide["interval_id"] == 0) & (sfs_wide["version"] == 1)]
 # palette = params.gap_handling_palette
 # var_to_plot = "sf"
+
 # import matplotlib.pyplot as plt
 
-# # === Time Series Plot ===
-# fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+# fig, axes = plt.subplots(1, 3, figsize=(10, 2))
+# axes[0].set_title("SF")
+# axes[1].set_title("GP")
+# axes[2].set_title("SF PE")
+# axes[0].plot(
+#     df_time_series["sf_orig"],
+#     label="Original SF",
+#     color="black",
+#     linestyle="-",
+# )
 # for gap_status, ts_data in df_time_series.groupby("gap_status", observed=False):
 #     ts_data.plot(
 #         y=var_to_plot,
@@ -153,6 +159,17 @@ sfs_wide["gp"] = sfs_wide["lag_n"] / sfs_wide["lag_n_orig"]
 #         linestyle="--",
 #         legend=False,
 #     )
+#     ts_data.plot(
+#         y="sf_pe",
+#         ax=axes[2],
+#         label=gap_status,
+#         color=palette[gap_status],
+#         linestyle=":",
+#         legend=False,
+#     )
+# axes[0].legend()
+
+#####################
 
 
 # DO THE BINNING
@@ -206,6 +223,7 @@ for gap_status in ["lint", "naive"]:
                                     pe[i, j, k] = inputs["sf_pe"][
                                         (xidx == i) & (yidx == j) & (zidx == k)
                                     ].values
+
             # Condition the following on not 3d and naive
             if dim == 3 and gap_status == "naive":
                 pass

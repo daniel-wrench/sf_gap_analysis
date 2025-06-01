@@ -15,16 +15,15 @@ np.random.seed(42)
 
 # TO-DO (see existing apps)
 # - Don't compute un-needed periodogram, just get frequencies
-# - Add Blackman-Tukey from Kiea: should work with data gaps, and robust to noise?
+# - Add Blackman-Tukey from Kea: should work with data gaps, and robust to noise?
 # - Retain lines for original/underlying data (colour grey): save simulated data and corresponding stats, comment out, read in
-# - Add periodic gaps
+# - Add periodic gaps (70 every 100 points)
 # - Add sample size curves when missing data
 
 # - Give to ChatGPT, ask to
 #       - make interactive
 #       - only re-compute when parameters change (i.e. don't compute original stats)
 # - Publish online
-# - Add kurtosis, selection of PDFs
 
 
 def compute_es(data):
@@ -38,7 +37,7 @@ def compute_es(data):
     dk = 2.0 * np.pi / L
 
     # Calculate the second order structure function
-    lags, sf2 = compute_structure_function(data, lags=np.arange(1, L // 2))
+    lags, sf2, _ = compute_structure_function(data, lags=np.arange(1, L // 2))
     ell = lags * dx
     # Mark's code uses the following:
     # vell, sf2 = mpi_sf.mpi_sf(f1)
@@ -134,13 +133,17 @@ def compute_structure_function(data, lags=None, max_lag=None):
         # lags = lags[lags > 0]  # Ensure no zero lag
 
     sf2 = np.zeros(len(lags))
+    sf4 = np.zeros(len(lags))
 
     for i, lag in enumerate(lags):
         # Calculate squared differences for all possible pairs at this lag
         diff = data[lag:] - data[:-lag]
         sf2[i] = np.nanmean(diff**2)
+        sf4[i] = np.nanmean(diff**4)
 
-    return lags, sf2
+    kurtosis = sf4 / (sf2**2)  # Excess kurtosis
+
+    return lags, sf2, kurtosis
 
 
 # Function to compute slopes to verify scaling laws
@@ -225,7 +228,7 @@ def make_tsa_plot(
         _, psd_n = signal.periodogram(white_noise_data, fs=sampling_freq)
         psd_n = psd_n[1:] / (2 * np.pi)  # Exclude the zero frequency
 
-        lags_n, sf2_n = compute_structure_function(
+        lags_n, sf2_n, _ = compute_structure_function(
             white_noise_data, max_lag=n_points // 2
         )
 
@@ -265,7 +268,7 @@ def make_tsa_plot(
         # Compute the autocovariance function of the gaps
         acf_gaps = ts.acf(gap_signal, nlags=n_points // 2, missing="conservative")
 
-        lags_gaps, sf2_gaps = compute_structure_function(
+        lags_gaps, sf2_gaps, _ = compute_structure_function(
             gap_signal, max_lag=n_points // 2
         )
 
@@ -306,7 +309,7 @@ def make_tsa_plot(
     # Convert frequency to period (hours) for easier interpretation
 
     # Compute structure function
-    lags, sf2 = compute_structure_function(data, lags=np.arange(1, n_points // 2))
+    lags, sf2, kurt = compute_structure_function(data, lags=np.arange(1, n_points // 2))
 
     # Add the fitted slope line
     try:
@@ -349,21 +352,33 @@ def make_tsa_plot(
 
     ############################################
 
-    fig, ax = plt.subplots(2, 2, figsize=(10, 7))
-    ax = ax.flatten()
+    fig = plt.figure(figsize=(13, 6))
+
+    # Top panel spans entire first row (row 0, columns 0-2)
+    ax_top = plt.subplot2grid((2, 4), (0, 0), colspan=4)
+
+    # Bottom row panels
+    ax_bottom = [
+        plt.subplot2grid((2, 4), (1, 0)),  # row 1, col 0
+        plt.subplot2grid((2, 4), (1, 1)),  # row 1, col 1
+        plt.subplot2grid((2, 4), (1, 2)),  # row 1, col 2
+        plt.subplot2grid((2, 4), (1, 3)),  # row 1, col 2
+    ]
 
     # Plot the time series
-    ax[0].plot(t, data, linewidth=0.8, color="black")
-    ax[0].set_xlabel("Time (s)")
-    ax[0].set_ylabel("")
+    ax_top.plot(t, data, linewidth=0.8, color="black")
+    ax_top.set_xlabel("Time (s)")
+    ax_top.set_ylabel("")
 
-    ax[0].set_title(title, fontweight="bold")
+    ax_top.set_title(title, fontweight="bold")
 
     # Plot the structure function
     # 1. Log-log plot showing scaling regions
-    ax[1].axhline(y=2 * data_var, label="$2\sigma^2$", alpha=0.5, lw=0.3, color="black")
-    ax[1].loglog(lags, sf2, linewidth=2, color=palette["sf"], alpha=0.3)
-    ax[1].loglog(
+    ax_bottom[0].axhline(
+        y=2 * data_var, label="$2\sigma^2$", alpha=0.5, lw=0.3, color="black"
+    )
+    ax_bottom[0].loglog(lags, sf2, linewidth=2, color=palette["sf"], alpha=0.3)
+    ax_bottom[0].loglog(
         lags_binned,
         sf2_binned,
         linewidth=0.8,
@@ -378,7 +393,7 @@ def make_tsa_plot(
         intercept = sf_fit.intercept
         x_fit = np.linspace(1 / pwrl_min_freq, 1 / pwrl_max_freq, 100)
         y_fit = np.exp(slope * np.log(x_fit) + intercept)
-        ax[1].loglog(
+        ax_bottom[0].loglog(
             x_fit,
             y_fit * 2,
             color=palette["sf"],
@@ -386,51 +401,55 @@ def make_tsa_plot(
             lw=2.5,
         )
 
-    ax[1].set_xlabel("Lag (s)")
-    ax[1].set_ylabel("$S_2$")
-    ax[1].set_title(
+    ax_bottom[0].set_xlabel("Lag (s)")
+    ax_bottom[0].set_ylabel("$S_2$")
+    ax_bottom[0].set_title(
         "STRUCTURE FUNCTION (binned)", fontweight="bold", color=palette["sf"]
     )
     #
     # Plot the autocovariance function
-    ax[2].axhline(y=0, color="black", alpha=0.3, lw=0.5)
-    ax[2].plot(acf, linewidth=2, color=palette["acf"], alpha=1)
-    ax[2].plot(
+    ax_bottom[1].axhline(y=0, color="black", alpha=0.3, lw=0.5)
+    ax_bottom[1].plot(acf, linewidth=2, color=palette["acf"], alpha=1)
+    ax_bottom[1].plot(
         acf_from_sf,
         color=palette["sf"],
         label="ACF from SF",
         linewidth=0.8,
     )
-    ax[2].set_xlabel("Lag (s)")
-    ax[2].set_ylabel("$R$")
-    ax[2].set_title("AUTOCORRELATION FUNCTION", fontweight="bold", color=palette["acf"])
+    ax_bottom[1].set_xlabel("Lag (s)")
+    ax_bottom[1].set_ylabel("$R$")
+    ax_bottom[1].set_title(
+        "AUTOCORRELATION FUNCTION", fontweight="bold", color=palette["acf"]
+    )
 
     inset_xmin = 0
     inset_xmax = 25
     inset_ymin = acf[inset_xmax]
     inset_ymax = 1
-    axins = inset_axes(ax[2], width="30%", height="30%", loc="upper right")
+    axins = inset_axes(ax_bottom[1], width="30%", height="30%", loc="upper right")
     axins.plot(
         acf, marker="o", color=palette["acf"], alpha=1, markersize=1, linewidth=0.5
     )
     axins.set_xlim(inset_xmin, inset_xmax)
     axins.set_ylim(inset_ymin, inset_ymax)
+    # Reduce font size
+    axins.tick_params(labelsize=8)
 
     # Plot the power spectrum (Lomb-Scargle periodogram)
-    ax[3].loglog(
+    ax_bottom[2].loglog(
         freqs / (2 * np.pi),  # Convert frequency to Hz
         psd,
         color=palette["psd"],
         alpha=0.8,  # freqs * (2 * np.pi), psd / (2 * np.pi)
     )
-    # ax[3].loglog(
+    # ax_bottom[2].loglog(
     #     psd_k / (2 * np.pi),  # Convert frequency to Hz,
     #     psd_k_new,
     #     color="blue",
     #     label="Mark's PSD",
     #     alpha=0.5,
     # )
-    ax[3].loglog(
+    ax_bottom[2].loglog(
         es_k / (2 * np.pi),
         es,
         marker="o",
@@ -438,9 +457,17 @@ def make_tsa_plot(
         color=palette["sf"],
         alpha=0.8,
         lw=1,
-        label="Equivalent Spectrum (from binned SF)",
+        label="Equivalent Spectrum",
         # linewidth=0.8,
     )
+
+    ax_bottom[3].plot(lags, kurt, color="#e7298a", alpha=0.8, linewidth=1.5)
+    ax_bottom[3].axhline(
+        y=3, color="black", linestyle="--", label="Normal Kurtosis", alpha=0.5
+    )
+    ax_bottom[3].set_xlabel("Lag (s)")
+    ax_bottom[3].set_ylabel("$S_4/S_2^2$")
+    ax_bottom[3].set_title("KURTOSIS", fontweight="bold", color="#e7298a")
 
     if psd_fit is not None:
 
@@ -449,7 +476,7 @@ def make_tsa_plot(
 
         x_fit = np.linspace(pwrl_min_freq, pwrl_max_freq, 100)
         y_fit = np.exp(slope * np.log(x_fit) + intercept)
-        ax[3].loglog(
+        ax_bottom[2].loglog(
             x_fit,
             y_fit * 5,
             color=palette["psd"],
@@ -457,28 +484,28 @@ def make_tsa_plot(
             lw=2.5,
         )
 
-    ax[3].set_xlabel("Frequency (Hz)")
-    ax[3].set_ylabel("$E$")
-    ax[3].set_title("POWER SPECTRUM", fontweight="bold", color=palette["psd"])
+    ax_bottom[2].set_xlabel("Frequency (Hz)")
+    ax_bottom[2].set_ylabel("$E$")
+    ax_bottom[2].set_title("POWER SPECTRUM", fontweight="bold", color=palette["psd"])
 
     if seasonality_period is not None:
         # Add vertical lines at the seasonality period/frequency
-        ax[3].axvline(
+        ax_bottom[2].axvline(
             x=1 / seasonality_period,
             color="gray",
             label="Seasonality Frequency",
             alpha=0.5,
         )
 
-        ax[1].axvline(
+        ax_bottom[0].axvline(
             x=seasonality_period, color="gray", label="Seasonality Period", alpha=0.5
         )
-        ax[2].axvline(
+        ax_bottom[1].axvline(
             x=seasonality_period, color="gray", label="Seasonality Period", alpha=0.5
         )
 
     if correlation_length:
-        ax[2].axvline(
+        ax_bottom[1].axvline(
             x=correlation_length,
             color="red",
             linestyle="--",
@@ -486,7 +513,7 @@ def make_tsa_plot(
         )
 
     if white_noise:
-        ax[3].loglog(
+        ax_bottom[2].loglog(
             freqs / (2 * np.pi),
             psd_n,
             linewidth=1.5,
@@ -494,14 +521,14 @@ def make_tsa_plot(
             alpha=0.5,
             label="Noise Spectrum",
         )
-        ax[2].plot(
+        ax_bottom[1].plot(
             acf_n,
             linewidth=1.5,
             color="gray",
             alpha=0.5,
             label="Noise ACF$\\approx 0$",
         )
-        ax[1].loglog(
+        ax_bottom[0].loglog(
             lags_n,
             sf2_n,
             linewidth=1.5,
@@ -513,7 +540,7 @@ def make_tsa_plot(
     if remove_fraction_random > 0:
         # Plot the power spectrum of the gaps
         # 1. Log-log plot showing the power law behavior
-        ax[3].loglog(
+        ax_bottom[2].loglog(
             freqs / (2 * np.pi),
             psd_gaps,
             linewidth=1,
@@ -522,14 +549,14 @@ def make_tsa_plot(
             label="Gap Spectrum",
         )
 
-        ax[2].plot(
+        ax_bottom[1].plot(
             acf_gaps,
             linewidth=1.5,
             color="purple",
             alpha=0.2,
             label="Gap ACF",
         )
-        ax[1].loglog(
+        ax_bottom[0].loglog(
             lags_gaps,
             sf2_gaps,
             linewidth=1.5,
@@ -538,9 +565,9 @@ def make_tsa_plot(
             label="Gap SF",
         )
 
-    ax[1].legend()
-    ax[2].legend(loc="center right")
-    ax[3].legend()
+    ax_bottom[0].legend()
+    ax_bottom[1].legend(loc="center right")
+    ax_bottom[2].legend()
 
     plt.tight_layout()
 
@@ -548,18 +575,18 @@ def make_tsa_plot(
 if __name__ == "__main__":
     make_tsa_plot(
         # Simulation parameters
-        data="fbm",  # Options: "turbulence", "white noise", "periodic", "random walk"
+        data="turbulence",  # Options: "turbulence", "white noise", "periodic", "random walk"
         seasonality_period=None,  # Set None for no seasonality
         season_amplitude=1,
-        n_points=10000,
+        n_points=5000,
         sampling_freq=1.0,  # Hz
         linear_trend=False,
         linear_trend_amplitude=50,
-        white_noise=True,
+        white_noise=False,
         white_noise_sigma=0.3,
         standardize=False,
         subtract_mean=False,
-        remove_fraction_random=0.4,
+        remove_fraction_random=0,
         remove_fraction_periodic=0.1,  # Not yet implemented
     )
     plt.show()

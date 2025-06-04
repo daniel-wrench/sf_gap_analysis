@@ -21,6 +21,64 @@ from matplotlib import pyplot as plt
 np.random.seed(123)
 
 
+def compute_sf_fast(data, lags, powers=[2], return_missing=False):
+    """
+    Compute structure function values for specified orders at given lags.
+
+    Parameters:
+        data : pd.DataFrame (N x 1) or (N x 3)
+        lags : iterable of int
+        powers : iterable of float
+        return_missing : bool, whether to return missing_percent array
+
+    Returns:
+        sf_results : dict {order: np.ndarray of structure function values}
+        missing_percent : np.ndarray (if return_missing=True)
+    """
+    arr = data.to_numpy()
+    N, D = arr.shape
+
+    if D not in (1, 3):
+        raise ValueError("Input data must have shape (N, 1) or (N, 3)")
+
+    lags = np.asarray(lags, dtype=int)
+    sf_results = {p: np.empty(len(lags)) for p in powers}
+    missing_percent = np.empty(len(lags)) if return_missing else None
+
+    for idx, lag in enumerate(lags):
+        shifted = np.empty_like(arr, dtype=float)
+        shifted[:] = np.nan
+        shifted[:-lag] = arr[lag:]
+
+        diffs = shifted - arr
+
+        if D == 3:
+            inc = np.linalg.norm(diffs, axis=1)  # Euclidean norm for 3D
+        else:
+            inc = diffs[:, 0]
+
+        valid = ~np.isnan(inc)
+        n_valid = valid.sum()
+
+        for p in powers:
+            valid_data = inc[valid]
+            sf_results[p][idx] = (
+                np.nanmean(valid_data**p) if valid_data.size > 0 else np.nan
+            )
+
+        if return_missing:
+            missing_percent[idx] = 100 * (1 - n_valid / (N - lag))
+
+    if return_missing:
+        # If only one power is requested, just return that, rather than the dictionary
+        return (
+            sf_results[powers[0]] if len(powers) == 1 else sf_results,
+            missing_percent,
+        )
+    else:
+        return sf_results[powers[0]] if len(powers) == 1 else sf_results
+
+
 def compute_sf(
     data,
     lags,

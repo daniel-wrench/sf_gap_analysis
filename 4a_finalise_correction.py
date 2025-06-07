@@ -32,18 +32,18 @@ for gap_handling in ["lint", "naive"]:
                 np.logspace(0, np.log10(max_lag), n_bins + 1) - 0.01
             )  # so that first lag bin starts just before 1
             xedges[-1] = max_lag + 1
-            yedges = np.linspace(0, 100, n_bins + 1)  # Missing prop
-            zedges = np.logspace(-2, 1, n_bins + 1)  # ranges from 0.01 to 10
+            yedges = np.linspace(0, 100, n_bins + 1)  # Missing percentage (0-100)
+            zedges = np.logspace(-2, 1, n_bins + 1)  # SF power (0.01-10)
 
             # Read in all pe arrays from data/processed and combine them in a list
             pe_list = []
             for file in glob.glob(
-                f"{data_path_prefix}data/processed/psp/train/errors/*pe_{dim}d_{n_bins}_bins_{gap_handling}.pkl"
+                f"{data_path_prefix}data/processed/psp/errors/*pe_{dim}d_{n_bins}_bins_{gap_handling}_NEW.pkl"
             ):  # LIMIT HERE!!
                 with open(file, "rb") as f:
                     pe_list.append(pickle.load(f))
-                    print(f"Loaded {file}")
-            print(f"Loaded {len(pe_list)} files")
+                    print(f"READING FILE {file}")
+            print(f"FINISHED READING {len(pe_list)} files")
             if dim == 2:
                 pe_mean = np.full((n_bins, n_bins), fill_value=np.nan)
                 pe_min = np.full((n_bins, n_bins), fill_value=np.nan)
@@ -130,13 +130,14 @@ for gap_handling in ["lint", "naive"]:
                 plt.title("Distribution of missing proportion and lag", y=1.1)
                 ax.set_facecolor("black")
                 ax.set_xscale("log")
-                plt.savefig(
-                    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_2d_counts.pdf",
-                    bbox_inches="tight",
+
+                output_file_path = (
+                    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_2d_counts.pdf"
                 )
+                plt.savefig(output_file_path, bbox_inches="tight")
                 plt.close()
                 print(
-                    f"Saved 2D heatmap {n_bins} bins {gap_handling} to {run_mode}/plots"
+                    f"Saved 2D heatmap {n_bins} bins {gap_handling} to {output_file_path}"
                 )
 
             elif (dim == 3) and (gap_handling == "lint"):  # has zedges too
@@ -251,12 +252,15 @@ for gap_handling in ["lint", "naive"]:
                     c, cax=cbar_ax
                 )  # Attach the color bar to the last heatmap
                 cb.set_label("MPE")  # Optional: Label the color bar
-
+                output_file_path = f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_{gap_handling}_power.pdf"
                 plt.savefig(
-                    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_{gap_handling}_power.pdf",
+                    output_file_path,
                     bbox_inches="tight",
                 )
                 plt.close()
+                print(
+                    f"Saved 3D heatmap {n_bins} bins {gap_handling} to {output_file_path}"
+                )
 
                 # POWER VS % MISSING, BY LAG BIN
                 fig, ax = plt.subplots(
@@ -317,11 +321,15 @@ for gap_handling in ["lint", "naive"]:
                 )  # Attach the color bar to the last heatmap
                 cb.set_label("MPE")  # Optional: Label the color bar
 
+                output_file_path = f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_{gap_handling}_lag.pdf"
                 plt.savefig(
-                    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_{gap_handling}_lag.pdf",
+                    output_file_path,
                     bbox_inches="tight",
                 )
                 plt.close()
+                print(
+                    f"Saved 3D heatmap {n_bins} bins {gap_handling} to {output_file_path}"
+                )
 
                 # POWER VS LAG, BIN % MISSING BIN
                 fig, ax = plt.subplots(
@@ -379,11 +387,15 @@ for gap_handling in ["lint", "naive"]:
                 )  # Attach the color bar to the last heatmap
                 cb.set_label("MPE")  # Optional: Label the color bar
 
+                output_file_path = f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_{gap_handling}_missing.pdf"
                 plt.savefig(
-                    f"results/{run_mode}/plots/train_heatmap_{n_bins}bins_3d_{gap_handling}_missing.pdf",
+                    output_file_path,
                     bbox_inches="tight",
                 )
                 plt.close()
+                print(
+                    f"Saved 3D heatmap {n_bins} bins {gap_handling} to {output_file_path}"
+                )
 
             if dim == 3 and gap_handling == "naive":
                 pass
@@ -396,4 +408,4 @@ for gap_handling in ["lint", "naive"]:
                     "wb",
                 ) as f:
                     pickle.dump(correction_lookup, f)
-                print(f"Saved complete correction lookup table {output_file_path}")
+                print(f"Saved complete correction lookup table {output_file_path}\n")

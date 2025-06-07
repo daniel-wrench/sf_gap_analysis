@@ -50,7 +50,7 @@ def smooth_scaling(x, y, num_bins=20):
 
 
 # Read in cleaned Voyager 1 data
-df = pd.read_pickle("data/interim/voyager/voyager1_lism_cleaned.pkl")
+df = pd.read_pickle("data/interim/voyager/voyager2_lism.pkl")
 print("Loaded dataset")
 
 # Importing lookup table
@@ -78,7 +78,8 @@ new_cadence = (
     288  # 6-pt average, following Frat2021 while still making high-res enough for SFs
 )
 
-pwrl_range = [int(1e5 / new_cadence), int(1e6 / new_cadence)]  # params.pwrl_range
+# PREVIOUSLY 1e5, 1e6
+pwrl_range = [int(5e4 / new_cadence), int(5e5 / new_cadence)]  # params.pwrl_range
 # Reproducing Frat2019 range (5e5,5e6) would require fitting SF up to 60 days
 
 # Previously we chose the cadence based on the # points
@@ -120,6 +121,8 @@ ints_gapped_metadata = pd.DataFrame(
 file_index = 0
 # Just getting all ints from the one dataset for now
 # (With consistent resampling)
+
+all_sfs_gapped_corrected = []
 
 # Extract an interval
 for int_index in range(n_ints):
@@ -343,6 +346,9 @@ for int_index in range(n_ints):
         # Need to add this again for plotting of corrected SF
         sfs_gapped_corrected["lag_tc"] = sfs_gapped_corrected["lag"] * 10 / len(int_std)
 
+    # Append the corrected SFs to the list for later concatenation
+    all_sfs_gapped_corrected.append(sfs_gapped_corrected)
+
     # ##############################################################
 
     print("Plotting...")
@@ -534,10 +540,14 @@ for int_index in range(n_ints):
 
     ax2.set_ylim(1e-1, 1e1)
     ax3.set_ylim(0, 1)
-    plt.savefig(f"results/full/plots/voyager/v1_corrected_{int_index}.png", dpi=300)
+    plt.savefig(f"results/full/plots/voyager/v2_corrected_{int_index}.png", dpi=300)
     plt.close(fig)
 
 # Save metadata
-output_file_path = "results/full/voyager1_corrected_metadata.csv"
+output_file_path = "results/full/voyager2_corrected_metadata.csv"
 ints_gapped_metadata.to_csv(output_file_path, index=False)
 print(f"Stats saved to {output_file_path}")
+
+# Export the corrected SFs
+sfs_gapped_corrected_all = pd.concat(all_sfs_gapped_corrected, ignore_index=True)
+sfs_gapped_corrected_all.to_pickle("results/full/voyager2_corrected_sfs.pkl")

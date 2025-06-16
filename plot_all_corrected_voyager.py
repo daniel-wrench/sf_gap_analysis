@@ -62,8 +62,12 @@ cbar.ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:.0f}"))
 
 ax.set_xlabel("$\\tau$ (s)")
 ax.set_ylabel("$S_2$")
-ax.set_title("All Corrected Voyager 2 SFs")
+ax.set_title("All Corrected voyager 2 SFs")
 ax.grid(True, alpha=0.3)
+# Shade the region between 1e-6 and 1e-5
+ax.axvspan(
+    1e5, 1e6, alpha=0.3, color="gray", label="Slope fitting region"
+)  # Shade between x=2 and x=6
 ax.legend()
 plt.tight_layout()
 
@@ -122,8 +126,12 @@ cbar.ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:.0f}"))
 
 ax.set_xlabel("Frequency (Hz)")
 ax.set_ylabel("ES")
-ax.set_title("All Corrected Voyager 2 ES")
+ax.set_title("All Corrected voyager 2 ES")
 ax.grid(True, alpha=0.3)
+# Shade the region between 1e-6 and 1e-5
+ax.axvspan(
+    1e-6, 1e-5, alpha=0.3, color="gray", label="Slope fitting region"
+)  # Shade between x=2 and x=6
 
 ax.legend()
 plt.tight_layout()

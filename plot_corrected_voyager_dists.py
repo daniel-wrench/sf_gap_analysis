@@ -10,16 +10,28 @@ plt.rcParams["font.sans-serif"] = ["Arial"]
 plt.rcParams.update({"xtick.direction": "in", "ytick.direction": "in"})
 
 # Read and process data
-df = pd.read_csv("results/full/voyager2_corrected_metadata.csv")
-high_res_stats = pd.read_csv("results/full/voyager1_lism_ttu_hr.csv")
-high_res_stats["source"] = "This work"
+df_v1 = pd.read_csv("results/full/voyager1_corrected_metadata_NEW_RANGE.csv")
+high_res_stats_V1 = pd.read_csv("results/full/voyager1_lism_ttu_hr.csv")
+high_res_stats_V1["source"] = "Voyager 1"
 
 # Calculate time columns
-df["tce_s"] = df["tce"] * df["cadence"]
-df["ttu_s"] = df["ttu"] * df["cadence"]
-df["tce_days"] = df["tce_s"] / (24 * 3600)
-df["ttu_hours"] = df["ttu_s"] / 3600
-df["source"] = "This work"
+df_v1["tce_s"] = df_v1["tce"] * df_v1["cadence"]
+df_v1["ttu_s"] = df_v1["ttu"] * df_v1["cadence"]
+df_v1["tce_days"] = df_v1["tce_s"] / (24 * 3600)
+df_v1["ttu_hours"] = df_v1["ttu_s"] / 3600
+df_v1["source"] = "Voyager 1"
+
+# Read and process data
+df_v2 = pd.read_csv("results/full/voyager2_corrected_metadata_NEW_RANGE.csv")
+
+# Calculate time columns
+df_v2["tce_s"] = df_v2["tce"] * df_v2["cadence"]
+df_v2["ttu_s"] = df_v2["ttu"] * df_v2["cadence"]
+df_v2["tce_days"] = df_v2["tce_s"] / (24 * 3600)
+df_v2["ttu_hours"] = df_v2["ttu_s"] / 3600
+df_v2["source"] = "Voyager 2"
+
+df = pd.concat([df_v1, df_v2], ignore_index=True)
 
 # Fraternale 2021 data
 fraternale_data = pd.DataFrame(
@@ -27,7 +39,7 @@ fraternale_data = pd.DataFrame(
         "tce_days": [63.5, 19, 76, 19, 60, np.nan, np.nan, np.nan],
         "ttu_hours": [0.048, 0.06, 0.07, 0.054, 0.063, np.nan, np.nan, np.nan],
         "slope": [0.36, 0.28, 0.27, 0.29, 0.67, 0.48, 0.37, 0.72],
-        "source": ["Fraternale et al. (2019, 2021)"] * 8,
+        "source": ["Previous V1 estimates"] * 8,
     }
 )
 
@@ -44,9 +56,6 @@ bin_edges = {
     "ttu_hours": np.linspace(0, 0.1, 10),
 }
 
-frat_color = "skyblue"
-main_color = {"slope": "grey", "tce_days": "grey", "ttu_hours": "grey"}
-
 # Store handles and labels for shared legend
 legend_handles = None
 legend_labels = None
@@ -54,7 +63,7 @@ legend_labels = None
 for i, var in enumerate(vars_to_plot):
     # Main data
     if var == "ttu_hours":
-        current_data = high_res_stats
+        current_data = high_res_stats_V1
     else:
         current_data = df[df["gap_handling"] == "corrected_3d"]
     current_data = pd.concat([current_data, fraternale_data], ignore_index=True)
@@ -64,6 +73,12 @@ for i, var in enumerate(vars_to_plot):
         current_data,
         x=var,
         hue="source",
+        hue_order=[
+            "Voyager 1",
+            "Voyager 2",
+            "Previous V1 estimates",
+        ],
+        palette=["#2ca02c", "#1f77b4", "#ff7f0e"],
         ax=axes[i],
         bins=bin_edges[var],
         element="step",
@@ -85,7 +100,7 @@ for i, var in enumerate(vars_to_plot):
             f"median: {current_data[var].median():.2f}"
         )
     )
-sns.move_legend(axes[1], "upper center", bbox_to_anchor=(0.5, 1.4), ncol=2, title="")
+sns.move_legend(axes[1], "upper center", bbox_to_anchor=(0.5, 1.4), ncol=3, title="")
 
 axes[0].set_ylabel("Count", fontsize=10)
 max_y_val = max([ax.get_ylim()[1] for ax in axes])
@@ -95,9 +110,8 @@ for ax in axes:
 # Adjust layout to make room for legend
 plt.tight_layout()
 plt.subplots_adjust(top=0.8, wspace=0.1)
-
 plt.savefig(
-    "results/full/plots/voyager/voyager2_corrected_stats_NEW_RANGE.png",
+    "results/full/plots/voyager/voyager1_2_corrected_stats_NEW_RANGE.png",
     dpi=300,
     bbox_inches="tight",
 )

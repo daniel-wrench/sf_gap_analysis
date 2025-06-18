@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# Get Line2d
+from matplotlib.lines import Line2D
+
 
 # Read a pickle file
 def read_pickle_file(file_path):
@@ -38,6 +41,8 @@ def create_voyager_analysis_plot(
     es_v1_hr,
     es_v2_f,
     es_v2_hr,
+    lc_corr_min,
+    lc_corr_max,
 ):
     """
     Create a comprehensive three-panel plot for Voyager magnetic field analysis.
@@ -60,7 +65,7 @@ def create_voyager_analysis_plot(
     DI = 700000  # Ion inertial length in km
 
     # Create figure with optimized layout
-    fig, axes = plt.subplots(3, 1, figsize=(4, 9))
+    fig, axes = plt.subplots(1, 3, figsize=(11, 3.5))
 
     # Color scheme
     colors = {
@@ -180,6 +185,56 @@ def create_voyager_analysis_plot(
         ha="center",
         va="center",
     )
+    ax2.text(
+        x1 * 0.5,
+        y_pos * 1.2,
+        "$\\beta$ fit range",
+        fontsize=10,
+        color="black",
+        ha="left",
+        va="bottom",
+    )
+
+    # Annotate lc_corr range
+    x1, x2 = lc_corr_min, lc_corr_max  # your x-values
+    y_pos = 8e-5  # y-position for the bar
+    ax2.annotate(
+        "",
+        xy=(x2, y_pos),
+        xytext=(x1, y_pos),
+        arrowprops=dict(
+            arrowstyle="|-|, widthA=0.3, widthB=0.3",
+            color="black",
+            lw=1,
+        ),
+        fontsize=10,
+        color="black",
+        ha="center",
+        va="center",
+    )
+    ax2.text(
+        x1 * 1.2,
+        y_pos * 1.2,
+        f"$\\lambda_C$ range",
+        fontsize=10,
+        color="black",
+        ha="left",
+        va="bottom",
+    )
+
+    # Create a manual legend
+    handles = [
+        plt.Line2D([0], [0], color="black", lw=2, label="Naive SF (entire interval)"),
+        plt.Line2D(
+            [0], [0], color="black", lw=1, alpha=0.25, label="Corrected SFs (subsets)"
+        ),
+    ]
+    ax2.legend(
+        handles=handles,
+        loc="lower right",
+        fontsize=8,
+        frameon=True,
+    )
 
     # Final layout adjustments
     plt.tight_layout()
@@ -190,8 +245,8 @@ def _add_mission_info(ax, colors):
     """Add mission information text boxes."""
     # Voyager 1 info
     ax.text(
-        0.02,
-        0.98,
+        0.03,
+        0.97,
         "$\\bf{Voyager\ 1}$",
         transform=ax.transAxes,
         fontsize=10,
@@ -205,8 +260,8 @@ def _add_mission_info(ax, colors):
         # ),
     )
     ax.text(
-        0.02,
-        0.87,
+        0.04,
+        0.88,
         "121-160au\n$⟨B⟩$ = 0.47 nT\n$⟨\delta b/B_0⟩$ = 0.22",
         transform=ax.transAxes,
         fontsize=9,
@@ -222,8 +277,8 @@ def _add_mission_info(ax, colors):
 
     # Voyager 2 info
     ax.text(
-        0.98,
-        0.98,
+        0.97,
+        0.97,
         "$\\bf{Voyager\ 2}$",
         transform=ax.transAxes,
         fontsize=10,
@@ -238,8 +293,8 @@ def _add_mission_info(ax, colors):
         # ),
     )
     ax.text(
-        0.98,
-        0.87,
+        0.97,
+        0.88,
         "119-135au\n$⟨B⟩$ = 0.57 nT\n$⟨\delta b/B_0⟩$ = 0.15nT",
         transform=ax.transAxes,
         fontsize=9,
@@ -433,7 +488,31 @@ es_v2_f = 1 / (lags_v2_hr * dt * 2)
 
 # Get correlation lengths
 # (Simply read dataframe of scalar stats)
-v1_scalars = pd.read_csv("results/full/voyager1_corrected_metadata_NEW_RANGE.csv")
+
+# Read and process data
+df_v1 = pd.read_csv("results/full/voyager1_corrected_metadata_NEW_RANGE.csv")
+
+# Calculate time columns
+df_v1["tce_s"] = df_v1["tce"] * df_v1["cadence"]
+df_v1["ttu_s"] = df_v1["ttu"] * df_v1["cadence"]
+df_v1["tce_days"] = df_v1["tce_s"] / (24 * 3600)
+df_v1["ttu_hours"] = df_v1["ttu_s"] / 3600
+
+# Read and process data
+df_v2 = pd.read_csv("results/full/voyager2_corrected_metadata_NEW_RANGE.csv")
+
+# Calculate time columns
+df_v2["tce_s"] = df_v2["tce"] * df_v2["cadence"]
+df_v2["ttu_s"] = df_v2["ttu"] * df_v2["cadence"]
+df_v2["tce_days"] = df_v2["tce_s"] / (24 * 3600)
+df_v2["ttu_hours"] = df_v2["ttu_s"] / 3600
+
+df = pd.concat([df_v1, df_v2], ignore_index=True)
+df_all_corr = df[df["gap_handling"] == "corrected_3d"]
+
+lc_corr_min = df_all_corr.tce_s.min()
+lc_corr_max = df_all_corr.tce_s.max()
+
 
 # Get min and max of correlation lengths
 # v1_min_corr_length = v1_scalars["corr_length"].min()
@@ -456,9 +535,11 @@ fig = create_voyager_analysis_plot(
     es_v1_hr,
     es_v2_f,
     es_v2_hr,
+    lc_corr_min,
+    lc_corr_max,
 )
-plt.savefig("big_voyager_sfs.png", dpi=300, bbox_inches="tight")
-plt.show()
+plt.savefig("big_voyager_sfs_row.png", dpi=300, bbox_inches="tight")
+# plt.show()
 
 
 # Get fluctuation sizes

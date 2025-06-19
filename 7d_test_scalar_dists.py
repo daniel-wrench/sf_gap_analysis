@@ -117,7 +117,7 @@ print(
 )
 
 # Define the variables to plot
-variables = ["slope", "tce", "ttu", "Re_lt"]
+variables = ["slope", "tce", "ttu"]
 
 # Create column "tgp_bins" to store the bins of the TGP
 bin_labels = ["0-25", "25-50", "50-75", "75-100"]
@@ -227,7 +227,7 @@ print(df_results_full)
 df_to_plot = df_results_full[df_results_full["bin"] != "all_data"]
 
 
-var_names = [r"$\beta$", r"$\lambda_C$", r"$\lambda_T$", r"$Re$"]
+var_names = [r"$\beta$", r"$\lambda_C$", r"$\lambda_T$"]
 
 # Get count of numeric vars in df_to_plot
 print(df_to_plot.head())
@@ -242,7 +242,7 @@ metrics = [
     "Fligner",
     "Anderson-Darling",
 ]
-variables = ["slope", "tce", "ttu", "Re_lt"]
+variables = ["slope", "tce", "ttu"]
 num_metrics = len(metrics)
 num_vars = len(variables)
 
@@ -252,7 +252,7 @@ p_value_indices = [num_metrics - 3, num_metrics - 2, num_metrics - 1]
 fig, ax = plt.subplots(
     num_metrics,
     num_vars,
-    figsize=(5, 3.5),
+    figsize=(4, 3.5),
     sharex=True,
     sharey="row",
     gridspec_kw={"hspace": 0.15, "wspace": 0.15},
@@ -301,9 +301,33 @@ fig.legend(
     ["Corrected", "Naive", "LINT"],
     loc="upper center",
     ncol=len(labels),
-    bbox_to_anchor=(0.5, 1.02),
+    bbox_to_anchor=(0.5, 1.05),
 )
 fig.text(0.5, -0.02, "Missing data bin (%)", ha="center", va="center")
+
+# Add arrow to indicate the direction of increasing similarity to the true distribution
+arrowprops = dict(arrowstyle="->", lw=1, color="darkgreen")
+
+ax[0, 2].annotate(
+    # "Larger values = more similar to true distribution",
+    "",
+    xy=(1.1, 0.8),  # Position of the arrow
+    xytext=(1.1, 0.2),  # Position of the arrow base
+    xycoords="axes fraction",
+    textcoords="axes fraction",
+    arrowprops=arrowprops,
+)
+
+ax[0, 2].text(
+    1.15,
+    0.5,
+    "Larger values =\nmore similar to true dist.",
+    ha="left",
+    va="center",
+    transform=ax[0, 2].transAxes,
+    fontsize=8,
+    color="darkgreen",
+)
 
 # Remove individual legends
 for i in range(len(metrics)):
@@ -332,7 +356,7 @@ for ax in ax[-1, :]:
 # plt.tight_layout() # not compatible
 # plt.show()
 plt.savefig(
-    f"results/{run_mode}/plots/test_wind_pdf_metrics_SLIM.png",
+    f"results/{run_mode}/plots/test_wind_pdf_metrics.png",
     bbox_inches="tight",
     dpi=300,
 )

@@ -66,7 +66,7 @@ print(
 )
 
 # Define the variables to plot
-variables = ["slope", "tce", "ttu", "Re_lt"]
+variables = ["slope", "tce", "ttu"]
 
 # Create list of x-labels with usual Latex symbols
 xlabels = [
@@ -103,7 +103,7 @@ for bin in ["all_data"]:
         data_true = ints[(ints.gap_handling == "naive") & (ints.tgp_bin == bin)]
 
     # Create a 2x2 multipanel plot
-    fig, axes = plt.subplots(1, 4, figsize=(4, 1.5), sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(3, 1.5), sharey=True)
 
     for i, variable in enumerate(variables):
         variable_to_plot = variable
@@ -123,33 +123,32 @@ for bin in ["all_data"]:
             data_true[f"{variable_to_plot}_orig"],
             label=r"True",
             color=palette["true"],
-            lw=1.5,
-            alpha=0.8,
+            lw=2,
+            alpha=0.7,
             ax=ax,
         )
         sns.kdeplot(
             data_corrected[variable_to_plot],
             label="Corrected",
             color=palette["corrected_3d"],
-            linestyle="dotted",
-            lw=0.8,
+            lw=1,
             ax=ax,
         )
         sns.kdeplot(
             data_naive[variable_to_plot],
             label="Naive",
             color=palette["naive"],
-            linestyle="dashed",
+            linestyle="dotted",
             ax=ax,
-            lw=0.8,
+            lw=1,
         )
         sns.kdeplot(
             data_lint[variable_to_plot],
             label="LINT",
             color=palette["lint"],
-            linestyle="dashdot",
+            linestyle="dashed",
             ax=ax,
-            lw=0.8,
+            lw=1,
         )
 
         # Add labels and title specific to the variable
@@ -215,18 +214,18 @@ for bin in ["all_data"]:
         # )
 
         if variable == "slope":
-            #     # Add vertical line and annotation for K41 prediction
-            #     ax.axvline(2 / 3, color="mediumblue", linestyle="solid", alpha=0.3, lw=0.5)
-            #     ax.text(
-            #         2 / 3 - 0.4,
-            #         2.8,
-            #         r"K41",
-            #         va="center",
-            #         ha="left",
-            #         fontsize=7,
-            #         # color="mediumblue",
-            #         alpha=0.5,
-            #     )
+            # Add vertical line and annotation for K41 prediction
+            # ax.axvline(2 / 3, color="mediumblue", linestyle="solid", alpha=0.3, lw=0.5)
+            # ax.text(
+            #     2 / 3 - 0.4,
+            #     2.8,
+            #     r"K41",
+            #     va="center",
+            #     ha="left",
+            #     fontsize=7,
+            #     # color="mediumblue",
+            #     alpha=0.5,
+            # )
 
             ax.set_xlim(0, 1)
 
@@ -244,7 +243,7 @@ for bin in ["all_data"]:
     # Put legend outside the plot
     plt.legend(
         loc="upper center",
-        bbox_to_anchor=(-1.2, 1.6),
+        bbox_to_anchor=(-0.6, 1.6),
         # fancybox=True,
         # shadow=True,
         ncol=4,

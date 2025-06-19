@@ -30,9 +30,13 @@ def load_and_process_voyager_data():
 
     # High resolution Voyager 1 data
     high_res_v1 = pd.read_csv("results/full/voyager1_lism_ttu_hr.csv")
+    high_res_v2 = pd.read_csv("results/full/voyager2_lism_ttu_hr.csv")
     high_res_v1["source"] = "Voyager 1"
+    high_res_v2["source"] = "Voyager 2"
 
-    return pd.concat([df_v1, df_v2], ignore_index=True), high_res_v1
+    return pd.concat([df_v1, df_v2], ignore_index=True), pd.concat(
+        [high_res_v1, high_res_v2], ignore_index=True
+    )
 
 
 def create_fraternale_data():
@@ -50,7 +54,7 @@ def create_fraternale_data():
 def plot_histograms():
     """Create the main histogram plots"""
     # Load data
-    df_combined, high_res_v1 = load_and_process_voyager_data()
+    df_combined, high_res = load_and_process_voyager_data()
     fraternale_data = create_fraternale_data()
 
     # Plot configuration
@@ -59,7 +63,7 @@ def plot_histograms():
     bin_edges = {
         "slope": np.linspace(0.1, 0.9, 12),
         "tce_days": np.linspace(0.3, 70, 10),
-        "ttu_hours": np.linspace(0, 0.08, 12),
+        "ttu_hours": np.linspace(0, 0.22, 10),
     }
 
     # Create subplots
@@ -73,7 +77,7 @@ def plot_histograms():
 
         # Select appropriate data source
         if var == "ttu_hours":
-            plot_data = high_res_v1
+            plot_data = high_res
         else:
             plot_data = df_combined[df_combined["gap_handling"] == "corrected_3d"]
 
@@ -113,7 +117,7 @@ def plot_histograms():
         # Add K41 reference line for slope
         if var == "slope":
             ax.axvline(2 / 3, color="black", linestyle="dotted", alpha=0.6)
-            ax.text(2 / 3 + 0.01, 6, "K41", fontsize=10, alpha=0.6)
+            ax.text(2 / 3 + 0.01, 12, "K41", fontsize=10, alpha=0.6)
 
         # Print statistics
         print(
@@ -129,8 +133,9 @@ def plot_histograms():
     for ax in axes:
         ax.set_ylim(0, max_y)
 
-    # Special x-axis adjustment for middle plot
+    # X-axis adjustments
     axes[1].set_xlim(-5, 80)
+    axes[2].set_xlim(-0.01, 0.2)
 
     # Create unified legend
     create_legend(axes[1])
@@ -151,20 +156,27 @@ def plot_histograms():
 
 def create_legend(ax):
     """Create a unified legend with all plot elements"""
-    # Create legend handles
+
+    from matplotlib.patches import Patch
+
+    # Create legend handles - use Patch for histogram-style bordered rectangles
     legend_elements = [
-        mlines.Line2D([0], [0], color="#2ca02c8b", lw=4, label="Voyager 1"),
-        mlines.Line2D([0], [0], color="#1f76b4a7", lw=4, label="Voyager 2"),
+        Patch(
+            facecolor="#2ca02c47", edgecolor="#2ca02c", linewidth=0.8, label="Voyager 1"
+        ),
+        Patch(
+            facecolor="#1f76b447", edgecolor="#1f77b4", linewidth=0.8, label="Voyager 2"
+        ),
         mlines.Line2D(
             [0],
             [0],
             marker="*",
             color="w",
-            markerfacecolor="#7c7c7c28",
+            markerfacecolor="#bdbdbd",
             markeredgecolor="black",
             markeredgewidth=0.5,
             markersize=10,
-            label="Previous V1 estimates",
+            label="Previous estimates from V1",
             linestyle="None",
         ),
     ]

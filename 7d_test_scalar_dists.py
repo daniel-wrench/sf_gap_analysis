@@ -255,7 +255,7 @@ fig, ax = plt.subplots(
     figsize=(4, 3.5),
     sharex=True,
     sharey="row",
-    gridspec_kw={"hspace": 0.15, "wspace": 0.15},
+    gridspec_kw={"hspace": 0.18, "wspace": 0.15},
 )
 
 # Ensure p-value rows share their y-axes
@@ -289,7 +289,7 @@ for i, metric in enumerate(metrics):
         if metric == "Anderson-Darling":  # since floors at 1e-3
             ax[i, j].set_ylim(1e-3, 1e0)
         ax[i, j].set_xlabel("")
-        ax[i, j].grid(True, alpha=0.5)
+        ax[i, j].grid(True, alpha=0.3)
         # Log y-axis for i > 3
         # if i > 2:
         #    ax[i, j].set_yscale("symlog", linthresh=1e-3)
@@ -311,22 +311,23 @@ arrowprops = dict(arrowstyle="->", lw=1, color="darkgreen")
 ax[0, 2].annotate(
     # "Larger values = more similar to true distribution",
     "",
-    xy=(1.1, 0.8),  # Position of the arrow
-    xytext=(1.1, 0.2),  # Position of the arrow base
+    xy=(1.1, 0.95),  # Position of the arrow
+    xytext=(1.1, 0.4),  # Position of the arrow base
     xycoords="axes fraction",
     textcoords="axes fraction",
     arrowprops=arrowprops,
 )
 
 ax[0, 2].text(
-    1.15,
-    0.5,
-    "Larger values =\nmore similar to true dist.",
+    1.05,
+    -0.85,
+    "Larger values = more similar to true dist.",
     ha="left",
     va="center",
     transform=ax[0, 2].transAxes,
     fontsize=8,
     color="darkgreen",
+    rotation=270,
 )
 
 # Remove individual legends

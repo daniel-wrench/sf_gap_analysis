@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.ticker import AutoMinorLocator, MaxNLocator
 
 # Set matplotlib styling
 plt.rcParams["font.family"] = "sans-serif"
@@ -51,6 +52,10 @@ def create_fraternale_data():
     )
 
 
+# Color palette
+colors = {"Voyager 1": "#16702df8", "Voyager 2": "#43a1cabe"}
+
+
 def plot_histograms():
     """Create the main histogram plots"""
     # Load data
@@ -69,8 +74,10 @@ def plot_histograms():
     # Create subplots
     fig, axes = plt.subplots(1, 3, figsize=(5, 2), sharey=True)
 
-    # Color palette
-    colors = {"Voyager 1": "#2ca02c", "Voyager 2": "#1f77b4"}
+    # Add more tickmarks and grid lines
+    for ax in axes:
+        ax.grid(True, alpha=0.3)
+        ax.set_axisbelow(True)
 
     for i, var in enumerate(vars_to_plot):
         ax = axes[i]
@@ -89,8 +96,9 @@ def plot_histograms():
             hue_order=["Voyager 1", "Voyager 2"],
             palette=colors,
             ax=ax,
+            linewidth=0.5,
             bins=bin_edges[var],
-            element="step",
+            multiple="stack",
             legend=False,  # We'll handle legend separately
         )
 
@@ -103,10 +111,10 @@ def plot_histograms():
                     np.full_like(frat_values, 0.8),
                     marker="*",
                     s=100,
-                    color="#7c7c7c28",
+                    color="#dfdcdccc",
                     edgecolors="black",
                     linewidths=0.5,
-                    alpha=0.4,
+                    alpha=0.8,
                     zorder=5,
                 )
 
@@ -137,6 +145,13 @@ def plot_histograms():
     axes[1].set_xlim(-5, 80)
     axes[2].set_xlim(-0.01, 0.2)
 
+    # Add major and minor ticks
+    for ax in axes:
+        ax.xaxis.set_major_locator(MaxNLocator(4))
+        # ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+        ax.yaxis.set_major_locator(MaxNLocator(4))
+        # ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+
     # Create unified legend
     create_legend(axes[1])
 
@@ -162,17 +177,23 @@ def create_legend(ax):
     # Create legend handles - use Patch for histogram-style bordered rectangles
     legend_elements = [
         Patch(
-            facecolor="#2ca02c47", edgecolor="#2ca02c", linewidth=0.8, label="Voyager 1"
+            facecolor=colors["Voyager 1"],
+            edgecolor="black",
+            linewidth=0.5,
+            label="Voyager 1",
         ),
         Patch(
-            facecolor="#1f76b447", edgecolor="#1f77b4", linewidth=0.8, label="Voyager 2"
+            facecolor=colors["Voyager 2"],
+            edgecolor="black",
+            linewidth=0.5,
+            label="Voyager 2",
         ),
         mlines.Line2D(
             [0],
             [0],
             marker="*",
             color="w",
-            markerfacecolor="#bdbdbd",
+            markerfacecolor="#dfdcdccc",
             markeredgecolor="black",
             markeredgewidth=0.5,
             markersize=10,

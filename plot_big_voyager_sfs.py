@@ -7,6 +7,12 @@ import pandas as pd
 # Get Line2d
 from matplotlib.lines import Line2D
 
+# Set matplotlib to move all tickmarks inside
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["ytick.direction"] = "in"
+# Set font to Arial
+plt.rcParams["font.family"] = "Arial"
+
 
 # Read a pickle file
 def read_pickle_file(file_path):
@@ -60,17 +66,17 @@ def create_voyager_analysis_plot(
     """
 
     # Constants
-    U = 25000  # m/s (solar wind speed)
+    U = 30000  # m/s relative velocity ISM wrt spacecraft: U_rel = U_ISM - U_spacecraft = ~13 km/s - -17km/s (Fraternale 2021)
     AU = 1.496e11  # meters (1 astronomical unit)
     DI = 700000  # Ion inertial length in km
 
     # Create figure with optimized layout
-    fig, axes = plt.subplots(1, 3, figsize=(11, 3.5))
+    fig, axes = plt.subplots(1, 3, figsize=(11, 3.2))
 
     # Color scheme
     colors = {
-        "v1": "#2E8B57",  # Sea green
-        "v2": "#4169E1",  # Royal blue
+        "v1": "#16702df8",
+        "v2": "#43a1cabe",
         "reference": "#696969",  # Dim gray
         "k41": "#708090",  # Slate gray
     }
@@ -107,6 +113,7 @@ def create_voyager_analysis_plot(
     # Formatting
     ax1.set_ylabel("|B| (nT)", fontsize=12)
     ax1.set_xlabel("Date", fontsize=12)
+
     ax1.set_ylim(0.32, 0.88)
     ax1.grid(True, alpha=0.3)
 
@@ -131,8 +138,9 @@ def create_voyager_analysis_plot(
 
     # Formatting
     ax2.set_xlabel("$\\tau$ (s)", fontsize=12)
-    ax2.set_ylabel("$S_2$", fontsize=12)
+    ax2.set_ylabel("$S_2$ (nT$^2$)", fontsize=12)
     ax2.set_ylim(1e-6, 1e-1)
+    ax2.set_xlim(1e1, 1e9)
     ax2.grid(True, alpha=0.3)
     # ax2.legend(fontsize=10)
 
@@ -169,7 +177,7 @@ def create_voyager_analysis_plot(
     _add_wavenumber_axis(ax3, U)
 
     # Annotate fit range
-    x1, x2 = 1e4, 1e5  # your x-values
+    x1, x2 = 1e3, 1e4  # your x-values
     y_pos = 1e-2  # y-position for the bar
     ax2.annotate(
         "",
@@ -197,7 +205,7 @@ def create_voyager_analysis_plot(
 
     # Annotate lc_corr range
     x1, x2 = lc_corr_min, lc_corr_max  # your x-values
-    y_pos = 8e-5  # y-position for the bar
+    y_pos = 1e-5  # y-position for the bar
     ax2.annotate(
         "",
         xy=(x2, y_pos),
@@ -213,9 +221,9 @@ def create_voyager_analysis_plot(
         va="center",
     )
     ax2.text(
-        x1 * 1.2,
-        y_pos * 1.2,
-        f"$\\lambda_C$ range",
+        x1 * 1.4,
+        y_pos * 0.3,
+        "$\\lambda_C$ range",
         fontsize=10,
         color="black",
         ha="left",
@@ -229,9 +237,9 @@ def create_voyager_analysis_plot(
             [0], [0], color="black", lw=1, alpha=0.25, label="Corrected SFs (subsets)"
         ),
     ]
-    ax2.legend(
+    ax3.legend(
         handles=handles,
-        loc="lower right",
+        loc="lower left",
         fontsize=8,
         frameon=True,
     )
@@ -425,12 +433,22 @@ def _add_scale_annotations(ax_time, ax_spatial):
     for time_val, label in time_scales:
         ax_time.annotate(
             "",
-            xy=(time_val, 1e-6),
-            xytext=(time_val, 2e-7),
+            xy=(time_val, 0),
+            xytext=(time_val, 0.13),
+            xycoords=("data", "axes fraction"),
             arrowprops=dict(arrowstyle="->", color="black", lw=1.5, alpha=0.3),
+            annotation_clip=False,
         )
         ax_time.text(
-            time_val, 1e-7, label, ha="center", va="top", fontsize=10, alpha=0.5
+            time_val,
+            0.2,
+            label,
+            ha="center",
+            va="top",
+            fontsize=10,
+            alpha=0.5,
+            transform=ax_time.get_xaxis_transform(),
+            clip_on=False,
         )
 
     # Length scale annotations
@@ -439,14 +457,14 @@ def _add_scale_annotations(ax_time, ax_spatial):
         ax_spatial.annotate(
             "",
             xy=(length_val, 1),
-            xytext=(length_val, 1.18),
+            xytext=(length_val, 0.88),
             xycoords=("data", "axes fraction"),
             arrowprops=dict(arrowstyle="->", color="black", lw=1.5, alpha=0.3),
             annotation_clip=False,
         )
         ax_spatial.text(
             length_val,
-            1.2,
+            0.82,
             label,
             ha="center",
             va="bottom",

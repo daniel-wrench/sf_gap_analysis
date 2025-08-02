@@ -130,7 +130,7 @@ ax1_date.axvline(v1_hp_date, color="k", linestyle="--")
 ax2_date.axvline(v2_hp_date, color="k", linestyle="--")
 
 # Align primary x-axes (distance)
-ax1.set_xlim(min_radius, max_radius)
+# ax1.set_xlim(min_radius, max_radius)
 # ax2.set_xlim(min_radius, max_radius)
 
 for region in v2_highlight_regions:

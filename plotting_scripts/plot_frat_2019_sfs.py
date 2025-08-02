@@ -18,8 +18,8 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from sunpy.timeseries import TimeSeries
 
-sys.path.append(os.path.abspath(".."))
-# So that I can read in the src files while working here in the notebooks/ folder
+# Import local modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import src.params as params
 import src.sf_funcs as sf
@@ -136,14 +136,14 @@ sf_full.index = sf_full.index.total_seconds()
 # ### Computing correlation scale
 
 
-time_lags_lr, r_vec_lr = utils.compute_nd_acf(
-    [subset.BR, subset.BT, subset.BN],
-    nlags=10000,  # Arbritrary large number
-    plot=True,
-)
-tc_exp = utils.compute_outer_scale_exp_trick(time_lags_lr, r_vec_lr, plot=False)
+# time_lags_lr, r_vec_lr = utils.compute_nd_acf(
+#     [subset.BR, subset.BT, subset.BN],
+#     nlags=10000,  # Arbritrary large number
+#     plot=False,
+# )
+# tc_exp = utils.compute_outer_scale_exp_trick(time_lags_lr, r_vec_lr, plot=False)
 
-print(f"Correlation time = {np.round(tc_exp)}s = {np.round(tc_exp/3600)} hours")
+# print(f"Correlation time = {np.round(tc_exp)}s = {np.round(tc_exp/3600)} hours")
 
 
 # Calculating correlation time, using full 60-day dataset.
@@ -152,21 +152,21 @@ print(f"Correlation time = {np.round(tc_exp)}s = {np.round(tc_exp/3600)} hours")
 # Also calculating $\lambda_C$ using integral method
 
 
-fig, ax = plt.subplots(1, 1, figsize=(5, 3), constrained_layout=True)
-tc, fig, ax = utils.compute_outer_scale_integral(time_lags_lr, r_vec_lr, fig, ax, True)
-# print(f"Correlation time = {np.round(tc)}s = {np.round(tc/3600)} hours")
+# fig, ax = plt.subplots(1, 1, figsize=(5, 3), constrained_layout=True)
+# tc, fig, ax = utils.compute_outer_scale_integral(time_lags_lr, r_vec_lr, fig, ax, True)
+# # print(f"Correlation time = {np.round(tc)}s = {np.round(tc/3600)} hours")
 
-plt.show()
-print(tc / 60 / 60)
-print("hours")
+# plt.show()
+# print(tc / 60 / 60)
+# print("hours")
 
 
-print(
-    "10 of these is ",
-    np.round(10 * tc / 60 / 60 / 24, 2),
-    "days, compared with full data length of",
-    subset.index[-1] - subset.index[0],
-)
+# print(
+#     "10 of these is ",
+#     np.round(10 * tc / 60 / 60 / 24, 2),
+#     "days, compared with full data length of",
+#     subset.index[-1] - subset.index[0],
+# )
 
 
 # Note that this integral version is much longer, which will make the final interval lengths
@@ -186,20 +186,12 @@ ylim_kurt = (2, 10)
 # sdk["kurtosis"] = sdk[4].div(sdk[2] ** 2)
 
 print("Plotting...")
-fig = plt.figure(figsize=(13, 4))
-gs = gridspec.GridSpec(1, 5, wspace=0.4)
-ax0 = plt.subplot(gs[0, 0:3])
-
-ax1 = plt.subplot(gs[0, 3:])
+fig = plt.figure(figsize=(7, 8))
+gs = gridspec.GridSpec(2, 1, height_ratios=[1, 2])
+ax0 = fig.add_subplot(gs[0])
+ax1 = fig.add_subplot(gs[1])
 
 ax0.plot(subset_resampled.BT, c="black", lw=0.2)
-for i in range(11):
-    ax0.axvline(
-        subset_resampled.index[0] + pd.Timedelta(tc * i, "s"),
-        color="black",
-        linestyle="dotted",
-        lw=1,
-    )
 ax0.set_title(r"Voyager 1 @ 118au, 80\% missing (D1 from Fraternale et al. (2019))")
 ax0.set_ylabel("$B_T$ (nT)")
 ax0.xaxis.set_major_formatter(
@@ -207,28 +199,12 @@ ax0.xaxis.set_major_formatter(
 )
 
 for p in [1, 2, 3, 4]:
-    ax1.plot(sf_full.index, sf_full[p], c="red", label=f"p={p} (naive)")
+    ax1.plot(sf_full.index, sf_full[p], c="red")
     qi, xi, pi = utils.fitpowerlaw(sf_full.index, sf_full[p].values, 1e4, 2e5)
-    ax1.plot(
-        xi,
-        pi * 2,
-        c="black",
-        ls="--",
-        lw=1.2,
-        label="Inertial range power-law fit: $\\alpha_i$ = {0:.2f}".format(qi[0]),
-    )
+    ax1.plot(sf_full_lint.index, sf_full_lint[p], c="purple")
 
-    # Add the slope value as an annotation based on location of the fit
-    plt.annotate(
-        "$\\zeta_{0} = {1:.2f}$".format(p, qi[0]),
-        (xi[0] * 2, np.median(pi) * 2),
-        fontsize=14,
-    )
-
-    ax1.plot(sf_full_lint.index, sf_full_lint[p], c="purple", label=f"p={p} (LINT)")
-
-# ax1.plot(sf_std.index, sf_std[2], c="blue", label="10 lambda C")
-
+ax1.plot(sf_full.index, sf_full[1], c="red", label=f"Naive SFs")
+ax1.plot(sf_full_lint.index, sf_full_lint[1], c="purple", label=f"LINT SFs")
 
 ax1.semilogx()
 ax1.semilogy()
@@ -237,8 +213,6 @@ if xlim is not None:
     ax1.set_xlim(xlim)
 if ylim_sf is not None:
     ax1.set_ylim(ylim_sf)
-
-# plt.show()
 
 ax1.set_xlabel("$\\tau$ (s)")
 ax1.set_ylabel("$S_p$ (nT$^p$)", color="red")
@@ -261,49 +235,51 @@ ax1.add_patch(
     ),
 )
 
+# Create twin axis BEFORE plotting N(tau)
 ax2 = ax1.twinx()
-plt.plot(
+
+# Plot N(tau) lines with very low zorder
+ax2.plot(
     sf_full.index,
     0.2 * (len(subset_resampled) - (sf_full.index / 600)),
     color="black",
     ls="dotted",
-    label="Theoretical sample size",
+    zorder=-1,  # Very low zorder
 )
-for i in range(len(sf_full) - 1):
-    ax2.plot(
-        sf_full.index[i : i + 2],
-        sf_full["N"].values[i : i + 2],
-        color=sf_full["color"].values[i],
-    )
+ax2.plot(
+    sf_full.index,
+    sf_full["N"],
+    color="black",
+    zorder=-1,  # Very low zorder
+    linewidth=1,
+)
+
 ax2.set_ylabel("$N(\\tau)$", color="black")
 ax2.tick_params(axis="y", labelcolor="black")
-ax1.text(rectangle_x, 2e-8, "$N(\\tau)<$ threshold", fontsize=11, alpha=0.8)
-ax1.text(1.2e3, 5e-1, "Theoretical trend of $N\\tau$", fontsize=11)
-# Add vertical line at lag equal to 8 correlation times
-ax1.axvline(x=10 * tc, c="blue", lw=2, alpha=0.2)
-ax1.axvline(x=2 * tc, c="blue", lw=2, alpha=0.2)
-# ax1.axvline(x=48 * 3600, c="purple", lw=2, alpha=0.2)
-ax1.axvline(x=12 * 3600, c="brown", lw=2, alpha=0.4)
-ax1.axvline(x=24 * 3600, c="brown", lw=2, alpha=0.3)
-ax1.axvline(x=36 * 3600, c="brown", lw=2, alpha=0.2)
-ax1.axvline(x=48 * 3600, c="brown", lw=2, alpha=0.2)
-ax1.axvline(x=60 * 3600, c="brown", lw=2, alpha=0.2)
-ax1.axvline(x=72 * 3600, c="brown", lw=2, alpha=0.2)
 
-ax1.text(10 * tc * 1.2, 5e-1, "$10\\lambda_C$", fontsize=11, c="blue")
-ax1.text(2 * tc * 1.2, 5e-1, "$2\\lambda_C$", fontsize=11, c="blue")
-
-# ax1.text(48 * 3600 * 1.2, 5e-1, "Burger max lag", fontsize=11, c="purple")
-ax1.text(12 * 3600 / 3, 5e-8, "1$\\times$12h", fontsize=11, c="brown")
-
-# Annotate first panel with the correlation time
-ax0.text(
-    subset_resampled.index[0] + pd.Timedelta(11 * tc, "s"),
-    0.12,
-    f"$10\\lambda_C=10\\times{np.round(tc / 60 / 60, 2)}$ hours",
-    fontsize=11,
+# Add vertical lines and text annotations
+ax1.axvline(
+    x=12 * 3600,
     c="black",
+    lw=1.5,
+    alpha=0.4,
+    label="Multiples of $\\tau=$12h",
+    ls="dashed",
 )
-plt.show()
-# plt.savefig("frat_2019_sfs_reproduction.png")
-print("Done")
+ax1.axvline(x=24 * 3600, c="black", lw=1.5, alpha=0.3, ls="dashed")
+ax1.axvline(x=36 * 3600, c="black", lw=1.5, alpha=0.2, ls="dashed")
+ax1.axvline(x=48 * 3600, c="black", lw=1.5, alpha=0.2, ls="dashed")
+ax1.axvline(x=60 * 3600, c="black", lw=1.5, alpha=0.2, ls="dashed")
+ax1.axvline(x=72 * 3600, c="black", lw=1.5, alpha=0.2, ls="dashed")
+
+ax1.text(rectangle_x, 2e-8, "$N(\\tau)<$ threshold", fontsize=11, alpha=0.8)
+ax1.text(1.2e3, 5e-1, "Theoretical trend of $N(\\tau)$", fontsize=11)
+
+# Create legend with higher zorder and solid background
+legend = ax1.legend(
+    facecolor="white", framealpha=1.0, edgecolor="black", loc="lower left"
+)
+legend.set_zorder(ax2.get_zorder() + 50)  # Very high zorder
+ax1.set_xlim(5e2, 5e6)
+# plt.show()
+plt.savefig("bg_figs/frat_2019_sfs_reproduction.png")

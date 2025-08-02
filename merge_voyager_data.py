@@ -5,35 +5,47 @@ from sunpy.timeseries import TimeSeries
 
 import src.params as params
 
-spacecraft = "voyager2"
-
-if spacecraft == "voyager1":
-    start_year = 2011
-elif spacecraft == "voyager2":
-    start_year = 2017
+# Define spacecraft and their start years
+spacecraft_config = {"voyager1": 2010, "voyager2": 2016}
 
 cadence = "48s"
 
-data = TimeSeries(
-    # f"../data/raw/voyager/{spacecraft}_{cadence}_mag-vim_{year}0101_v01.cdf",
-    glob.glob(f"data/raw/voyager/{spacecraft}_{cadence}_mag-vim_*.cdf"),
-    concatenate=True,
-)
+for spacecraft, start_year in spacecraft_config.items():
+    print(f"\n=== Processing {spacecraft.upper()} ===")
 
-df_raw = data.to_dataframe()[str(start_year) :]
+    # Load and concatenate all CDF files for the spacecraft
+    file_pattern = f"data/raw/voyager/{spacecraft}_{cadence}_mag-vim_*.cdf"
+    print(f"Looking for files matching: {file_pattern}")
 
-# Get magnetic field components + orbital radius
-vars = params.mag_vars_dict["voyager"].copy()
-vars.append("Radius")
-df_raw = df_raw.loc[:, vars]
+    files = glob.glob(file_pattern)
+    if not files:
+        print(f"Warning: No files found for {spacecraft}")
+        continue
 
-df = df_raw.resample(cadence).mean()
+    print(f"Found {len(files)} files for {spacecraft}")
 
-print(df.info())
+    try:
+        data = TimeSeries(files, concatenate=True)
+        df_raw = data.to_dataframe()[str(start_year) :]
+    except Exception as e:
+        print(f"Error loading TimeSeries data for {spacecraft}: {e}")
+        continue
 
-print(df.head())
+    # Get magnetic field components + orbital radius
+    vars = params.mag_vars_dict["voyager"].copy()
+    vars.append("Radius")
+    df_raw = df_raw.loc[:, vars]
 
-df.to_pickle(f"data/interim/voyager/{spacecraft}_hs_lism.pkl")
-print(
-    f"Exported merged {spacecraft} data to data/interim/voyager/{spacecraft}_hs_lism.pkl"
-)
+    df = df_raw.resample(cadence).mean()
+
+    print(f"\n{spacecraft.upper()} Data Info:")
+    print(df.info())
+    print(f"\n{spacecraft.upper()} Data Head:")
+    print(df.head())
+
+    # Save to pickle file
+    output_file = f"data/interim/voyager/{spacecraft}_hs_lism.pkl"
+    df.to_pickle(output_file)
+    print(f"Exported merged {spacecraft} data to {output_file}")
+
+print("\n=== Processing Complete ===")

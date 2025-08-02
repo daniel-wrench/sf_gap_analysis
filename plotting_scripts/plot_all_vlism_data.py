@@ -122,7 +122,6 @@ for component, color, lw in zip(
         alpha=1.0,
     )
 
-ax1.set_xlabel("DISTANCE FROM SUN (AU)")
 ax1.set_ylabel("Magnetic Field Strength (nT)")
 
 handles, labels = ax1.get_legend_handles_labels()
@@ -252,15 +251,31 @@ ax2_date.grid(True, which="both", axis="x", alpha=0.6)
 ax2.legend(
     handles,
     labels,
-    loc="center right",
-    fontsize=14,
+    loc="center",
+    fontsize=13,
     frameon=True,
     facecolor="white",  # legend box background color
     edgecolor="black",  # legend box border color
     framealpha=0.5,  # legend box transparency
 )
 
+ax1.tick_params(axis="x", which="major", pad=15)
+# ax1.set_xlabel("DISTANCE FROM SUN (AU)")
 
-plt.subplots_adjust(hspace=0.01)  # Reduce from default (~0.2) to 0.05
-plt.tight_layout()
+# Add annotation inside a box
+ax1.annotate(
+    "DISTANCE FROM SUN (AU)",
+    xy=(0.48, -0.18),
+    xycoords="axes fraction",
+    fontsize=12,
+    # fontweight="bold",
+    ha="center",
+    va="bottom",
+    bbox=dict(facecolor="white", alpha=1, edgecolor="white"),
+)
+
+# Reduce spacing between subplots
+plt.subplots_adjust(hspace=0.25)  # Removed to avoid conflict with tight_layout
+
+# plt.tight_layout()
 plt.savefig("bg_figs/bg_all_vlism_data.png", dpi=300, bbox_inches="tight")

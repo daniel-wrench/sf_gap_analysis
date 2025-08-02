@@ -1,8 +1,6 @@
 # MAKE BACKGROUND PLOT: ALL VLISM DATA
 # This script plots the VLISM and some heliosheath data from Voyager 1 and Voyager 2
 
-import sys
-
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -27,7 +25,7 @@ def plot_events(
     date = pd.to_datetime(f"{year_start}-01-01") + pd.DateOffset(days=doy_start - 1)
     ylim = ax.get_ylim()
     # Plot a single vertical line at the specified date.
-    ax.axvline(date, color=color, linestyle="--", alpha=0.8, label=name)
+    ax.axvline(date, color=color, linestyle="--", alpha=0.7, label=name)
     # Place a label near the top of the line.
     ax.text(
         date + pd.DateOffset(days=5),
@@ -37,7 +35,7 @@ def plot_events(
         verticalalignment="top",
         fontsize=9,
         color="black",
-        alpha=0.8,
+        alpha=0.7,
     )
 
 
@@ -194,7 +192,7 @@ for region in v1_highlight_regions:
     plot_events(ax1_date, *region)
 
 
-ax1_date.text(pd.to_datetime("2021-03-01"), 0.6, "hump", alpha=0.8)
+ax1_date.text(pd.to_datetime("2021-03-01"), 0.6, "hump", alpha=0.7, fontsize=9)
 
 ax1_date.text(
     v1_hp_date - pd.DateOffset(days=150),

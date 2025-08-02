@@ -1,8 +1,13 @@
 # # Apply correction factor to Voyager data (for real)
 #
+# Usage: `python correct_plot_voyager_ints.py <spacecraft>`
+# Where `<spacecraft>` is either `voyager1` or `voyager2`
+# There is then an optional second argument to limit the number of intervals corrected.
+
 # CORRELATION LENGTH = 17 DAYS
 
 import pickle
+import sys
 
 import matplotlib.dates as mdates
 import numpy as np
@@ -24,9 +29,36 @@ plt.rcParams["font.sans-serif"] = ["Arial"]
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
+# Parse command line arguments
+if len(sys.argv) < 2 or len(sys.argv) > 3:
+    print("Usage: python correct_plot_voyager_ints.py <spacecraft> [n_intervals]")
+    print("  spacecraft: 'voyager1' or 'voyager2'")
+    print("  n_intervals: optional, limits number of intervals to process")
+    print("Example: python correct_plot_voyager_ints.py voyager1 5")
+    sys.exit(1)
 
-# Smoothing function
+spacecraft = sys.argv[1].lower()
+if spacecraft not in ["voyager1", "voyager2"]:
+    print("Error: spacecraft must be either 'voyager1' or 'voyager2'")
+    sys.exit(1)
+
+# Set spacecraft-specific variables
+spacecraft_num = "1" if spacecraft == "voyager1" else "2"
+spacecraft_short = "v1" if spacecraft == "voyager1" else "v2"
+spacecraft_title = "Voyager 1" if spacecraft == "voyager1" else "Voyager 2"
+
+# Constants
+CORRELATION_LENGTH_DAYS = 17
+TC_N = 10  # Number of correlation lengths per interval
+NEW_CADENCE = 288  # 6-pt average, following Frat2021
+N_BINS = 25
+RUN_MODE = "full"
+POWER_LAW_RANGE_FACTOR = [3e3, 3e4]  # Will be divided by cadence
+PLOT_DPI = 300
+
+
 def smooth_scaling(x, y, num_bins=20):
+    """Smooth scaling function using logarithmic binning and cubic interpolation."""
     bin_edges = np.logspace(np.log10(x.min()), np.log10(x.max()), num_bins)
     bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
     y_binned = np.array(
@@ -49,14 +81,12 @@ def smooth_scaling(x, y, num_bins=20):
     return interp_func(x)
 
 
-# Read in cleaned Voyager 1 data
-df = pd.read_pickle("data/interim/voyager/voyager1_lism.pkl")
-print("Loaded dataset")
+# Read in cleaned Voyager data
+df = pd.read_pickle(f"data/interim/voyager/{spacecraft}_lism.pkl")
+print(f"Loaded {spacecraft} dataset")
 
-# Importing lookup table
-n_bins = 25
-run_mode = "full"
-with open(f"results/{run_mode}/correction_lookup_3d_{n_bins}_bins_lint.pkl", "rb") as f:
+# Import lookup table
+with open(f"results/{RUN_MODE}/correction_lookup_3d_{N_BINS}_bins_lint.pkl", "rb") as f:
     correction_lookup_3d = pickle.load(f)
 
 # Update lag bins to be relative to a correlation scale
@@ -68,32 +98,37 @@ correction_lookup_3d["xedges"] = correction_lookup_3d["xedges"] * 10 / params.in
 # i.e. from intervals of 10,000 points across 10 correlation lengths, calculated up to lag 2,000.
 # Integral corr length `tc` has already been defined above.
 
-
-tc = 17 * 24 * 3600  # (17 days in seconds)
-
-tc_n = 10
-# interval_length = params.int_length
-# new_cadence = tc_n * tc / interval_length
-new_cadence = (
-    288  # 6-pt average, following Frat2021 while still making high-res enough for SFs
-)
+tc = CORRELATION_LENGTH_DAYS * 24 * 3600  # (17 days in seconds)
+new_cadence = NEW_CADENCE
 
 # PREVIOUSLY 1e5, 1e6
-pwrl_range = [int(1e3 / new_cadence), int(2e4 / new_cadence)]  # params.pwrl_range
+pwrl_range = [
+    int(POWER_LAW_RANGE_FACTOR[0] / new_cadence),
+    int(POWER_LAW_RANGE_FACTOR[1] / new_cadence),
+]  # params.pwrl_range
 # Reproducing Frat2019 range (5e5,5e6) would require fitting SF up to 60 days
 
 # Previously we chose the cadence based on the # points
 # Now we want to choose the number of points based on the cadence
 
-interval_length = int(tc_n * tc / new_cadence)
+interval_length = int(TC_N * tc / new_cadence)
 
 lags = np.arange(1, params.max_lag_prop * interval_length)
 powers = [2]
 
 df_std = df.resample(str(np.round(new_cadence, 3)) + "s").mean()
 n_ints = int(np.floor(len(df_std) / interval_length))
+
+# Check if user wants to limit number of intervals
+if len(sys.argv) == 3:
+    n_ints_requested = int(sys.argv[2])
+    if n_ints_requested < n_ints:
+        n_ints = n_ints_requested
+        print(f"Processing only the first {n_ints} intervals (user requested).")
+
 print(
-    f"Number of standardised intervals to correct: {n_ints} ({tc_n} corr lengths, {new_cadence}s cadence, {interval_length} points)"
+    f"Number of standardised intervals to correct: {n_ints} "
+    f"({TC_N} corr lengths, {new_cadence}s cadence, {interval_length} points)"
 )
 
 # We should have 24 intervals of 10,000 points each, each covering 10 correlation times = 10 * 17 days = 170 days.
@@ -124,7 +159,7 @@ file_index = 0
 
 all_sfs_gapped_corrected = []
 
-# Extract an interval
+# Perform correction for each interval
 for int_index in range(n_ints):
     print(f"Correcting interval {int_index}...")
     int_std = df_std[int_index * interval_length : (int_index + 1) * interval_length]
@@ -174,7 +209,7 @@ for int_index in range(n_ints):
 
     # Apply 2D and 3D scaling to test set, report avg errors
     sfs_lint_corrected_3d = sf.compute_scaling(
-        sfs_gapped, 3, correction_lookup_3d, n_bins
+        sfs_gapped, 3, correction_lookup_3d, N_BINS
     )
 
     single_sf = sfs_lint_corrected_3d[(sfs_lint_corrected_3d["int_index"] == int_index)]
@@ -266,6 +301,7 @@ for int_index in range(n_ints):
     # Calculate slopes and scales
     for gap_handling in sfs_gapped_corrected.gap_handling.unique():
 
+        # Compute equivalent spectrum (ES) for the corrected SFs
         sfs_gapped_corrected.loc[:, "sf_corrected_es"] = (
             sfs_gapped_corrected["sf_2"] * sfs_gapped_corrected["lag"] / 6
         )
@@ -519,11 +555,11 @@ for int_index in range(n_ints):
     # ax3.legend(loc="lower left", fontsize=8, frameon=False)
     ax3.set_ylabel("ACF")
 
-    # fig.suptitle(
-    #     f"Voyager 1 LISM, interval {int_index}: {new_cadence/60:.1f}min resolution, {missing*100:.1f}\% missing",
-    #     y=0.95,
-    #     fontsize=20,
-    # )
+    fig.suptitle(
+        f"{spacecraft_title} interval {int_index}: {new_cadence:.0f}s resolution, {missing*100:.1f}% missing",
+        y=0.95,
+        fontsize=12,
+    )
 
     # fig.text(0.5, 0.47, "SF-DERIVED CURVES", ha="center", fontsize=15)
     # fig.text(0.24, 0.47, "SF CORRECTION", ha="center", fontsize=15)
@@ -540,14 +576,17 @@ for int_index in range(n_ints):
 
     ax2.set_ylim(1e-1, 1e1)
     ax3.set_ylim(0, 1)
-    plt.savefig(f"results/full/plots/voyager/v2_corrected_{int_index}.png", dpi=300)
+    plt.savefig(
+        f"results/full/plots/voyager/{spacecraft_short}_corrected_{int_index}_test.png",
+        dpi=PLOT_DPI,
+    )
     plt.close(fig)
 
 # Save metadata
-output_file_path = "results/full/voyager1_corrected_metadata_NEW_RANGE.csv"
+output_file_path = f"results/full/{spacecraft}_corrected_metadata_test.csv"
 ints_gapped_metadata.to_csv(output_file_path, index=False)
 print(f"Stats saved to {output_file_path}")
 
 # Export the corrected SFs
 sfs_gapped_corrected_all = pd.concat(all_sfs_gapped_corrected, ignore_index=True)
-sfs_gapped_corrected_all.to_pickle("results/full/voyager1_corrected_sfs_NEW_RANGE.pkl")
+sfs_gapped_corrected_all.to_pickle(f"results/full/{spacecraft}_corrected_sfs_test.pkl")

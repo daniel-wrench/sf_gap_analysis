@@ -28,7 +28,7 @@ plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
 # Read in cleaned Voyager 1 data
-df = pd.read_pickle("data/interim/voyager/voyager1_lism_cleaned.pkl")
+df = pd.read_pickle("data/interim/voyager/voyager2_lism.pkl")
 print("Loaded dataset")
 
 interval_days = 170
@@ -139,6 +139,6 @@ results_df[["ttu_hours", "ttu_s"]].round(2)
 results_df["ttu_hours"].describe()
 
 # Export the results as a CSV file
-results_df.to_csv("results/full/voyager1_lism_ttu_hr.csv", index=False)
+results_df.to_csv("results/full/voyager2_lism_ttu_hr.csv", index=False)
 
 results_df.head()

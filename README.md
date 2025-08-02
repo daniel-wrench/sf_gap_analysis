@@ -207,7 +207,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
     And also calculates the slopes, correlation scales, taylor scales from all the SF estimates. Before this, they had only been calculated for the true SF back in `1_compute_sfs.py` *(which is not strictly necessary any more, other than making preprocessing plots for interest)*.
 
     - NOTE ALSO DIFFERENT VERSIONS OF SF_FUNCS.LOAD_AND_CONCATENATE?
-    If you are after minimal output from the full dataset, set `with_sfs = False`. (These files, used by the next script, go into `data/processed/test/corrected`.) If you are after full output (from just a few intervals) for later plotting in case studies, set `with_sfs = True`. (These files go into `results/test_sfs_corrected_subset`.)
+    If you are after minimal output from the full dataset, set `with_sfs = False`. (These files, used by the next script, go into `data/processed/test/corrected`.) If you are after full output (from just a few intervals) for later plotting in case studies, set `with_sfs = True`. (These files go into `results/{run_mode}/test_sfs_corrected_subset/`.)
 
     *Local:* 
     
@@ -251,7 +251,7 @@ You will need to prefix the commands below with `!`, use `%cd` to move into the 
 
     2. **`python 7a_plot_test_results.py`** (scatterplots, boxplots)
 
-    3. **`python 7b_plot_test_case_studies.py`**
+    3. **`python 7b_plot_test_case_studies.py > results/full/case_studies_stats.txt`**
 
     4. **`python 7c_plot_scalar_dists.py`**
 
@@ -261,21 +261,14 @@ Final publication-ready plots are then moved to `doc/figs/`
 
 ## Notes/next steps
 
-- Create correction factor file
+- Create shareable correction factor file
 - Lines 367-387 in `1_compute_sfs.py` aren't strictly necessary, as we compute all these derived stats now in step 5. However, those stats are used in the preprocessing plots that are output by this script.
 - Add line about data size, e.g. *The HPC version of the code currently ingests 300GB across 10,000 CDF files (data from 1995-2022) and produces an 18MB CSV file.*
 - Include typical duration (range) of standardised intervals for each spacecraft 
 - Normal**iz**ation for Voyager plots (better pipeline in that script)
 - Better case-study examples - using quicker way to view many of them?
-- Clarify effect of standardisation in limitations section, as Mark mentioned
-- Highlight emphasise on good overall shape, rather than inertial range slope, based on results?
 - Previous slope range (1-10\% of corr time) did give results that matched theoretical values well, e.g. median of 0.67 from 175 PSP ints, 0.72 for 40 Wind ints
 - Calculate sf_2_pe in 1_compute_sfs? Currently not to have somewhat simpler calculation once corrected, but also leading to some duplication of code, especially if we want the error trend line plots.
 - Add handling, e.g. in sf func, for extreme cases where SF will be missing values for certain lags due to high % missing (not a high priority for now because only going up to lag 2000, e.g. still 30 dx values for 99.6% missing)
 - Having logarithmically spaced lag bins would make the correction factor much cleaner to work with: one-to-one bins
 - For now likely to do stick with simple job arrays and single jobs on HPC, with importing and exporting of intermediate steps, but perhaps better to do single MPI script with broadcasting and reducing.
-- *CORRECTION CASE STUDIES plot*:
-    - Confirm conf intervals
-    - Add nice little box for slope errors with annotations, or else some way to comment on slopes
-    - Smooth the results, check it works with these two corrections. Update error accordingly
-

@@ -9,8 +9,8 @@
 
 times_to_gap = 25
 data_path_prefix = ""  # "/nesi/nobackup/vuw04187/"
-run_mode = "full"  # "mini" (local) or "full" (hpc)
-pwrl_range = [50, 500]
+run_mode = "mini"  # "mini" (local) or "full" (hpc)
+pwrl_range = [5, 10]
 minimum_missing_chunks = 0.7
 n_bins_list = [25]  # 15, 20,
 int_length = 10000

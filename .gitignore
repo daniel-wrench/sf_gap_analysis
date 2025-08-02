@@ -2,6 +2,8 @@
 /results
 /venv
 /logs
+/bg_figs
+/cool_figs
 /src/__pycache__
 /old
 /__pycache__
@@ -9,5 +11,6 @@
 /docs/old_drafts
 /corrections_OLD
 /doc/old_drafts
+/doc/paper
 /doc/paper/WrenchSFGaps_SECOND_SUBMISSION
 /new_scripts_other_repo

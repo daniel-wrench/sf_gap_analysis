@@ -1,6 +1,8 @@
 # MAKE BACKGROUND PLOT: ALL VLISM DATA
 # This script plots the VLISM and some heliosheath data from Voyager 1 and Voyager 2
 
+import sys
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -25,7 +27,7 @@ def plot_events(
     date = pd.to_datetime(f"{year_start}-01-01") + pd.DateOffset(days=doy_start - 1)
     ylim = ax.get_ylim()
     # Plot a single vertical line at the specified date.
-    ax.axvline(date, color=color, linestyle="--", alpha=0.5, label=name)
+    ax.axvline(date, color=color, linestyle="--", alpha=0.8, label=name)
     # Place a label near the top of the line.
     ax.text(
         date + pd.DateOffset(days=25),
@@ -65,9 +67,32 @@ print(f"Voyager 2 missing data fraction: {v2_missing_fraction:.2%}")
 df1 = v1_raw.resample("24h").mean()
 df2 = v2_raw.resample("24h").mean()
 
+# Compute the velocity of the v1 spacecraft, based on the Radius and datetime index
+v1_duration = (df1.index[-1] - df1.index[0]).total_seconds()
+v1_distance = df1["Radius"].iloc[-1] - df1["Radius"].iloc[0]
+v1_velocity = v1_distance / v1_duration  # AU/s
+
+v2_duration = (df2.index[-1] - df2.index[0]).total_seconds()
+v2_distance = df2["Radius"].iloc[-1] - df2["Radius"].iloc[0]
+v2_velocity = v2_distance / v2_duration  # AU/s
+
+
 # Find common distance range for alignment
 min_radius = df1.Radius.min()
 max_radius = df1.Radius.max()
+
+min_datetime_v1 = df1[df1.Radius > min_radius].index.min()
+# Using the v2_velocity, compute the maximum datetime for v2
+max_datetime_v1 = min_datetime_v1 + pd.Timedelta(
+    (max_radius - min_radius) / v1_velocity, unit="s"
+)
+
+min_datetime_v2 = df2[df2.Radius > min_radius].index.min()
+# Using the v2_velocity, compute the maximum datetime for v2
+max_datetime_v2 = min_datetime_v2 + pd.Timedelta(
+    (max_radius - min_radius) / v2_velocity, unit="s"
+)
+
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharey=True)
 
@@ -84,7 +109,7 @@ handles, labels = ax1.get_legend_handles_labels()
 # handles = [handles[0], handles[2], handles[1]]
 labels = ["$|\\bf{B}|$", r"$B_R$", r"$B_T$", r"$B_N$"]
 
-ax1.legend(handles, labels, loc="upper left", fontsize=10)
+ax2.legend(handles, labels, loc="center", fontsize=14)
 
 ax1.annotate(
     "VOYAGER 1",
@@ -126,20 +151,20 @@ ax2_date = ax2.twiny()
 ax2_date.plot(df2.index, df2["BR"], alpha=0)
 ax2_date.set_xlabel("Date")
 
-ax1_date.axvline(v1_hp_date, color="k", linestyle="--")
-ax2_date.axvline(v2_hp_date, color="k", linestyle="--")
+ax1_date.axvline(v1_hp_date, color="k", linestyle="--", lw=2)
+ax2_date.axvline(v2_hp_date, color="k", linestyle="--", lw=2)
 
 # Align primary x-axes (distance)
-# ax1.set_xlim(min_radius, max_radius)
-# ax2.set_xlim(min_radius, max_radius)
+ax1.set_xlim(min_radius, max_radius)
+ax2.set_xlim(min_radius, max_radius)
+
+ax1_date.set_xlim(min_datetime_v1, max_datetime_v1)
+ax2_date.set_xlim(min_datetime_v2, max_datetime_v2)
+
+ax1.set_ylim(-0.7, 1)
 
 for region in v2_highlight_regions:
     plot_events(ax2_date, *region)
-
-# ax2_date.set_xlim(
-#     df2[df2.Radius > min_radius].index[0],
-#     df2[df2.Radius > min_radius].index[0] + pd.Timedelta(df1.index[-1] - df1.index[0]),
-# )
 
 for region in v1_highlight_regions:
     plot_events(ax1_date, *region)
@@ -149,8 +174,8 @@ ax1_date.text(pd.to_datetime("2021-03-01"), 0.6, "hump", alpha=0.8)
 
 
 # Add vertical gridlines for Voyager 1 and Voyager 2
-ax1.grid(True, which="both", axis="x", alpha=0.8)
-ax2.grid(True, which="both", axis="x", alpha=0.8)
+ax1.grid(True, which="both", axis="x", alpha=0.6)
+ax2.grid(True, which="both", axis="x", alpha=0.6)
 
 plt.tight_layout()
 plt.savefig("bg_figs/bg_all_vlism_data.png", dpi=300, bbox_inches="tight")

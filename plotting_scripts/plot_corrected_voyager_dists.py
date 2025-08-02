@@ -150,7 +150,7 @@ def plot_histograms():
         ax.xaxis.set_major_locator(MaxNLocator(4))
         # ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         ax.yaxis.set_major_locator(MaxNLocator(4))
-        # ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
 
     # Create unified legend
     create_legend(axes[1])

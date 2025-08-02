@@ -71,7 +71,7 @@ def create_voyager_analysis_plot(
     DI = 700000  # Ion inertial length in km
 
     # Create figure with optimized layout
-    fig, axes = plt.subplots(1, 3, figsize=(11, 3.2))
+    fig, axes = plt.subplots(3, 1, figsize=(4, 9))
 
     # Color scheme
     colors = {
@@ -139,8 +139,8 @@ def create_voyager_analysis_plot(
     # Formatting
     ax2.set_xlabel("$\\tau$ (s)", fontsize=12)
     ax2.set_ylabel("$S_2$ (nT$^2$)", fontsize=12)
-    ax2.set_ylim(1e-6, 1e-1)
-    ax2.set_xlim(1e1, 1e9)
+    ax2.set_ylim(1e-6, 5e-1)
+    ax2.set_xlim(1e1, 3e8)
     ax2.grid(True, alpha=0.3)
     # ax2.legend(fontsize=10)
 
@@ -178,7 +178,7 @@ def create_voyager_analysis_plot(
 
     # Annotate fit range
     x1, x2 = 1e3, 1e4  # your x-values
-    y_pos = 1e-2  # y-position for the bar
+    y_pos = 2e-2  # y-position for the bar
     ax2.annotate(
         "",
         xy=(x2, y_pos),
@@ -189,13 +189,13 @@ def create_voyager_analysis_plot(
             lw=1,
         ),
         fontsize=10,
-        color="black",
+        color="grey",
         ha="center",
         va="center",
     )
     ax2.text(
         x1 * 0.5,
-        y_pos * 1.2,
+        y_pos * 1.3,
         "$\\beta$ fit range",
         fontsize=10,
         color="black",
@@ -205,7 +205,7 @@ def create_voyager_analysis_plot(
 
     # Annotate lc_corr range
     x1, x2 = lc_corr_min, lc_corr_max  # your x-values
-    y_pos = 1e-5  # y-position for the bar
+    y_pos = 2e-2  # y-position for the bar
     ax2.annotate(
         "",
         xy=(x2, y_pos),
@@ -216,13 +216,13 @@ def create_voyager_analysis_plot(
             lw=1,
         ),
         fontsize=10,
-        color="black",
+        color="grey",
         ha="center",
         va="center",
     )
     ax2.text(
-        x1 * 1.4,
-        y_pos * 0.3,
+        x1 * 1.6,
+        y_pos * 1.3,
         "$\\lambda_C$ range",
         fontsize=10,
         color="black",
@@ -346,9 +346,17 @@ def _plot_corrected_es(ax, sfs_corrected, color, scale_factor=1):
 
 def _add_k41_references_sf(ax, color):
     """Add Kolmogorov 2/3 power law references to structure function plot."""
-    tau_range = np.logspace(np.log10(48), np.log10(11 * 365 * 86400), 100)
+    tau_range = np.logspace(np.log10(48), np.log10(2.5 * 365 * 86400), 100)
 
     # Two reference lines with different amplitudes
+    ax.loglog(
+        tau_range[:40],
+        1e-5 * tau_range[:40] ** (2 / 3),
+        color=color,
+        linestyle="--",
+        alpha=0.6,
+        linewidth=1.5,
+    )
     ax.loglog(
         tau_range,
         3.1e-8 * tau_range ** (2 / 3),
@@ -357,18 +365,10 @@ def _add_k41_references_sf(ax, color):
         alpha=0.6,
         linewidth=1.5,
     )
-    ax.loglog(
-        tau_range,
-        8e-6 * tau_range ** (2 / 3),
-        color=color,
-        linestyle="--",
-        alpha=0.6,
-        linewidth=1.5,
-    )
 
     # Add K41 labels
-    ax.text(2e2, 5e-4, "K41", rotation=30, alpha=0.7, fontsize=10, color=color)
-    ax.text(1e7, 7e-4, "K41", rotation=30, alpha=0.7, fontsize=10, color=color)
+    ax.text(2e2, 7e-4, "K41", rotation=30, alpha=0.7, fontsize=10, color=color)
+    ax.text(1e7, 6e-4, "K41", rotation=30, alpha=0.7, fontsize=10, color=color)
 
 
 def _add_k41_references_es(ax, freq_range, color):
@@ -556,7 +556,7 @@ fig = create_voyager_analysis_plot(
     lc_corr_min,
     lc_corr_max,
 )
-plt.savefig("big_voyager_sfs_row.png", dpi=300, bbox_inches="tight")
+plt.savefig("big_voyager_sfs_col.png", dpi=300, bbox_inches="tight")
 # plt.show()
 
 

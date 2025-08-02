@@ -304,5 +304,6 @@ ax0.text(
     fontsize=11,
     c="black",
 )
-plt.savefig("frat_2019_sfs_reproduction.png")
+plt.show()
+# plt.savefig("frat_2019_sfs_reproduction.png")
 print("Done")

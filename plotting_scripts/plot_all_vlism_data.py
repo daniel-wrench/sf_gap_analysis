@@ -94,18 +94,26 @@ max_datetime_v2 = min_datetime_v2 + pd.Timedelta(
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharey=True)
 
-# Voyager 1 plot (top)
 # Voyager 1 plot (top) - with paler pre-heliopause data
-for component, color, lw in zip(
-    ["F1", "BR", "BT", "BN"], ["black", "red", "green", "blue"], [1.2, 0.5, 0.5, 0.5]
-):
+
+v1_metadata = {
+    "F1": {"label": "$|\\bf{B}|$", "color": "black", "lw": 1.2, "sigma": 0.04},
+    "BR": {"label": r"$B_R$", "color": "red", "lw": 0.5, "sigma": 0.06},
+    # ^ this is the nominal value - could be between 0.02 and 0.1
+    "BT": {"label": r"$B_T$", "color": "green", "lw": 0.5, "sigma": 0.02},
+    "BN": {"label": r"$B_N$", "color": "blue", "lw": 0.5, "sigma": 0.02},
+}
+
+# Plot the Voyager 1 data with the specified metadata
+for component, metadata in v1_metadata.items():
+
     # Pre-heliopause data (paler)
     pre_hp_mask = df1.index < v1_hp_date
     ax1.plot(
         df1.Radius[pre_hp_mask],
         df1[component][pre_hp_mask],
-        color=color,
-        lw=lw,
+        color=metadata["color"],
+        lw=metadata["lw"],
         alpha=0.4,
     )
 
@@ -114,11 +122,25 @@ for component, color, lw in zip(
     ax1.plot(
         df1.Radius[post_hp_mask],
         df1[component][post_hp_mask],
-        color=color,
+        color=metadata["color"],
         label=component,
-        lw=lw,
+        lw=metadata["lw"],
         alpha=1.0,
     )
+
+    # Coordinates for the annotation
+    # x_pos = df1.index[-1]
+    # y_pos = df1[component][-1]
+    # uncertainty_value = metadata["sigma"]
+
+    # # Draw the error bar symbol (|-|) using a short vertical line with caps
+    # ax1.errorbar(
+    #     x_pos, y_pos, yerr=uncertainty_value, fmt="o", color="black", capsize=5
+    # )
+
+    # # Add text label with ± and value next to it
+    # ax1.text(x_pos, y_pos, f"±{uncertainty_value}", fontsize=12, va="center")
+
 
 ax1.set_ylabel("Magnetic Field Strength (nT)")
 
@@ -134,18 +156,25 @@ ax1_date = ax1.twiny()
 ax1_date.plot(df1.index, df1["BR"], alpha=0)
 ax1_date.set_xlabel("Date")
 
+
+v2_metadata = {
+    "F1": {"label": "$|\\bf{B}|$", "color": "black", "lw": 1.2, "sigma": 0.04},
+    "BR": {"label": r"$B_R$", "color": "red", "lw": 0.5, "sigma": 0.06},
+    # ^ this is the nominal value - could be between 0.02 and 0.1
+    "BT": {"label": r"$B_T$", "color": "green", "lw": 0.5, "sigma": 0.03},
+    "BN": {"label": r"$B_N$", "color": "blue", "lw": 0.5, "sigma": 0.03},
+}
+
 # Voyager 2 plot (bottom) - with paler pre-heliopause data
-for component, color, lw in zip(
-    ["F1", "BR", "BT", "BN"], ["black", "red", "green", "blue"], [0.9, 0.2, 0.2, 0.2]
-):
+for component, metadata in v2_metadata.items():
     # Pre-heliopause data (paler)
     pre_hp_mask = df2.index < v2_hp_date
     ax2.plot(
         df2.index[pre_hp_mask],
         df2[component][pre_hp_mask],
-        label=component,
-        color=color,
-        lw=lw,
+        label=metadata["label"],
+        color=metadata["color"],
+        lw=metadata["lw"],
         alpha=0.4,
     )
 
@@ -154,8 +183,8 @@ for component, color, lw in zip(
     ax2.plot(
         df2.index[post_hp_mask],
         df2[component][post_hp_mask],
-        color=color,
-        lw=lw,
+        color=metadata["color"],
+        lw=metadata["lw"],
         alpha=1.0,
     )
 
@@ -272,6 +301,7 @@ ax2.legend(
     edgecolor="black",  # legend box border color
     framealpha=1.0,  # legend box transparency
 )
+
 
 # Reduce spacing between subplots
 plt.subplots_adjust(hspace=0.25)  # Removed to avoid conflict with tight_layout

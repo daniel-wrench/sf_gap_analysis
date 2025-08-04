@@ -6,7 +6,7 @@ from sunpy.timeseries import TimeSeries
 import src.params as params
 
 # Define spacecraft and their start years
-spacecraft_config = {"voyager1": 2010, "voyager2": 2016}
+spacecraft_config = {"voyager1": 2009, "voyager2": 2015}
 
 cadence = "48s"
 

@@ -97,7 +97,7 @@ fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharey=True)
 # Voyager 1 plot (top)
 # Voyager 1 plot (top) - with paler pre-heliopause data
 for component, color, lw in zip(
-    ["F1", "BR", "BT", "BN"], ["black", "red", "green", "blue"], [1.2, 0.6, 0.6, 0.6]
+    ["F1", "BR", "BT", "BN"], ["black", "red", "green", "blue"], [1.2, 0.5, 0.5, 0.5]
 ):
     # Pre-heliopause data (paler)
     pre_hp_mask = df1.index < v1_hp_date
@@ -132,11 +132,11 @@ ax2.legend(handles, labels, loc="center", fontsize=14)
 # Add secondary x-axis for dates (Voyager 1)
 ax1_date = ax1.twiny()
 ax1_date.plot(df1.index, df1["BR"], alpha=0)
-ax1_date.set_xlabel("DATE")
+ax1_date.set_xlabel("Date")
 
 # Voyager 2 plot (bottom) - with paler pre-heliopause data
 for component, color, lw in zip(
-    ["F1", "BR", "BT", "BN"], ["black", "red", "green", "blue"], [0.9, 0.3, 0.3, 0.3]
+    ["F1", "BR", "BT", "BN"], ["black", "red", "green", "blue"], [0.9, 0.2, 0.2, 0.2]
 ):
     # Pre-heliopause data (paler)
     pre_hp_mask = df2.index < v2_hp_date
@@ -160,7 +160,7 @@ for component, color, lw in zip(
     )
 
 
-ax2.set_xlabel("DATE")
+ax2.set_xlabel("Date")
 ax2.set_ylabel("Magnetic Field Strength (nT)")
 
 
@@ -195,7 +195,7 @@ for region in v1_highlight_regions:
 ax1_date.text(pd.to_datetime("2021-03-01"), 0.6, "hump", alpha=0.7, fontsize=9)
 
 ax1_date.text(
-    v1_hp_date - pd.DateOffset(days=150),
+    v1_hp_date - pd.DateOffset(days=200),
     ax1_date.get_ylim()[1] * 0.92,
     "HP",
     rotation=90,
@@ -207,7 +207,7 @@ ax1_date.text(
 )
 
 ax2.text(
-    v2_hp_date - pd.DateOffset(days=180),
+    v2_hp_date - pd.DateOffset(days=220),
     ax2.get_ylim()[1] * 0.92,
     "HP",
     rotation=90,
@@ -221,7 +221,7 @@ ax2.text(
 ax2_date.set_xticklabels([])
 
 ax1.annotate(
-    "VOYAGER 1",
+    "Voyager 1",
     xy=(0.98, 0.85),
     xycoords="axes fraction",
     fontsize=16,
@@ -230,7 +230,7 @@ ax1.annotate(
     va="bottom",
 )
 ax2.annotate(
-    "VOYAGER 2",
+    "Voyager 2",
     xy=(0.98, 0.85),
     xycoords="axes fraction",
     fontsize=16,
@@ -244,25 +244,14 @@ labels = ["$|\\bf{B}|$", r"$B_R$", r"$B_T$", r"$B_N$"]
 
 # Add vertical gridlines for Voyager 1 and Voyager 2
 ax1.grid(True, which="both", axis="x", alpha=0.6)
-ax2_date.grid(True, which="both", axis="x", alpha=0.6)
-
-ax2.legend(
-    handles,
-    labels,
-    loc="center",
-    fontsize=13,
-    frameon=True,
-    facecolor="white",  # legend box background color
-    edgecolor="black",  # legend box border color
-    framealpha=0.5,  # legend box transparency
-)
+ax2_date.grid(True, which="both", axis="x", alpha=0.6, zorder=1)
 
 ax1.tick_params(axis="x", which="major", pad=15)
 # ax1.set_xlabel("DISTANCE FROM SUN (AU)")
 
 # Add annotation inside a box
 ax1.annotate(
-    "DISTANCE FROM SUN (AU)",
+    "Distance from Sun (au)",
     xy=(0.48, -0.18),
     xycoords="axes fraction",
     fontsize=12,
@@ -270,6 +259,18 @@ ax1.annotate(
     ha="center",
     va="bottom",
     bbox=dict(facecolor="white", alpha=1, edgecolor="white"),
+)
+
+ax2.legend(
+    handles,
+    labels,
+    loc="center right",
+    fontsize=13,
+    ncol=2,
+    frameon=True,
+    facecolor="white",  # legend box background color
+    edgecolor="black",  # legend box border color
+    framealpha=1.0,  # legend box transparency
 )
 
 # Reduce spacing between subplots

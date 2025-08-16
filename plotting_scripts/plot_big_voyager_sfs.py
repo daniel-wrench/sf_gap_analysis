@@ -71,7 +71,7 @@ def create_voyager_analysis_plot(
     DI = 700000  # Ion inertial length in km
 
     # Create figure with optimized layout
-    fig, axes = plt.subplots(3, 1, figsize=(4, 9))
+    fig, axes = plt.subplots(3, 1, figsize=(4, 10))
 
     # Color scheme
     colors = {
@@ -114,7 +114,7 @@ def create_voyager_analysis_plot(
     ax1.set_ylabel("|B| (nT)", fontsize=12)
     ax1.set_xlabel("Date", fontsize=12)
 
-    ax1.set_ylim(0.32, 0.88)
+    ax1.set_ylim(0.2, 0.9)
     ax1.grid(True, alpha=0.3)
 
     # Add mission information
@@ -130,16 +130,15 @@ def create_voyager_analysis_plot(
     ax2.loglog(lags_v2_hr * 48, sf_v2_hr, color=colors["v2"], label="V2", linewidth=2)
 
     # Corrected structure functions
-    _plot_corrected_sfs(ax2, v1_sfs_corrected, colors["v1"], scale_factor=3000)
-    _plot_corrected_sfs(ax2, v2_sfs_corrected, colors["v2"], scale_factor=3000)
-
+    _plot_corrected_sfs(ax2, v1_sfs_corrected, colors["v1"])  # scale_factor=3000
+    _plot_corrected_sfs(ax2, v2_sfs_corrected, colors["v2"])  # scale_factor=3000
     # Kolmogorov reference lines
     _add_k41_references_sf(ax2, colors["reference"])
 
     # Formatting
     ax2.set_xlabel("$\\tau$ (s)", fontsize=12)
     ax2.set_ylabel("$S_2$ (nT$^2$)", fontsize=12)
-    ax2.set_ylim(1e-6, 5e-1)
+    # ax2.set_ylim(1e-6, 5e-1)
     ax2.set_xlim(1e1, 3e8)
     ax2.grid(True, alpha=0.3)
     # ax2.legend(fontsize=10)
@@ -161,7 +160,7 @@ def create_voyager_analysis_plot(
 
     # Corrected equivalent spectra
     _plot_corrected_es(ax3, v1_sfs_corrected, colors["v1"])
-    _plot_corrected_es(ax3, v2_sfs_corrected, colors["v2"], scale_factor=10)
+    _plot_corrected_es(ax3, v2_sfs_corrected, colors["v2"])  # scale_factor=10
 
     # Kolmogorov reference lines
     _add_k41_references_es(ax3, es_v1_f, colors["reference"])
@@ -169,7 +168,7 @@ def create_voyager_analysis_plot(
     # Formatting
     ax3.set_xlabel("f (Hz)", fontsize=12)
     ax3.set_ylabel("$S_2\\tau/6$", fontsize=12)
-    ax3.set_ylim(7e-5, 1e7)
+    ax3.set_ylim(1e-4, 1e6)
     ax3.grid(True, alpha=0.3)
     # ax3.legend(fontsize=10)
 
@@ -270,7 +269,7 @@ def _add_mission_info(ax, colors):
     ax.text(
         0.04,
         0.88,
-        "121-160au\n$⟨B⟩$ = 0.47 nT\n$⟨\delta b/B_0⟩$ = 0.22",
+        "121-160 au\n$B_0$ = 0.46 nT\n$\delta b/B_0$ = 0.22",
         transform=ax.transAxes,
         fontsize=9,
         color=colors["v1"],
@@ -303,7 +302,7 @@ def _add_mission_info(ax, colors):
     ax.text(
         0.97,
         0.88,
-        "119-135au\n$⟨B⟩$ = 0.57 nT\n$⟨\delta b/B_0⟩$ = 0.15nT",
+        "119-135 au\n$B_0$ = 0.57 nT\n$\delta b/B_0$ = 0.15",
         transform=ax.transAxes,
         fontsize=9,
         color=colors["v2"],
@@ -560,47 +559,44 @@ plt.savefig("big_voyager_sfs_col.png", dpi=300, bbox_inches="tight")
 # plt.show()
 
 
-# Get fluctuation sizes
-# Bx = v1_raw["BR"]
-# By = v1_raw["BT"]
-# Bz = v1_raw["BN"]
+v1_raw = pd.read_pickle("data/interim/voyager/voyager1_lism.pkl")
+v2_raw = pd.read_pickle("data/interim/voyager/voyager2_lism.pkl")
 
-# Bx_mean = Bx.mean()
-# By_mean = By.mean()
-# Bz_mean = Bz.mean()
 
-# # Calculate magnetic field magnitude B0
-# B0 = np.sqrt(Bx_mean**2 + By_mean**2 + Bz_mean**2)
-# print(f"B0: {B0:.3f} nT")
-# # Calculate rms magnetic field fluctuations, db
-# dbx = Bx - Bx_mean
-# dby = By - By_mean
-# dbz = Bz - Bz_mean
-# db = np.sqrt(np.mean(dbx**2 + dby**2 + dbz**2))
+def fluctuation_ratio(df):
+    # Components
+    Bx, By, Bz = df["BR"], df["BT"], df["BN"]
 
-# print(f"db: {db:.3f} nT")
-# # Calculate the ratio of fluctuations to mean field
-# ratio = db / B0
-# print(f"Ratio of fluctuations to mean field: {ratio:.3f}")
+    # Vector mean field
+    Bx_mean, By_mean, Bz_mean = Bx.mean(), By.mean(), Bz.mean()
+    B0 = np.sqrt(Bx_mean**2 + By_mean**2 + Bz_mean**2)
 
-# Bx = v2_raw["BR"]
-# By = v2_raw["BT"]
-# Bz = v2_raw["BN"]
+    # Vector rms fluctuation
+    db = np.sqrt(
+        np.mean((Bx - Bx_mean) ** 2 + (By - By_mean) ** 2 + (Bz - Bz_mean) ** 2)
+    )
+    ratio_vector = db / B0
 
-# Bx_mean = Bx.mean()
-# By_mean = By.mean()
-# Bz_mean = Bz.mean()
+    # Scalar magnitude fluctuations
+    Bmag = np.sqrt(Bx**2 + By**2 + Bz**2)
+    ratio_scalar = Bmag.std() / Bmag.mean()
 
-# # Calculate magnetic field magnitude B0
-# B0 = np.sqrt(Bx_mean**2 + By_mean**2 + Bz_mean**2)
-# print(f"B0: {B0:.3f} nT")
-# # Calculate rms magnetic field fluctuations, db
-# dbx = Bx - Bx_mean
-# dby = By - By_mean
-# dbz = Bz - Bz_mean
-# db = np.sqrt(np.mean(dbx**2 + dby**2 + dbz**2))
+    return B0, db, ratio_vector, ratio_scalar
 
-# print(f"db: {db:.3f} nT")
-# # Calculate the ratio of fluctuations to mean field
-# ratio = db / B0
-# print(f"Ratio of fluctuations to mean field: {ratio:.3f}")
+
+# Voyager 1
+v1 = pd.read_pickle("data/interim/voyager/voyager1_lism.pkl")
+B0, db, ratio_vec, ratio_mag = fluctuation_ratio(v1)
+print("Voyager 1")
+print(f"B0: {B0:.3f} nT")
+print(f"δB (vector): {db:.3f} nT, δB/|<B>|: {ratio_vec:.3f}")
+print(f"σ(|B|)/<|B|>: {ratio_mag:.3f}")
+
+# Voyager 2
+v2 = pd.read_pickle("data/interim/voyager/voyager2_lism.pkl")
+B0, db, ratio_vec, ratio_mag = fluctuation_ratio(v2)
+print("\nVoyager 2")
+print(f"B0: {B0:.3f} nT")
+print(f"δB (vector): {db:.3f} nT, δB/|<B>|: {ratio_vec:.3f}")
+print(f"σ(|B|)/<|B|>: {ratio_mag:.3f}")
+print(f"σ(|B|)/<|B|>: {ratio_mag:.3f}")

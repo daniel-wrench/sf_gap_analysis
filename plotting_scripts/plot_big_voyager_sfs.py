@@ -71,12 +71,12 @@ def create_voyager_analysis_plot(
     DI = 700000  # Ion inertial length in km
 
     # Create figure with optimized layout
-    fig, axes = plt.subplots(3, 1, figsize=(4, 10))
+    fig, axes = plt.subplots(3, 1, figsize=(4.5, 9))
 
     # Color scheme
     colors = {
-        "v1": "#16702df8",
-        "v2": "#43a1cabe",
+        "v1": "#20ac43ff",
+        "v2": "#4ab7e6ff",
         "reference": "#696969",  # Dim gray
         "k41": "#708090",  # Slate gray
     }
@@ -126,19 +126,23 @@ def create_voyager_analysis_plot(
     ax2 = axes[1]
 
     # Main structure functions
+    ax2.loglog(lags_v1_hr * 48, sf_v1_hr, color="black", label="V1", linewidth=3.5)
+    ax2.loglog(lags_v2_hr * 48, sf_v2_hr, color="black", label="V2", linewidth=3.5)
+
     ax2.loglog(lags_v1_hr * 48, sf_v1_hr, color=colors["v1"], label="V1", linewidth=2)
+
     ax2.loglog(lags_v2_hr * 48, sf_v2_hr, color=colors["v2"], label="V2", linewidth=2)
 
     # Corrected structure functions
-    _plot_corrected_sfs(ax2, v1_sfs_corrected, colors["v1"])  # scale_factor=3000
-    _plot_corrected_sfs(ax2, v2_sfs_corrected, colors["v2"])  # scale_factor=3000
+    _plot_corrected_sfs(ax2, v1_sfs_corrected, colors["v1"], scale_factor=3000)
+    _plot_corrected_sfs(ax2, v2_sfs_corrected, colors["v2"], scale_factor=3000)
     # Kolmogorov reference lines
     _add_k41_references_sf(ax2, colors["reference"])
 
     # Formatting
     ax2.set_xlabel("$\\tau$ (s)", fontsize=12)
     ax2.set_ylabel("$S_2$ (nT$^2$)", fontsize=12)
-    # ax2.set_ylim(1e-6, 5e-1)
+    ax2.set_ylim(1e-6, 5e-1)
     ax2.set_xlim(1e1, 3e8)
     ax2.grid(True, alpha=0.3)
     # ax2.legend(fontsize=10)
@@ -155,12 +159,14 @@ def create_voyager_analysis_plot(
     ax3 = axes[2]
 
     # Main equivalent spectra
+    ax3.loglog(es_v1_f, es_v1_hr, label="V1", color="black", linewidth=3.5)
     ax3.loglog(es_v1_f, es_v1_hr, label="V1", color=colors["v1"], linewidth=2)
+    ax3.loglog(es_v2_f, es_v2_hr, label="V2", color="black", linewidth=3.5)
     ax3.loglog(es_v2_f, es_v2_hr, label="V2", color=colors["v2"], linewidth=2)
 
     # Corrected equivalent spectra
-    _plot_corrected_es(ax3, v1_sfs_corrected, colors["v1"])
-    _plot_corrected_es(ax3, v2_sfs_corrected, colors["v2"])  # scale_factor=10
+    _plot_corrected_es(ax3, v1_sfs_corrected, colors["v1"], scale_factor=0.05)
+    _plot_corrected_es(ax3, v2_sfs_corrected, colors["v2"], scale_factor=0.05)
 
     # Kolmogorov reference lines
     _add_k41_references_es(ax3, es_v1_f, colors["reference"])
@@ -337,7 +343,7 @@ def _plot_corrected_es(ax, sfs_corrected, color, scale_factor=1):
         ax.loglog(
             subset["inverse_lag_s"],
             subset["sf_corrected_es"] * scale_factor,
-            alpha=0.25,
+            alpha=0.4,
             color=color,
             linewidth=1,
         )
@@ -377,7 +383,7 @@ def _add_k41_references_es(ax, freq_range, color):
     # Two reference lines with different amplitudes
     ax.loglog(
         f_range,
-        3.1e-5 * f_range ** (-5 / 3),
+        3.1e-6 * f_range ** (-5 / 3),
         color=color,
         linestyle="--",
         alpha=0.6,
@@ -393,7 +399,7 @@ def _add_k41_references_es(ax, freq_range, color):
     )
 
     # Add K41 labels
-    ax.text(1e-3, 7e-1, "K41", rotation=-40, alpha=0.7, fontsize=10, color=color)
+    ax.text(5e-4, 7e-1, "K41", rotation=-40, alpha=0.7, fontsize=10, color=color)
     ax.text(1e-8, 1e2, "K41", rotation=-40, alpha=0.7, fontsize=10, color=color)
 
 

@@ -37,7 +37,7 @@ if len(sys.argv) < 2 or len(sys.argv) > 3:
     print("Example: python correct_plot_voyager_ints.py voyager1 5")
     sys.exit(1)
 
-spacecraft = sys.argv[1].lower()
+spacecraft = sys.argv[1]
 if spacecraft not in ["voyager1", "voyager2"]:
     print("Error: spacecraft must be either 'voyager1' or 'voyager2'")
     sys.exit(1)
@@ -159,7 +159,21 @@ file_index = 0
 
 all_sfs_gapped_corrected = []
 
+
 # Perform correction for each interval
+
+# ## Smoothing correction
+#
+# Previous method, employed in first paper submission, involved Gaussian blurring
+# the heatmaps to create `correction_lookup_3d_blurred`,
+# which replaced `correction_lookup_3d` in the following script.
+# *See the GitHub, main branch, for this code.*
+#
+# This time we are smoothing the actual correction values for each specific SF;
+# this is done below and applied to the interval from the paper.
+#
+
+
 for int_index in range(n_ints):
     print(f"Correcting interval {int_index}...")
     int_std = df_std[int_index * interval_length : (int_index + 1) * interval_length]
@@ -190,19 +204,6 @@ for int_index in range(n_ints):
     interp_output["sf_2_se"] = bad_output["sf_2_se"]
 
     sfs_gapped = pd.concat([interp_output, bad_output])
-
-    # ### Correcting SF
-
-    # ## Smoothing correction
-    #
-    # Previous method, employed in first paper submission, involved Gaussian blurring
-    # the heatmaps to create `correction_lookup_3d_blurred`,
-    # which replaced `correction_lookup_3d` in the following script.
-    # *See the GitHub, main branch, for this code.*
-    #
-    # This time we are smoothing the actual correction values for each specific SF;
-    # this is done below and applied to the interval from the paper.
-    #
 
     # Making lag relative to correlation scale, for consistent correction application
     sfs_gapped["lag_tc"] = sfs_gapped["lag"] * 10 / len(int_std)
@@ -577,16 +578,16 @@ for int_index in range(n_ints):
     ax2.set_ylim(1e-1, 1e1)
     ax3.set_ylim(0, 1)
     plt.savefig(
-        f"results/full/plots/voyager/{spacecraft_short}_corrected_{int_index}_test.png",
+        f"results/full/plots/voyager/{spacecraft_short}_corrected_{int_index}.png",
         dpi=PLOT_DPI,
     )
     plt.close(fig)
 
 # Save metadata
-output_file_path = f"results/full/{spacecraft}_corrected_metadata_test.csv"
+output_file_path = f"results/full/{spacecraft}_corrected_metadata.csv"
 ints_gapped_metadata.to_csv(output_file_path, index=False)
 print(f"Stats saved to {output_file_path}")
 
 # Export the corrected SFs
 sfs_gapped_corrected_all = pd.concat(all_sfs_gapped_corrected, ignore_index=True)
-sfs_gapped_corrected_all.to_pickle(f"results/full/{spacecraft}_corrected_sfs_test.pkl")
+sfs_gapped_corrected_all.to_pickle(f"results/full/{spacecraft}_corrected_sfs.pkl")

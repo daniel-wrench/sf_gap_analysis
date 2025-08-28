@@ -1,3 +1,5 @@
+import math
+
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
@@ -66,8 +68,12 @@ def plot_histograms():
     vars_to_plot = ["slope", "tce_days", "ttu_hours"]
     labels = [r"$\beta$", r"$\lambda_C$ (days)", r"$\lambda_T$ (hours)"]
     bin_edges = {
-        "slope": np.linspace(0.1, 0.9, 12),
-        "tce_days": np.linspace(0.3, 70, 10),
+        "slope": np.linspace(
+            0.15,
+            1.5,
+            10,
+        ),
+        "tce_days": np.linspace(0, math.ceil(fraternale_data.tce_days.max()), 10),
         "ttu_hours": np.linspace(0, 0.22, 10),
     }
 
@@ -119,19 +125,44 @@ def plot_histograms():
                 )
 
         # Customize axes
-        ax.set_xlim(bin_edges[var][0], bin_edges[var][-1])
+        # ax.set_xlim(bin_edges[var][0], bin_edges[var][-1])
         ax.set_xlabel(labels[i], fontsize=10)
 
         # Add K41 reference line for slope
         if var == "slope":
-            ax.axvline(2 / 3, color="black", linestyle="dotted", alpha=0.6)
-            ax.text(2 / 3 + 0.01, 12, "K41", fontsize=10, alpha=0.6)
-
+            ax.axvline(2 / 3, color="black", alpha=0.4, ymax=0.8, lw=0.9)
+            ax.text(
+                2 / 3,
+                21,
+                "K41",
+                fontsize=6,
+                alpha=0.6,
+                ha="center",
+            )
+            ax.axvline(1 / 2, color="black", alpha=0.4, ymax=0.8, lw=0.9)
+            ax.text(
+                1 / 2 - 0.05,
+                21,
+                "IK",
+                fontsize=6,
+                alpha=0.6,
+                ha="center",
+            )
+            ax.axvline(1, color="black", alpha=0.4, ymax=0.8, lw=0.9)
+            ax.text(
+                1,
+                21,
+                "Bgr",
+                fontsize=6,
+                alpha=0.6,
+                ha="center",
+            )
         # Print statistics
         print(
-            f"95% CI for {var}: "
-            f"{plot_data[var].quantile(0.025):.2f}, "
-            f"{plot_data[var].quantile(0.975):.2f}, "
+            # f"95% CI for {var}: "
+            # f"{plot_data[var].quantile(0.025):.2f}, "
+            # f"{plot_data[var].quantile(0.975):.2f}, "
+            f"Range for {var}: {plot_data[var].min():.2f} - {plot_data[var].max():.2f}, "
             f"median: {plot_data[var].median():.2f}"
         )
 
@@ -141,6 +172,7 @@ def plot_histograms():
     for ax in axes:
         ax.set_ylim(0, max_y)
 
+    axes[0].set_ylim(0, 25)
     # X-axis adjustments
     axes[1].set_xlim(-5, 80)
     axes[2].set_xlim(-0.01, 0.2)
@@ -197,7 +229,7 @@ def create_legend(ax):
             markeredgecolor="black",
             markeredgewidth=0.5,
             markersize=10,
-            label="Previous estimates from V1",
+            label="Previous estimates for V1",
             linestyle="None",
         ),
     ]

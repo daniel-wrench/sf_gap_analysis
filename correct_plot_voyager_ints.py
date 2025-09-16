@@ -30,14 +30,15 @@ plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 
 # Parse command line arguments
-if len(sys.argv) < 2 or len(sys.argv) > 3:
-    print("Usage: python correct_plot_voyager_ints.py <spacecraft> [n_intervals]")
-    print("  spacecraft: 'voyager1' or 'voyager2'")
-    print("  n_intervals: optional, limits number of intervals to process")
-    print("Example: python correct_plot_voyager_ints.py voyager1 5")
-    sys.exit(1)
+# if len(sys.argv) < 2 or len(sys.argv) > 3:
+#     print("Usage: python correct_plot_voyager_ints.py <spacecraft> [n_intervals]")
+#     print("  spacecraft: 'voyager1' or 'voyager2'")
+#     print("  n_intervals: optional, limits number of intervals to process")
+#     print("Example: python correct_plot_voyager_ints.py voyager1 5")
+#     sys.exit(1)
 
-spacecraft = sys.argv[1]
+spacecraft = "voyager1"
+# spacecraft = sys.argv[1]
 if spacecraft not in ["voyager1", "voyager2"]:
     print("Error: spacecraft must be either 'voyager1' or 'voyager2'")
     sys.exit(1)
@@ -120,11 +121,12 @@ df_std = df.resample(str(np.round(new_cadence, 3)) + "s").mean()
 n_ints = int(np.floor(len(df_std) / interval_length))
 
 # Check if user wants to limit number of intervals
-if len(sys.argv) == 3:
-    n_ints_requested = int(sys.argv[2])
-    if n_ints_requested < n_ints:
-        n_ints = n_ints_requested
-        print(f"Processing only the first {n_ints} intervals (user requested).")
+n_ints = 2
+# if len(sys.argv) == 3:
+#     n_ints_requested = int(sys.argv[2])
+#     if n_ints_requested < n_ints:
+#         n_ints = n_ints_requested
+#         print(f"Processing only the first {n_ints} intervals (user requested).")
 
 print(
     f"Number of standardised intervals to correct: {n_ints} "
@@ -173,14 +175,27 @@ all_sfs_gapped_corrected = []
 # this is done below and applied to the interval from the paper.
 #
 
+COMPONENTS = ["BR", "BT", "BN"]
 
 for int_index in range(n_ints):
     print(f"Correcting interval {int_index}...")
     int_std = df_std[int_index * interval_length : (int_index + 1) * interval_length]
 
+    # sfs_lint = {}
+    # sfs_corr = {}
+    # sfs_corr_lower = {}
+    # sfs_corr_upper = {}
+
+    # for comp in COMPONENTS:
+    # sd = np.nanstd(int_std[comp])
+    # mean = np.nanmean(int_std[comp])
+    # int_std_norm = (int_std[[comp]] - mean) / sd
+    # bad_input = pd.DataFrame(int_std_norm)
+
     int_norm = utils.normalize(int_std)
     bad_input = int_norm[["BR", "BT", "BN"]]
 
+    sd = 1
     bad_output = sf.compute_sf(bad_input, lags, powers, False, False)
     bad_output["gap_handling"] = "naive"
     bad_output["file_index"] = file_index
@@ -235,15 +250,19 @@ for int_index in range(n_ints):
         "scaling_upper_smooth",
     ] = scaling_upper_smooth
 
-    # Apply scalings
+    # Apply scalings AND SCALING BACK TO ORIGINAL POWER LEVELS, BASED ON VARIANCE
     sfs_lint_corrected_3d["sf_2_corrected_3d"] = (
-        sfs_lint_corrected_3d["sf_2"] * sfs_lint_corrected_3d["scaling_smooth"]
+        sfs_lint_corrected_3d["sf_2"] * sfs_lint_corrected_3d["scaling_smooth"] * sd**2
     )
     sfs_lint_corrected_3d["sf_2_lower_corrected_3d"] = (
-        sfs_lint_corrected_3d["sf_2"] * sfs_lint_corrected_3d["scaling_lower_smooth"]
+        sfs_lint_corrected_3d["sf_2"]
+        * sfs_lint_corrected_3d["scaling_lower_smooth"]
+        * sd**2
     )
     sfs_lint_corrected_3d["sf_2_upper_corrected_3d"] = (
-        sfs_lint_corrected_3d["sf_2"] * sfs_lint_corrected_3d["scaling_upper_smooth"]
+        sfs_lint_corrected_3d["sf_2"]
+        * sfs_lint_corrected_3d["scaling_upper_smooth"]
+        * sd**2
     )
 
     correction_wide = sfs_lint_corrected_3d[
@@ -295,6 +314,8 @@ for int_index in range(n_ints):
             "gap_handling",
         ],
     ).reset_index()
+
+    ########### DO RE-STANDARDISING AND SUMMING OPERATION HERE
 
     # Adding the corrections, now as a form of "gap_handling", back to the gapped SF dataframe
     sfs_gapped_corrected = pd.concat([sfs_gapped, corrections_long])

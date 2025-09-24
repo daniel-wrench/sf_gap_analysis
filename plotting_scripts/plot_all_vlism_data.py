@@ -276,6 +276,8 @@ ax1.grid(True, which="both", axis="x", alpha=0.6)
 ax2_date.grid(True, which="both", axis="x", alpha=0.6, zorder=1)
 
 ax1.tick_params(axis="x", which="major", pad=15)
+for label in ax1.get_xticklabels():
+    label.set_fontweight("bold")
 # ax1.set_xlabel("DISTANCE FROM SUN (AU)")
 
 # Add annotation inside a box
@@ -284,7 +286,7 @@ ax1.annotate(
     xy=(0.48, -0.18),
     xycoords="axes fraction",
     fontsize=12,
-    # fontweight="bold",
+    fontweight="bold",
     ha="center",
     va="bottom",
     bbox=dict(facecolor="white", alpha=1, edgecolor="white"),
@@ -308,3 +310,20 @@ plt.subplots_adjust(hspace=0.25)  # Removed to avoid conflict with tight_layout
 
 # plt.tight_layout()
 plt.savefig("bg_figs/bg_all_vlism_data.png", dpi=300, bbox_inches="tight")
+
+
+# Drop a column from df1
+df1.drop(columns=["Radius"], inplace=True)
+
+
+# Plot Voyager 2 post-heliopause data
+ax_v2 = df2.loc[df2.index > v2_hp_date].plot(lw=0.5, figsize=(8, 3))
+plt.axvline("2021-01-01", color="k", linestyle="--", lw=1, alpha=0.5)
+plt.title("Voyager 2 Post-Heliopause 48s MAG Data")
+
+# Re-order the legend
+handles, labels = ax_v2.get_legend_handles_labels()
+order = ["F1", "BN", "BR", "BT"]
+ordered_handles = [handles[labels.index(k)] for k in order if k in labels]
+ordered_labels = order
+ax_v2.legend(ordered_handles, ordered_labels, loc="best")
